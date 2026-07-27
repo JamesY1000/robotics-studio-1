@@ -1,0 +1,39 @@
+{
+    "name": "robotics-studio-1",
+    "dockerComposeFile": "docker-compose.yml",
+    "service": "rs1-devcontainer-user",
+    "workspaceFolder": "/robotics-studio-1",
+    "remoteUser": "ubuntu",
+    "overrideCommand": false,
+    "shutdownAction": "stopContainer",
+    "postCreateCommand": "bash .devcontainer/scripts/post_create.sh",
+    // Handle port forwarding in the future for foxglove/lichtblick and webdev stuff
+    "customizations": {
+        "vscode": {
+        "settings": {
+            "terminal.integrated.defaultProfile.linux": "zsh",
+            "terminal.integrated.profiles.linux": {
+            "zsh": { "path": "/usr/bin/zsh" }
+            },
+            "python.defaultInterpreterPath": "/usr/local/bin/python",
+            "editor.formatOnSave": true,
+            "files.trimTrailingWhitespace": true
+        },
+        "extensions": [
+            // Python
+            "ms-python.python",
+            "ms-python.vscode-pylance",
+            "ms-python.debugpy",
+            "charliermarsh.ruff",
+            "ms-python.mypy-type-checker",
+            // Git
+            "eamodio.gitlens",
+            // QOL
+            "christian-kohler.path-intellisense",
+            "usernamehw.errorlens",
+            "shardulm94.trailing-spaces",
+            "davidanson.vscode-markdownlint"
+      ]
+    }
+  }
+}

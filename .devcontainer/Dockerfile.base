@@ -1,0 +1,64 @@
+ARG ROS_DISTRO=humble
+ARG ROS_BASE_IMAGE=ros:${ROS_DISTRO}-ros-base-jammy
+
+FROM ${ROS_BASE_IMAGE}
+
+# Setup environment
+ENV ROS_DISTRO=${ROS_DISTRO}
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=${LANG}
+ENV LC_ALL=${LANG}
+
+# Allow pip to install packages system-wide
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
+
+#  System packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    sudo \
+    curl wget git ca-certificates gnupg \
+    build-essential nano \
+    ccache \
+    locales \
+    python3 python3-pip python3-venv python3-tk \
+    python3-colcon-mixin \
+    openssh-client \
+    zsh \
+    iproute2 procps lsof \
+    jq ripgrep fd-find shellcheck \
+    less vim-tiny \
+    libasio-dev \
+    libprotobuf-dev \
+    protobuf-compiler \
+    usbutils \
+    && locale-gen en_US.UTF-8 \
+    && ln -sf /usr/bin/python3 /usr/bin/python \
+    && ln -sf /usr/bin/fdfind /usr/local/bin/fd \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Ros tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3-colcon-common-extensions \
+    python3-rosdep \
+    python3-vcstool \
+    # ros-humble-perception \
+    ros-${ROS_DISTRO}-rviz2 \
+    ros-${ROS_DISTRO}-rmw-cyclonedds-cpp \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create and set user as 'ubuntu' with UID/GID 1000
+RUN useradd -m -u 1000 -G sudo -s /usr/bin/zsh ubuntu
+ENV USER=ubuntu
+
+RUN if [ ! -f /etc/ros/rosdep/sources.list.d/20-default.list ]; then rosdep init; fi \
+    && rosdep update --rosdistro $ROS_DISTRO
+
+#  Pre-install Python dev tools globally
+COPY .devcontainer/requirements.txt /tmp/devcontainer-requirements.txt
+RUN pip install --no-cache-dir -r /tmp/devcontainer-requirements.txt \
+    && rm /tmp/devcontainer-requirements.txt
+
+WORKDIR /robotics-studio-1
+ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp

@@ -1,0 +1,18 @@
+# Dev / Lint / Format
+ruff
+mypy
+black
+isort
+pre-commit
+
+# Testing
+pytest
+# httpx
+
+# Runtime
+numpy
+# matplotlib
+# uvicorn[standard]
+
+# Protobuf
+nanopb

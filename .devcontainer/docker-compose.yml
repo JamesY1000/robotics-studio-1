@@ -1,0 +1,63 @@
+services:
+
+  # Build helper
+  rs1-devcontainer-base:
+    image: ${IMG_NAME_DEVCONTAINER_BASE}:${IMAGE_TAG?IMAGE_TAG is required}
+    profiles:
+      - devcontainer-build
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile.base
+      args:
+        ROS_DISTRO: "${ROS_DISTRO?ROS_DISTRO is required}"
+        ROS_BASE_IMAGE: "ros:${ROS_DISTRO?ROS_DISTRO is required}-ros-base-${UBUNTU_DISTRO?UBUNTU_DISTRO is required}"
+        WORKING_DIR: ${WORKING_DIR}
+
+  # Actual devcontainer
+  rs1-devcontainer-user:
+    image: ${IMG_NAME_DEVCONTAINER_USER}:${IMAGE_TAG?IMAGE_TAG is required}
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile.user
+      args:
+        # REGISTRY:
+        BASE_IMAGE_NAME: ${IMG_NAME_DEVCONTAINER_BASE}
+        IMAGE_TAG: "${IMAGE_TAG?IMAGE_TAG is required}"
+        WORKING_DIR: ${WORKING_DIR}
+    init: true
+    tty: true
+    privileged: true
+    network_mode: host
+    ipc: host
+    pid: host
+    working_dir: ${WORKING_DIR}
+    volumes:
+      - ..:${WORKING_DIR}:cached
+      - ~/ccache:/ccache
+      - ~/Downloads:/home/ubuntu/Downloads
+      - ~/.config/Code:/home/ubuntu/Code
+      - ~/.gitconfig:/etc/gitconfig:ro
+      - ~/.zsh_history:/home/ubuntu/.zsh_history
+      - ~/.bash_history:/home/ubuntu/.bash_history
+      - ~/.ssh:/home/ubuntu/.ssh:ro
+      - ~/.Xauthority:/home/ubuntu/.Xauthority:ro
+      - ~/.cache/pre-commit:/home/ubuntu/.cache/pre-commit
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - /lib/modules:/lib/modules:ro
+      - /dev:/dev
+    environment:
+      DISPLAY:
+      XAUTHORITY:
+      NVIDIA_DRIVER_CAPABILITIES: all
+      NVIDIA_VISIBLE_DEVICES: all
+      TERM: xterm-256color
+      PYTHONDONTWRITEBYTECODE: 1
+      PYTHONUNBUFFERED: 1
+      CCACHE_DIR: /ccache
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp=unconfined
+    runtime: ${CONTAINER_RUNTIME?CONTAINER_RUNTIME is required}
+    restart: ${RESTART_POLICY?RESTART_POLICY is required}

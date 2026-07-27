@@ -1,0 +1,49 @@
+ARG BASE_IMAGE_NAME
+ARG IMAGE_TAG
+
+FROM ${BASE_IMAGE_NAME}:${IMAGE_TAG}
+
+ENV PATH=/usr/lib/ccache:${PATH}
+
+# The selected devcontainer base layer provides a user with UID/GID 1000 named ubuntu.
+RUN echo "${USER} ALL=(root) NOPASSWD:ALL" > "/etc/sudoers.d/${USER}" \
+  && chmod 0440 "/etc/sudoers.d/${USER}"
+
+# Switch to local user
+USER $USER
+
+RUN colcon mixin add default \
+      https://raw.githubusercontent.com/colcon/colcon-mixin-repository/master/index.yaml && \
+    colcon mixin update && \
+    colcon metadata add default \
+      https://raw.githubusercontent.com/colcon/colcon-metadata-repository/master/index.yaml && \
+    colcon metadata update
+
+#  Oh-My-Zsh for the dev user
+RUN curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh | sh \
+  && git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "${ZSH_CUSTOM:-"/home/$USER/.oh-my-zsh/custom"}/themes/powerlevel10k" \
+  && git clone --depth=1 https://github.com/zsh-users/zsh-syntax-highlighting.git "${ZSH_CUSTOM:-"/home/$USER/.oh-my-zsh/custom"}/plugins/zsh-syntax-highlighting" \
+  && git clone --depth=1 https://github.com/zsh-users/zsh-autosuggestions "${ZSH_CUSTOM:-"/home/$USER/.oh-my-zsh/custom"}/plugins/zsh-autosuggestions" \
+  && "${ZSH_CUSTOM:-"/home/$USER/.oh-my-zsh/custom"}/themes/powerlevel10k/gitstatus/install"
+
+# Copy zsh config files
+COPY --chown=$USER:$USER .devcontainer/zsh/ /home/$USER/
+
+# Setup fzf fuzzy search for zsh and bash
+RUN git clone --depth 1 https://github.com/junegunn/fzf.git /home/$USER/.fzf && /home/$USER/.fzf/install --all
+
+RUN touch ~/.customrc \
+  && echo "source /opt/ros/${ROS_DISTRO}/setup.zsh" >> ~/.zshrc \
+  && echo "export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp" >> ~/.zshrc \
+  && echo "source ~/.customrc" >> ~/.zshrc \
+  && echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> ~/.bashrc \
+  && echo "export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp" >> ~/.bashrc \
+  && echo "source ~/.customrc" >> ~/.bashrc
+
+# Setup aliases
+COPY --chown=$USER:$USER .devcontainer/config/aliases.txt /tmp/aliases.txt
+RUN cat /tmp/aliases.txt >> ~/.zshrc && rm /tmp/aliases.txt
+
+WORKDIR /robotics-studio-1
+
+CMD ["zsh"]

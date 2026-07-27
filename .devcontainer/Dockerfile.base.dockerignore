@@ -1,0 +1,5 @@
+# Ignore everything
+*
+
+# Except required files and folders
+!.devcontainer/requirements.txt
