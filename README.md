@@ -1,33 +1,107 @@
-# robotics-studio-1
-Repository for the UTS subject Robotics Studio 1
+# Robotics Studio 1
 
+Repository for the UTS subject Robotics Studio 1 group 2.
 
-To use the devcontainer setup, first complete these steps:
+Members are:
+- James Yuan
+- Timothy Ollerton
 
-Install docker:
+This project is developed by a team of 4-5 students. The goal of this repository is to be a common place to store and maintain our code, documentation, and setup instructions for the project throught the semester.
 
-*If your computer has nvidia gpus?
-Install Nvidia runtime for docker
+## Project Workflow (Quick Start)
 
+1. Pull the latest changes from main.
+2. Create a branch for your task.
+3. Develop and test locally in the devcontainer.
+4. Open a pull request with a clear description.
+5. Get at least one teammate review.
+6. Merge only when checks pass.
 
-Create a folder ~/git
+## Development Environment
 
+The recommended environment is the VS Code devcontainer.
 
-Create gitconfig or make sure you have it already?
+### Prerequisites
 
+- Docker installed and running.
+- VS Code with Dev Containers extension.
+- A local workspace directory at ~/git.
+- A valid git config on your machine.
+- ccache installed/configured (recommended).
 
-Create ccache or make sure you have it already?
+If your computer has an NVIDIA GPU:
+- Install NVIDIA Container Toolkit (Docker NVIDIA runtime).
 
-*If your computer does not have nvidia gpus and step x. Install nvidia runtime for docker failed, go to the .env file and change the container_runtime variable from nvidia to runc
+If your computer does not have an NVIDIA GPU, or NVIDIA runtime setup fails:
+- Open the .env file.
+- Change container_runtime from nvidia to runc.
 
+### Build the Devcontainer Images
 
-Building the image:
-- cd to .devcontainer folder
-- First build the base image using: docker compose --profile devcontainer-build build rs1-devcontainer-base
+From the .devcontainer directory:
 
-- Then build the user image: docker compose build rs1-devcontainer-user
+1. Build the base image:
 
-Then open vscode, click 'reopen in container'
-Everytime in the future, you just need to open the repository to the homepage (RS1), and you click reopen in container.
+```bash
+docker compose --profile devcontainer-build build rs1-devcontainer-base
+```
 
-Maybe in future we have a registry that we push to?
+2. Build the user image:
+
+```bash
+docker compose build rs1-devcontainer-user
+```
+
+3. Open the repo in VS Code and select Reopen in Container.
+
+After initial setup, you usually only need to open the repository in VS Code and reopen in container. If you prefer to run multiple terminal windows, you can use lazydocker and enter the container this way.
+
+## Branching and Commit Conventions
+
+Use one branch per issue or feature.
+
+Suggested branch prefixes:
+- feature/<short-description>
+- fix/<short-description>
+- test/<short-description>
+- docs/<short-description>
+
+Commit message style:
+- Keep messages concise and descriptive.
+- Start with an action verb.
+- Mention subsystem when relevant.
+
+Example:
+- Add retry logic for UWB packet timeout
+
+## Pull Request Guidelines
+
+Before opening a PR:
+- Rebase or merge latest main into your branch.
+- Confirm your branch builds successfully.
+- Update docs if behavior/setup changed.
+
+PR expectations:
+- Clearly defined and focused scope.
+- Clear summary of what changed and why.
+- At least one teammate review before merge.
+
+## Team Rules
+
+1. Never push directly to main.
+2. Pull the latest main before starting work.
+3. Use one branch per issue or feature.
+4. Use descriptive branch and commit names.
+5. Keep pull requests focused and reasonably small.
+6. At least one teammate reviews each pull request.
+7. Do not merge code that does not build.
+8. Merge frequently instead of integrating everything near the deadline.
+9. Document any dependency assumptions and setup procedures.
+10. Never commit secrets, generated build folders, or large datasets.
+
+## Definition of Done
+
+A task is done when:
+- Code is implemented (working) and reviewed.
+- Code does not break any other part of overall system.
+- Relevant docs are updated.
