@@ -12,6 +12,9 @@ RUN echo "${USER} ALL=(root) NOPASSWD:ALL" > "/etc/sudoers.d/${USER}" \
 # Switch to local user
 USER $USER
 
+# Bootstrapped line for installing colcon mixin
+WORKDIR /home/$USER
+
 RUN colcon mixin add default \
       https://raw.githubusercontent.com/colcon/colcon-mixin-repository/master/index.yaml && \
     colcon mixin update && \
