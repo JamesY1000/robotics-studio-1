@@ -5,8 +5,11 @@ Repository for the UTS subject Robotics Studio 1 group 2.
 Members are:
 - James Yuan
 - Timothy Ollerton
+- Nikhil Kumar
+- Noah Nourdine
+- Thejas Madathil
 
-This project is developed by a team of 4-5 students. The goal of this repository is to be a common place to store and maintain our code, documentation, and setup instructions for the project throught the semester.
+This repository is a common place to store and maintain our code, documentation, and setup instructions for the project throughout the semester.
 
 ## Project Workflow (Quick Start)
 
@@ -19,9 +22,9 @@ This project is developed by a team of 4-5 students. The goal of this repository
 
 ## Development Environment
 
-The recommended environment is the VS Code devcontainer.
+I've already set up a docker devcontainer that will be able to handle everything this subject throws at us plus whatever we want to run/setup, but to be honest you can continue using whatever setup you've currently got if that's easier/more comfortable for you.
 
-### Prerequisites
+### Docker setup (if you want to use the devcontainer)
 
 - Docker installed and running.
 - VS Code with Dev Containers extension.
@@ -35,6 +38,11 @@ If your computer has an NVIDIA GPU:
 If your computer does not have an NVIDIA GPU, or NVIDIA runtime setup fails:
 - Open the .env file.
 - Change container_runtime from nvidia to runc.
+
+To allow X11 forwarding to the container which you'll need for gui applications like rviz, run the command before rebuilding the devcontainer (in VSCode). This is a temporary solution till I figure out how to allow forwarding more cleanly:
+'''bash
+xhost +SI:localuser:$(whoami)
+'''
 
 ### Build the Devcontainer Images
 
