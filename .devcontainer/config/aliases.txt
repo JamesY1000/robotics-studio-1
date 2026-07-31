@@ -31,7 +31,7 @@ alias grs='git reset'
 alias grsh='git reset --hard'
 
 # ROS2 alises
-alias sw='source /project_milo/milo_ws/install/setup.zsh'
+alias sw='source /robotics-studio-1/rs1_ws/install/setup.zsh'
 alias cb='colcon build'
 alias cbps='colcon build --packages-select'
 alias cbput='colcon build --packages-up-to'

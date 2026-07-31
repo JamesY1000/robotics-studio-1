@@ -7,12 +7,5 @@ pre-commit
 
 # Testing
 pytest
-# httpx
 
-# Runtime
-numpy
-# matplotlib
-# uvicorn[standard]
-
-# Protobuf
-nanopb
+# Add any other python libraries/packages we might need here

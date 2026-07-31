@@ -1,7 +1,8 @@
 ARG ROS_DISTRO=humble
 ARG ROS_BASE_IMAGE=ros:${ROS_DISTRO}-ros-base-jammy
 
-FROM ${ROS_BASE_IMAGE}
+# FROM ${ROS_BASE_IMAGE}
+FROM osrf/ros:humble-desktop-full
 
 # Setup environment
 ENV ROS_DISTRO=${ROS_DISTRO}
@@ -13,23 +14,29 @@ ENV LC_ALL=${LANG}
 # Allow pip to install packages system-wide
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
 
-#  System packages
+# Install system packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
     sudo \
     curl wget git ca-certificates gnupg \
     build-essential nano \
     ccache \
     locales \
+    doxygen \
+    jq ripgrep fd-find shellcheck \
+    cmake \
+    gazebo \
+    libglu1-mesa-dev \
+    ruby-dev \
+    tmux \
+    xorg-dev \
     python3 python3-pip python3-venv python3-tk \
     python3-colcon-mixin \
     openssh-client \
+    python3-colcon-common-extensions \
+    python3-rosdep \
+    python3-vcstool \
+    python3-pydantic \
     zsh \
-    iproute2 procps lsof \
-    jq ripgrep fd-find shellcheck \
-    less vim-tiny \
-    libasio-dev \
-    libprotobuf-dev \
-    protobuf-compiler \
     usbutils \
     && locale-gen en_US.UTF-8 \
     && ln -sf /usr/bin/python3 /usr/bin/python \
@@ -37,14 +44,46 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Ros tools
+# Install ROS 2 packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3-colcon-common-extensions \
-    python3-rosdep \
-    python3-vcstool \
-    # ros-humble-perception \
-    ros-${ROS_DISTRO}-rviz2 \
-    ros-${ROS_DISTRO}-rmw-cyclonedds-cpp \
+    ros-humble-joint-state-publisher \
+    ros-humble-plotjuggler-ros \
+    ros-humble-robot-localization \
+    ros-humble-robot-state-publisher \
+    ros-humble-ros2bag \
+    ros-humble-rosbag2-storage-default-plugins \
+    ros-humble-rqt-tf-tree \
+    ros-humble-rmw-fastrtps-cpp \
+    ros-humble-rmw-cyclonedds-cpp \
+    ros-humble-rviz2 \
+    ros-humble-slam-toolbox \
+    ros-humble-turtlebot3 \
+    ros-humble-turtlebot3-msgs \
+    ros-humble-twist-mux \
+    ros-humble-usb-cam \
+    ros-humble-xacro \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Provided starter simulation
+RUN apt-get update \
+    && mkdir -p /etc/apt/keyrings \
+    && wget -qO- http://packages.osrfoundation.org/gazebo.key | gpg --dearmor -o /etc/apt/keyrings/gazebo-archive-keyring.gpg \
+    && . /etc/os-release \
+    && echo "deb [signed-by=/etc/apt/keyrings/gazebo-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable ${UBUNTU_CODENAME} main" > /etc/apt/sources.list.d/gazebo-stable.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+    ignition-fortress \
+    ros-dev-tools \
+    # ros-humble-robot-localization \
+    ros-humble-ros-ign \
+    ros-humble-ros-ign-interfaces \
+    ros-humble-navigation2 \
+    ros-humble-nav2-bringup \
+    # ros-humble-slam-toolbox \
+    ros-humble-turtlebot4-simulator \
+    ros-humble-irobot-create-nodes \
+    python3-numpy \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

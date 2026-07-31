@@ -48,7 +48,7 @@ services:
       - /dev:/dev
     environment:
       DISPLAY:
-      XAUTHORITY:
+      XAUTHORITY: /home/ubuntu/.Xauthority
       NVIDIA_DRIVER_CAPABILITIES: all
       NVIDIA_VISIBLE_DEVICES: all
       TERM: xterm-256color
