@@ -39,9 +39,14 @@ If your computer does not have an NVIDIA GPU, or NVIDIA runtime setup fails:
 - Open the .env file.
 - Change container_runtime from nvidia to runc.
 
-To allow X11 forwarding to the container which you'll need for gui applications like rviz, run the command before rebuilding the devcontainer (in VSCode). This is a temporary solution till I figure out how to allow forwarding more cleanly:
+To allow X11 forwarding to the container which you'll need for gui applications like rviz, run the command on host before rebuilding the devcontainer (in VSCode). This is a temporary solution till I figure out how to allow forwarding more cleanly:
 ```bash
 xhost +SI:localuser:$(whoami)
+```
+
+If this doesn't work, run this instead on host:
+```bash
+xhost +local:
 ```
 
 ### Build the Devcontainer Images
