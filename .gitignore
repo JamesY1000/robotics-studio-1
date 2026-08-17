@@ -25,6 +25,8 @@ yolo_training/datasets/
 yolo_training/runs/
 yolo_training/*.pt
 
+yolo_training/to_check/
+
 .vscode
 <<<<<<< HEAD
 >>>>>>> 8dfe850 (Migrated James' sample generation plugin to Gazebo6 and to using our tree models.)
@@ -36,6 +38,7 @@ yolo_training/*.pt
 
 **/__pycache__/
 *.py[cod]
+<<<<<<< HEAD
 =======
 .vscode/
 >>>>>>> 215efa8 (ignore vscode config files)
@@ -45,3 +48,5 @@ yolo_training/*.pt
 **/__pycache__/
 *.py[cod]
 >>>>>>> 13ff4dc (Exclude vscode and pycache)
+=======
+>>>>>>> 8a8c07d (ignore vscode config files)
