@@ -3,3 +3,6 @@
 /rs1_ws/install/
 
 .vscode/
+
+**/__pycache__/
+*.py[cod]
