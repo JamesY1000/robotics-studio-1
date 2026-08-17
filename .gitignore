@@ -12,4 +12,4 @@ yolo_training/*.pt
 .vscode
 .venv
 
-# /milo_ws/.vscode
+.vscode/
