@@ -13,3 +13,6 @@ yolo_training/*.pt
 .venv
 
 .vscode/
+
+**/__pycache__/
+*.py[cod]
