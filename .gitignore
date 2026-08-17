@@ -3,6 +3,7 @@
 */install/
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 sample_generator/sample_gen/database/
 
 yolo_training/database/
@@ -23,3 +24,9 @@ runs
 =======
 .vscode/
 >>>>>>> 215efa8 (ignore vscode config files)
+=======
+.vscode/
+
+**/__pycache__/
+*.py[cod]
+>>>>>>> 13ff4dc (Exclude vscode and pycache)
