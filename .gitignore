@@ -2,4 +2,4 @@
 /rs1_ws/build/
 /rs1_ws/install/
 
-# /milo_ws/.vscode
+.vscode/
