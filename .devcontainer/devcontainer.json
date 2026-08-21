@@ -7,7 +7,7 @@
     "overrideCommand": false,
     "shutdownAction": "stopContainer",
     "postCreateCommand": "bash .devcontainer/scripts/post_create.sh",
-    "initializeCommand": "xhost +SI:localuser:root",
+    "initializeCommand": "xhost +SI:localuser:${localEnv:USER}",
     // Handle port forwarding in the future for foxglove/lichtblick and webdev stuff
     "customizations": {
         "vscode": {
