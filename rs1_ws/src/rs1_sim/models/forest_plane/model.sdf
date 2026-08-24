@@ -6,29 +6,29 @@
         <link name="link">
             <collision name="collision">
                 <geometry>
-                    <heightmap>
-                        <uri>
-                            model://forest_plane/materials/textures/forest_height_map.png
-                        </uri>
-                        <size>200 200 5</size>
-                        <pos>0 0 0</pos>
-                    </heightmap>
+                    <mesh>
+                        <uri>model://forest_plane/materials/mesh/terrain.stl</uri>
+                    </mesh>
                 </geometry>
             </collision>
+
             <visual name="visual">
                 <geometry>
                     <mesh>
-                        <uri>model://forest_plane/materials/mesh/terrain_single_uv.obj</uri>
+                        <uri>model://forest_plane/materials/mesh/terrain.obj</uri>
                     </mesh>
                 </geometry>
+
                 <material>
                     <ambient>0.6 0.6 0.6 1</ambient>
                     <diffuse>0.8 0.8 0.8 1</diffuse>
                     <pbr>
                         <metal>
                             <albedo_map>
-                                model://forest_plane/materials/textures/forest_overhead.png
+                        model://forest_plane/materials/textures/forest_overhead.png
                             </albedo_map>
+                            <metalness>0.0</metalness>
+                            <roughness>1.0</roughness>
                         </metal>
                     </pbr>
                 </material>
