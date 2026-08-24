@@ -34,7 +34,7 @@
       <surface_model>EARTH_WGS84</surface_model>
     </spherical_coordinates>
 
-    <!-- Large ground planes with forest floor texture -->
+    <!-- Large forest ground terrain with collision and visual meshes -->
     <include>
       <uri>
         model://forest_plane
@@ -49,39 +49,39 @@
       <uri>
         https://fuel.gazebosim.org/1.0/OpenRobotics/models/Oak%20tree
       </uri>
-      <name>oak1</name>
-      <pose>0 0 -0.3 0 -0 0</pose>
+      <name>oak0</name>
+      <pose>0 0 0 0 0 0</pose>
     </include>
 
     <!-- Boundary trees for 200x200m environment -->
-    <!-- <include>
+    <include>
       <uri>
         https://fuel.gazebosim.org/1.0/OpenRobotics/models/Oak%20tree
       </uri>
       <name>oak1</name>
-      <pose>-99 -100 -0.3 0 -0 0</pose>
+      <pose>-99 -100 0 0 0 0</pose>
     </include>
     <include>
       <uri>
         https://fuel.gazebosim.org/1.0/OpenRobotics/models/Oak%20tree
       </uri>
       <name>oak2</name>
-      <pose>-99 100 -0.3 0 -0 0</pose>
+      <pose>-99 100 0 0 0 0</pose>
     </include>
     <include>
       <uri>
         https://fuel.gazebosim.org/1.0/OpenRobotics/models/Oak%20tree
       </uri>
       <name>oak3</name>
-      <pose>99 100 -0.3 0 -0 0</pose>
+      <pose>99 100 0 0 0 0</pose>
     </include>
     <include>
       <uri>
         https://fuel.gazebosim.org/1.0/OpenRobotics/models/Oak%20tree
       </uri>
       <name>oak4</name>
-      <pose>99 -100 -0.3 0 -0 0</pose>
-    </include> -->
+      <pose>99 -100 0 0 0 0</pose>
+    </include>
 
     <!-- Rest of the trees -->
     <!-- <include>
