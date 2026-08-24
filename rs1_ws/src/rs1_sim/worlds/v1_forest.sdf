@@ -45,8 +45,16 @@
 
     <!-- Oak trees -->
 
-    <!-- Boundary trees for 200x200m environment -->
     <include>
+      <uri>
+        https://fuel.gazebosim.org/1.0/OpenRobotics/models/Oak%20tree
+      </uri>
+      <name>oak1</name>
+      <pose>0 0 -0.3 0 -0 0</pose>
+    </include>
+
+    <!-- Boundary trees for 200x200m environment -->
+    <!-- <include>
       <uri>
         https://fuel.gazebosim.org/1.0/OpenRobotics/models/Oak%20tree
       </uri>
@@ -73,18 +81,16 @@
       </uri>
       <name>oak4</name>
       <pose>99 -100 -0.3 0 -0 0</pose>
-    </include>
+    </include> -->
 
     <!-- Rest of the trees -->
-    <include>
+    <!-- <include>
       <uri>
         https://fuel.gazebosim.org/1.0/OpenRobotics/models/Oak%20tree
       </uri>
       <name>oak5</name>
       <pose>0 0 -0.1 0 0 0</pose>
-    </include>
-
-
+    </include> -->
 
   </world>
 </sdf>
