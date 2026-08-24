@@ -1,0 +1,229 @@
+{
+  "random_seed": 20260824,
+  "raster_dimensions": {
+    "rows": 257,
+    "columns": 257
+  },
+  "physical_dimensions_m": {
+    "width": 200.0,
+    "height": 200.0
+  },
+  "pixel_spacing_m": {
+    "x": 0.78125,
+    "y": 0.78125
+  },
+  "elevation_statistics_m": {
+    "minimum": 0.0,
+    "maximum": 7.900000095367432,
+    "mean": 3.2655751705169678,
+    "standard_deviation": 1.7918460369110107
+  },
+  "slope_statistics_degrees": {
+    "maximum": 19.638614654541016,
+    "percentage_exceeding_20_deg": 0.0,
+    "slope_limit_iterations_used": 0
+  },
+  "water": {
+    "approved_mask_source": "water_mask.png",
+    "water_fraction_of_1024_mask_percent": 6.36749267578125,
+    "water_elevation_min_m": 0.0,
+    "water_elevation_max_m": 0.0,
+    "bank_width_m": 15.0
+  },
+  "validity": {
+    "contains_nan": false,
+    "contains_infinity": false,
+    "nodata_pixels": false
+  },
+  "orientation_and_corner_mapping": {
+    "orientation_preserved": true,
+    "crop": false,
+    "rotation": false,
+    "flip": false,
+    "mirror": false,
+    "stretch": false,
+    "mapping": {
+      "albedo_upper_left": {
+        "albedo_pixel": [
+          0,
+          0
+        ],
+        "dem_sample": [
+          0,
+          0
+        ],
+        "local_xy_m_before_centering": [
+          0.0,
+          200.0
+        ],
+        "gazebo_xy_m_after_Forest3D_centering": [
+          -100.0,
+          100.0
+        ],
+        "geotiff_sample_center_xy": [
+          500000.0,
+          1000200.0
+        ]
+      },
+      "albedo_upper_right": {
+        "albedo_pixel": [
+          1023,
+          0
+        ],
+        "dem_sample": [
+          256,
+          0
+        ],
+        "local_xy_m_before_centering": [
+          200.0,
+          200.0
+        ],
+        "gazebo_xy_m_after_Forest3D_centering": [
+          100.0,
+          100.0
+        ],
+        "geotiff_sample_center_xy": [
+          500200.0,
+          1000200.0
+        ]
+      },
+      "albedo_lower_left": {
+        "albedo_pixel": [
+          0,
+          1023
+        ],
+        "dem_sample": [
+          0,
+          256
+        ],
+        "local_xy_m_before_centering": [
+          0.0,
+          0.0
+        ],
+        "gazebo_xy_m_after_Forest3D_centering": [
+          -100.0,
+          -100.0
+        ],
+        "geotiff_sample_center_xy": [
+          500000.0,
+          1000000.0
+        ]
+      },
+      "albedo_lower_right": {
+        "albedo_pixel": [
+          1023,
+          1023
+        ],
+        "dem_sample": [
+          256,
+          256
+        ],
+        "local_xy_m_before_centering": [
+          200.0,
+          0.0
+        ],
+        "gazebo_xy_m_after_Forest3D_centering": [
+          100.0,
+          -100.0
+        ],
+        "geotiff_sample_center_xy": [
+          500200.0,
+          1000000.0
+        ]
+      }
+    },
+    "note": "DEM array row 0 corresponds exactly to albedo top; column 0 corresponds exactly to albedo left. GeoTIFF north-up Y decreases as raster row increases."
+  },
+  "hill_parameters": [
+    {
+      "center_x_m_from_left": 150.3456303369925,
+      "center_y_m_from_top": 151.30536333209537,
+      "radius_x_m": 18.55932090995087,
+      "radius_y_m": 25.52028674434664,
+      "amplitude_m": 3.181443288956272
+    },
+    {
+      "center_x_m_from_left": 80.6600668876972,
+      "center_y_m_from_top": 119.77191901983966,
+      "radius_x_m": 24.055030269752883,
+      "radius_y_m": 33.78865887073111,
+      "amplitude_m": 2.5683827071638254
+    },
+    {
+      "center_x_m_from_left": 140.00509177963377,
+      "center_y_m_from_top": 123.52953061153882,
+      "radius_x_m": 22.934063086945386,
+      "radius_y_m": 18.46769427268258,
+      "amplitude_m": 2.735170494253568
+    },
+    {
+      "center_x_m_from_left": 11.043927615957106,
+      "center_y_m_from_top": 163.65851479787787,
+      "radius_x_m": 22.020441303674012,
+      "radius_y_m": 25.106119652864145,
+      "amplitude_m": 2.4275077294090046
+    },
+    {
+      "center_x_m_from_left": 59.69299826000868,
+      "center_y_m_from_top": 96.06880140120994,
+      "radius_x_m": 25.418075373043003,
+      "radius_y_m": 27.353168360417378,
+      "amplitude_m": 1.8537436980456294
+    },
+    {
+      "center_x_m_from_left": 183.37136806784025,
+      "center_y_m_from_top": 184.36380807903203,
+      "radius_x_m": 34.75670149467571,
+      "radius_y_m": 20.562112945274315,
+      "amplitude_m": 3.151683134910911
+    },
+    {
+      "center_x_m_from_left": 180.5305314431537,
+      "center_y_m_from_top": 101.49942742047223,
+      "radius_x_m": 22.658969229906358,
+      "radius_y_m": 37.1868995413697,
+      "amplitude_m": 3.0297117268087366
+    },
+    {
+      "center_x_m_from_left": 112.79261419142804,
+      "center_y_m_from_top": 32.00498167038447,
+      "radius_x_m": 22.271682607836823,
+      "radius_y_m": 29.49777876265071,
+      "amplitude_m": 3.2960452476576103
+    },
+    {
+      "center_x_m_from_left": 39.6825051312108,
+      "center_y_m_from_top": 116.3910137666053,
+      "radius_x_m": 28.603260123415666,
+      "radius_y_m": 29.072652911087797,
+      "amplitude_m": 3.346081117071793
+    }
+  ],
+  "geotiff_validation": {
+    "band_count": 1,
+    "data_type": "float32",
+    "dimensions": [
+      257,
+      257
+    ],
+    "crs": "EPSG:32631",
+    "geotransform_gdal": [
+      499999.609375,
+      0.78125,
+      0.0,
+      1000200.390625,
+      0.0,
+      -0.78125
+    ],
+    "pixel_spacing_m": [
+      0.78125,
+      0.78125
+    ],
+    "nodata": null,
+    "elevation_range_m": [
+      0.0,
+      7.900000095367432
+    ],
+    "all_finite": true
+  }
+}
