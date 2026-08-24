@@ -1,42 +1,38 @@
-<sdf version="1.7">
-  <model name="forest_plane">
-    <static>true</static>
+<?xml version="1.0"?>
+<sdf version="1.8">
+    <model name="forest_plane">
+        <static>true</static>
 
-    <link name="link">
-        <collision name="collision">
-        <geometry>
-            <heightmap>
-            <uri>
-                model://forest_plane/materials/textures/forest_height_map.png
-            </uri>
-            <size>200 200 5</size>
-            <pos>0 0 0</pos>
-            </heightmap>
-        </geometry>
-        </collision>
-
-        <visual name="visual">
-            <geometry>
-                <heightmap>
-                <uri>
-                    model://forest_plane/materials/textures/forest_height_map.png
-                </uri>
-
-                <size>200 200 5</size>
-                <pos>0 0 0</pos>
-
-                <texture>
-                    <size>200</size>
-                    <diffuse>
-                    model://forest_plane/materials/textures/forest_overhead.png
-                    </diffuse>
-                    <normal>
-                    model://forest_plane/materials/textures/forest_normal_map.png
-                    </normal>
-                </texture>
-                </heightmap>
-            </geometry>
-        </visual>
-    </link>
-  </model>
+        <link name="link">
+            <collision name="collision">
+                <geometry>
+                    <heightmap>
+                        <uri>
+                            model://forest_plane/materials/textures/forest_height_map.png
+                        </uri>
+                        <size>200 200 5</size>
+                        <pos>0 0 0</pos>
+                    </heightmap>
+                </geometry>
+            </collision>
+            <visual name="visual">
+                <geometry>
+                    <mesh>
+                        <uri>model://forest_plane/materials/mesh/terrain_single_uv.obj</uri>
+                    </mesh>
+                </geometry>
+                <material>
+                    <ambient>0.6 0.6 0.6 1</ambient>
+                    <diffuse>0.8 0.8 0.8 1</diffuse>
+                    <pbr>
+                        <metal>
+                            <albedo_map>
+                                model://forest_plane/materials/textures/forest_overhead.png
+                            </albedo_map>
+                        </metal>
+                    </pbr>
+                </material>
+            </visual>
+        </link>
+    </model>
 </sdf>
