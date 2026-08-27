@@ -12,6 +12,10 @@ from launch.substitutions import (
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
+"""
+Handles launching of gazebo server, world, and assets
+"""
+
 RS1_PKG_NAME = "rs1_sim"
 CONFIG_PATH = "config"
 WORLDS_PATH = "worlds"
