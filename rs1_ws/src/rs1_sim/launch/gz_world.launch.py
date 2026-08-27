@@ -35,8 +35,8 @@ def generate_launch_description():
             # TODO (james): Clean up once world is created
             DeclareLaunchArgument(
                 "world",
-                default_value="v1_forest",
-                choices=["large_demo", "simple_trees", "v1_forest"],
+                default_value="v2_forest",
+                choices=["large_demo", "simple_trees", "v1_forest", "v2_forest"],
             ),
             DeclareLaunchArgument(
                 "use_sim_time",
