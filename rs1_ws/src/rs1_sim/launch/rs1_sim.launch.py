@@ -160,7 +160,6 @@ def generate_launch_description():
             ("/tf_static", "/husky1/tf_static"),
         ],
     )
-
     parrot_rviz = Node(
         package="rviz2",
         executable="rviz2",
