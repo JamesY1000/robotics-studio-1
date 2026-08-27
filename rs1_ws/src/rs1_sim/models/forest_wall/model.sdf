@@ -15,7 +15,7 @@
             <geometry>
             <box>
                 <normal>0 0 1</normal>
-                <size>9.32 4 0.01</size>
+                <size>9.32 4 0.20</size>
             </box>
             </geometry>
         </collision>
