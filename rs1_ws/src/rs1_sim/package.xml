@@ -7,14 +7,18 @@
   <maintainer email="jamesyuan1000@gmail.com">root</maintainer>
   <license>TODO: License declaration</license>
 
-<!-- # TODO (james): Clean up dependencies -->
+  <!-- # TODO (james): Clean up dependencies -->
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
   <exec_depend>ros_gz_sim</exec_depend>
   <exec_depend>ros_gz_bridge</exec_depend>
+  <exec_depend>rs1_description</exec_depend>
+  <exec_depend>xacro</exec_depend>
+  <exec_depend>rviz2</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
