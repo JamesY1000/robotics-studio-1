@@ -1,0 +1,29 @@
+<?xml version="1.0" ?>
+<sdf version="1.5">
+  <model name="Bush 2">
+    <static>true</static>
+    <link name="link">
+      <collision name="collision">
+        <!-- Approximate the dense, non-traversable core of the bush. -->
+        <pose>-0.115 0 0.75 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>1.25</radius>
+            <length>1.5</length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="visual">
+        <!-- Keep the detailed foliage for cameras and GPU lidar. The Z
+             offset places the lowest mesh vertex at model Z = 0. -->
+        <pose>0 0 0.667892 1.57079 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>5 5 5</scale>
+            <uri>model://bushes/bush_2/meshes/bush_2_visual_low.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>
