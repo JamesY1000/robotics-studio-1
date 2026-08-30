@@ -1,5 +1,9 @@
-/rs1_ws/log/
-/rs1_ws/build/
-/rs1_ws/install/
+*/log/
+*/build/
+*/install/
+
+sample_generator/sample_gen/database/
+
+.vscode
 
 # /milo_ws/.vscode

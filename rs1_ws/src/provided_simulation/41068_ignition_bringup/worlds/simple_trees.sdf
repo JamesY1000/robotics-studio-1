@@ -47,22 +47,26 @@
       <pose>0 0 0 0 0 0</pose>
     </include>
 
-    <!-- Oak tree -->
+    <!-- Oak tree (local copy in rs1_sim/models/trees - needs IGN_GAZEBO_RESOURCE_PATH
+         to include rs1_ws/src/rs1_sim/models).
+         Placed BEHIND the Parrot (negative X; the drone spawns at x=2 looking +X)
+         so it is never in the sample-generator camera frame. -->
     <include>
       <uri>
-        https://fuel.gazebosim.org/1.0/OpenRobotics/models/Oak%20tree
+        model://trees/oak_tree
       </uri>
       <name>oak1</name>
-      <pose>0 3.0 0 0 0 0</pose>
+      <pose>-15.0 -12.0 0 0 0 0</pose>
     </include>
-    
-    <!-- Pine tree -->
+
+    <!-- Pine tree (local copy in rs1_sim/models/trees) - also behind the camera
+         (previously at 5,0,0 it sat dead-centre in every sample image). -->
     <include>
       <uri>
-        https://fuel.gazebosim.org/1.0/OpenRobotics/models/Pine%20tree
+        model://trees/pine_tree
       </uri>
       <name>pine1</name>
-      <pose>5.0 0.0 0 0 0 0</pose>
+      <pose>-10.0 -15.0 0 0 0 0</pose>
     </include>
 
   </world>

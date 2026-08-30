@@ -1,0 +1,93 @@
+model_importer_node:
+  ros__parameters:
+    database_dir: "/home/tim/git/robotics-studio-1/sample_generator/sample_gen/database"
+    world_name: "simple_trees"
+    frame_id: "world"
+    # "_labeled" copies of the trees carry the ObjectLabelPlugin (the originals
+    # in rs1_sim are kept clean because they are also used as world decoration).
+    model_names:
+      - "oak_tree_labeled"
+      - "pine_tree_labeled"
+    model_dir: "/home/tim/git/robotics-studio-1/sample_generator/sample_gen/models/trees"
+    class_config_yml: class_configs.yml
+    class_config_name: class_config
+    class_config_dict_name: classes
+
+data_preprocessor_node:
+  ros__parameters:
+    database_dir: "/home/tim/git/robotics-studio-1/sample_generator/sample_gen/database"
+    min_points_sample: 1
+    min_number_objects: 1
+    min_points_object: 1
+    max_occlusion: [0.75, 0.75, 1.0]
+    frame_id: "base_link"
+    training_split: 0.6
+    visualize: true
+    next_with_key: false
+    model_distance: 0.5
+
+sample_collector_node:
+  ros__parameters:
+    database_dir: "/home/tim/git/robotics-studio-1/sample_generator/sample_gen/database"
+    visualize: true
+    min_points_sample: 5 # if just using 1 scanner, points can drop to 15 after occlusion removal
+    min_points_object: 0
+    max_occlusion: [0.75, 0.75, 1.0] # make sure z is set to 1 as we are using scans converted to pc2
+    frame_id: "world"
+    lidar_topics: [
+      "/arculee/laser/front/pc2", # Place in this order - front is first, rear is second
+      "/arculee/laser/rear/pc2"
+      ]
+    # model_distance: 5.0
+    class_config_yml: class_configs.yml
+    class_config_name: class_config
+    class_config_dict_name: classes
+
+# Camera-based collector: produces real RGB images + YOLO labels from the
+# Parrot drone's camera instead of lidar point clouds.
+camera_collector_node:
+  ros__parameters:
+    database_dir: "/home/tim/git/robotics-studio-1/sample_generator/sample_gen/database"
+    visualize: true
+    image_topic: "/parrot1/camera/image"
+    camera_info_topic: "" # optional; if empty, intrinsics are computed from hfov + image size
+    hfov: 2.0944 # Parrot rgbd camera horizontal FOV (rad)
+    frame_id: "world"
+    # Standard ROS optical frame of the parrot RGB camera (+Z forward), where
+    # the pinhole projection u=fx*X/Z+cx, v=fy*Y/Z+cy is valid.
+    camera_frame: "parrot1_camera_rgb_optical_frame"
+    class_config_yml: class_configs.yml
+    class_config_name: class_config
+    class_config_dict_name: classes
+
+# Broadcasts world -> parrot1_odom (drone spawn pose) and republishes the
+# /parrot1/tf and /parrot1/tf_static trees onto the global /tf so the camera
+# collector can look up world -> camera.
+parrot_world_broadcaster_node:
+  ros__parameters:
+    world_frame: "world"
+    odom_frame: "parrot1_odom"
+    tf_topic: "/parrot1/tf"
+    tf_static_topic: "/parrot1/tf_static"
+    # Must match the pose used to spawn the parrot in 41068_ignition.launch.py
+    spawn_pose: [2.0, 0.0, 0.8, 0.0] # x, y, z, yaw
+
+# Be careful not to exceed ~24 models spawned into the simulation at once
+
+sample_generator_node:
+  ros__parameters:
+    database_dir: "/home/tim/git/robotics-studio-1/sample_generator/sample_gen/database"
+    # Keep visualize false for the generator: true adds a 0.4 s sleep per
+    # placement attempt + RViz markers, which makes placing large trees very slow.
+    visualize: false
+    num_batches: 10 # No. batches to spawn models in, collect samples, move models around according to num_samples_per_batch, delete
+    num_samples_per_batch: 50 # Every batch, samples are collected and then models moved num_samples_per_batch times before deleting all models and moving on to the next batch
+    distance: 1.0 # Min. spacing between spawned objects (smaller = denser forest)
+    max_num_tries: 60
+    world_name: "simple_trees"
+    frame_id: "world"
+    spawn_area_yml_name: spawn_areas.yml
+    spawn_area_name: spawn_area_test
+    class_config_yml: class_configs.yml
+    class_config_name: class_config
+    class_config_dict_name: classes

@@ -93,7 +93,10 @@
   </link>
 
   <joint name="${prefix}camera_joint" type="fixed">
-    <origin xyz="0.25 0.0 0.25" rpy="0 0.785398 0"/> <!-- 0.5 0.0 0.9 -->
+    <!-- 45 deg down was too steep for the sample generator: with a ~98 deg
+         vertical FOV the trees (0-10 m tall) ended up cut off / in the lower
+         part of the frame. ~11 deg down centres a ~10 m tree at 20-25 m. -->
+    <origin xyz="0.25 0.0 0.25" rpy="0 0.2 0"/>
     <parent link="${prefix}base_link"/>
     <child link="${prefix}camera_link"/>
   </joint>
