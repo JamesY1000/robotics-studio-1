@@ -20,8 +20,17 @@ runs
 =======
 sample_generator/sample_gen/database/
 
+yolo_training/database/
+yolo_training/datasets/
+yolo_training/runs/
+yolo_training/*.pt
+
 .vscode
+<<<<<<< HEAD
 >>>>>>> 8dfe850 (Migrated James' sample generation plugin to Gazebo6 and to using our tree models.)
+=======
+.venv
+>>>>>>> 111ce0d (Yolo training scripts)
 
 .vscode/
 

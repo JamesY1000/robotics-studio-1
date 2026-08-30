@@ -9,18 +9,25 @@ labels using the **1-based** class ids from the ObjectLabelPlugin
 This script builds a clean, self-contained dataset under ``datasets/trees/``:
 
     * reads ``database/camera_samples/sample_database.csv``
+<<<<<<< HEAD
     * skips any image listed in ``database/excluded.csv`` (manual review list)
     * validates every remaining image/label pair
+=======
+    * validates every image/label pair
+>>>>>>> 111ce0d (Yolo training scripts)
     * splits the samples into train/val (deterministic seed)
     * copies the images and rewrites the labels with ids remapped 1 -> 0, 2 -> 1
     * writes ``data.yaml`` pointing at the prepared dataset
 
 The raw ``database/`` folder is never modified.
 
+<<<<<<< HEAD
 ``database/excluded.csv`` holds one relative image path per row (e.g.
 ``images/000500.jpg``); add or remove rows after a manual review to control
 which samples end up in the dataset.
 
+=======
+>>>>>>> 111ce0d (Yolo training scripts)
 Usage:
     python prepare_dataset.py
 """
@@ -38,7 +45,10 @@ import yaml
 ROOT = Path(__file__).resolve().parent
 SRC = ROOT / "database" / "camera_samples"
 SRC_CSV = SRC / "sample_database.csv"
+<<<<<<< HEAD
 EXCLUDED_CSV = ROOT / "database" / "excluded.csv"
+=======
+>>>>>>> 111ce0d (Yolo training scripts)
 OUT = ROOT / "datasets" / "trees"
 
 # 1-based classification id (as written by the sample generator) -> 0-based YOLO index
@@ -73,6 +83,7 @@ def parse_label(label_path: Path) -> list[list[str]]:
     return lines_out
 
 
+<<<<<<< HEAD
 def load_excluded(csv_path: Path) -> set[str]:
     """Return the set of image paths that must be kept out of the dataset.
 
@@ -91,10 +102,13 @@ def load_excluded(csv_path: Path) -> set[str]:
     return excluded
 
 
+=======
+>>>>>>> 111ce0d (Yolo training scripts)
 def main() -> None:
     if not SRC_CSV.is_file():
         raise SystemExit(f"sample database not found: {SRC_CSV}")
 
+<<<<<<< HEAD
     excluded = load_excluded(EXCLUDED_CSV)
 
     # Load sample list from the CSV (skipping anything on the exclusion list)
@@ -106,6 +120,13 @@ def main() -> None:
             if img_rel in excluded:
                 skipped += 1
                 continue
+=======
+    # Load sample list from the CSV
+    samples: list[tuple[str, str, Path, Path]] = []  # (image_rel, label_rel, img_path, label_path)
+    with open(SRC_CSV, newline="") as f:
+        for row in csv.DictReader(f):
+            img_rel = row["ImageFile"].strip()
+>>>>>>> 111ce0d (Yolo training scripts)
             lbl_rel = row["LabelFile"].strip()
             img_path = (SRC / img_rel).resolve()
             label_path = (SRC / lbl_rel).resolve()
@@ -118,8 +139,11 @@ def main() -> None:
     if not samples:
         raise SystemExit("no samples found in the CSV")
 
+<<<<<<< HEAD
     print(f"Excluded by {EXCLUDED_CSV.name}: {skipped}")
 
+=======
+>>>>>>> 111ce0d (Yolo training scripts)
     # Parse + validate labels, count objects per class
     parsed: dict[Path, list[list[str]]] = {}
     class_counts: Counter = Counter()
@@ -134,6 +158,7 @@ def main() -> None:
 
     # Deterministic train/val split
     rng = random.Random(SEED)
+<<<<<<< HEAD
     indices = list(range(len(samples)))
     rng.shuffle(indices)
     n_val = max(1, round(len(samples) * VAL_FRACTION))
@@ -145,6 +170,17 @@ def main() -> None:
     # Rebuild the prepared dataset from scratch so stale files never linger.
     if OUT.exists():
         shutil.rmtree(OUT)
+=======
+    order = list(samples)
+    rng.shuffle(order)
+    n_val = max(1, round(len(order) * VAL_FRACTION))
+    val_ids = {id(s) for s in order[:n_val]}
+    split: dict[str, list] = {"train": [], "val": []}
+    for s in samples:
+        split["val" if id(s) in val_ids else "train"].append(s)
+
+    # Write the prepared dataset
+>>>>>>> 111ce0d (Yolo training scripts)
     for part in ("train", "val"):
         (OUT / "images" / part).mkdir(parents=True, exist_ok=True)
         (OUT / "labels" / part).mkdir(parents=True, exist_ok=True)
