@@ -21,8 +21,11 @@ install(
              scripts/yolo_format.py
              scripts/camera_collector.py
              scripts/parrot_world_broadcaster.py
+<<<<<<< HEAD
              scripts/parrot_patrol.py
              scripts/make_labeled_world.py
+=======
+>>>>>>> 8dfe850 (Migrated James' sample generation plugin to Gazebo6 and to using our tree models.)
     DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)

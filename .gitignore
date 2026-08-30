@@ -4,6 +4,7 @@
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 sample_generator/sample_gen/database/
 
 yolo_training/database/
@@ -16,6 +17,11 @@ runs
 
 .vscode
 .venv
+=======
+sample_generator/sample_gen/database/
+
+.vscode
+>>>>>>> 8dfe850 (Migrated James' sample generation plugin to Gazebo6 and to using our tree models.)
 
 .vscode/
 

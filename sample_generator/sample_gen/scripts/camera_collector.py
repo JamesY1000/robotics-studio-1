@@ -50,6 +50,7 @@ from sample_gen_msgs.srv import CollectSample, CheckModelsLoaded, GetCurrentSamp
 NODE_NAME = "camera_collector_node"
 SAMPLE_GEN_PKG = "sample_gen"
 NEAR_CLIP = 0.05          # m, in front of the camera
+<<<<<<< HEAD
 # Trees beyond this depth don't reliably render in the rgbd image (the declared
 # 40 m clip still leaves faint/smeared far trees), so cull them conservatively.
 FAR_CLIP = 30.0           # m
@@ -58,6 +59,13 @@ MIN_BOX_PIXELS = 8        # skip tiny projected boxes (noise)
 # inside the image frame. 0.15 keeps trees at the frame edge (still useful for
 # YOLO) and only drops ones that are almost entirely off-screen.
 MIN_FRAME_VISIBLE_FRACTION = 0.15
+=======
+MIN_BOX_PIXELS = 8        # skip tiny projected boxes (noise)
+# A tree is only included if at least this fraction of its projected box lies
+# inside the image frame. Trees mostly off-screen (e.g. just a sliver at the
+# edge) are skipped instead of drawing a clipped, mostly-empty box.
+MIN_FRAME_VISIBLE_FRACTION = 0.4
+>>>>>>> 8dfe850 (Migrated James' sample generation plugin to Gazebo6 and to using our tree models.)
 
 # The request stamp comes from the ROS clock, which is bridged from Gazebo with
 # a small lag (a few ms). A camera frame / tree TF captured *just before* the
@@ -68,15 +76,27 @@ MIN_FRAME_VISIBLE_FRACTION = 0.15
 # bridge lag + several camera frames, so the data is guaranteed post-move.
 FRESHNESS_MARGIN_NS = 2_000_000_000  # 2 s (sim time)
 
+<<<<<<< HEAD
 # X/Y size scale per classification id. Pines (class 2) are sparse cones, so 0.8
 # of the 3.17 m AABB keeps the foliage in the box without being oversized for
 # close pines. Oaks (class 1) have a 10.6 x 8.5 m collision AABB but their dense
 # canopy is only ~30% of the X span, so 0.4 keeps the box snug around the foliage.
 BBOX_XY_SCALE = {1: 0.4, 2: 0.8}
+=======
+# X/Y size scale per classification id, measured from the visible foliage vs the
+# collision AABB. Pines (class 2) render as a sparse cone whose dense foliage is
+# ~55% of the 3.17 m AABB. Oaks (class 1) have a 10.6 x 8.5 m collision AABB but
+# their DENSE canopy is only ~30% of the X span (measured from the rendered
+# pixels). 0.3 matched the dense core but sometimes clipped the outer foliage, so
+# it is widened to 0.4 - enough margin to keep the whole canopy in the box
+# without going back to the "too wide" 0.5.
+BBOX_XY_SCALE = {1: 0.4, 2: 0.6}
+>>>>>>> 8dfe850 (Migrated James' sample generation plugin to Gazebo6 and to using our tree models.)
 BBOX_Z_SCALE = {1: 0.85, 2: 1.0}
 
 # A tree whose projected box is more than this fraction covered by NEARER trees'
 # projected boxes is considered mostly hidden and is dropped from the labels.
+<<<<<<< HEAD
 # 0.6 drops trees that are mostly covered by a nearer tree (e.g. an oak behind a
 # pine) while still keeping trees that are only partially overlapped.
 OCCLUSION_SKIP_FRACTION = 0.6
@@ -88,6 +108,9 @@ OCCLUSION_SKIP_FRACTION = 0.6
 MIN_DARK_FRACTION = 0.03
 DARK_THRESHOLD = 100.0        # BGR mean below this counts as foliage/trunk
 DEPTH_OCCLUSION_MARGIN = 1.5  # m, depth must be this much closer to be occluding
+=======
+OCCLUSION_SKIP_FRACTION = 0.5
+>>>>>>> 8dfe850 (Migrated James' sample generation plugin to Gazebo6 and to using our tree models.)
 
 
 def _resume_sample_id(db_path: Path) -> int:
@@ -120,15 +143,21 @@ class CameraCollectorParams(BaseParams):
     database_dir: str = "/tmp/sample_gen/database"
     visualize: bool = False
     image_topic: str = "/parrot1/camera/image"
+<<<<<<< HEAD
     depth_image_topic: str = "/parrot1/camera/depth/image"
+=======
+>>>>>>> 8dfe850 (Migrated James' sample generation plugin to Gazebo6 and to using our tree models.)
     camera_info_topic: str = ""
     hfov: float = 2.0944  # Parrot rgbd camera HFOV (rad)
     frame_id: str = "world"
     camera_frame: str = "parrot1_camera_rgb_optical_frame"
+<<<<<<< HEAD
     # Vertical shift (world Z, metres) applied to oak boxes to centre them on
     # the dense canopy rather than the full collision AABB. Defaults to 0 (the
     # original bringup flow); the forest launch overrides this to ~0.65.
     oak_z_center_offset: float = 0.0
+=======
+>>>>>>> 8dfe850 (Migrated James' sample generation plugin to Gazebo6 and to using our tree models.)
     class_config_yml: str = "class_configs.yml"
     class_config_name: str = "class_config"
     class_config_dict_name: str = "classes"
@@ -205,12 +234,15 @@ class CameraCollector(BaseNode):
             Image, self._params.image_topic, self._image_cb, qos_profile=rclpy.qos.qos_profile_sensor_data
         )
         self.get_logger().info(f"Subscribed to camera image on {self._params.image_topic}")
+<<<<<<< HEAD
         self.depth_msg: Optional[Image] = None
         if self._params.depth_image_topic:
             self.create_subscription(
                 Image, self._params.depth_image_topic, self._depth_cb, qos_profile=rclpy.qos.qos_profile_sensor_data
             )
             self.get_logger().info(f"Subscribed to depth image on {self._params.depth_image_topic}")
+=======
+>>>>>>> 8dfe850 (Migrated James' sample generation plugin to Gazebo6 and to using our tree models.)
         if self._params.camera_info_topic:
             self.create_subscription(
                 CameraInfo,
@@ -226,9 +258,12 @@ class CameraCollector(BaseNode):
         if self.K is None:
             self.K = self._intrinsics_from_hfov(msg.width, msg.height)
 
+<<<<<<< HEAD
     def _depth_cb(self, msg: Image) -> None:
         self.depth_msg = msg
 
+=======
+>>>>>>> 8dfe850 (Migrated James' sample generation plugin to Gazebo6 and to using our tree models.)
     def _camera_info_cb(self, msg: CameraInfo) -> None:
         self.camera_info_msg = msg
         self.K = np.array(msg.k, dtype=np.float64).reshape(3, 3)
@@ -344,11 +379,17 @@ class CameraCollector(BaseNode):
             centre, yaw = result
             scale = BBOX_XY_SCALE.get(int(label_gt.classification), 1.0)
             z_scale = BBOX_Z_SCALE.get(int(label_gt.classification), 1.0)
+<<<<<<< HEAD
             z_offset = self._params.oak_z_center_offset if int(label_gt.classification) == 1 else 0.0
             size = np.array(
                 [label_gt.size.x * scale, label_gt.size.y * scale, label_gt.size.z * z_scale]
             )
             centre = centre + np.array([0.0, 0.0, z_offset])
+=======
+            size = np.array(
+                [label_gt.size.x * scale, label_gt.size.y * scale, label_gt.size.z * z_scale]
+            )
+>>>>>>> 8dfe850 (Migrated James' sample generation plugin to Gazebo6 and to using our tree models.)
             boxes.append(
                 {
                     "name": label_name,
@@ -380,6 +421,7 @@ class CameraCollector(BaseNode):
             self.get_logger().warn(f"Could not decode image: {e}")
             return None
 
+<<<<<<< HEAD
     def _decode_depth(self, msg: Image) -> Optional[np.ndarray]:
         """Depth image in metres, or None if the encoding is unsupported."""
         try:
@@ -454,6 +496,8 @@ class CameraCollector(BaseNode):
             return None
         return np.array(verts, dtype=np.float64)
 
+=======
+>>>>>>> 8dfe850 (Migrated James' sample generation plugin to Gazebo6 and to using our tree models.)
     def _project_box(self, box: Dict[str, Any], T_cam_world: Any, img_w: int, img_h: int):
         """Project a 3D box into the image.
 
@@ -480,6 +524,7 @@ class CameraCollector(BaseNode):
 
         # Optical frame: +Z forward, +X right, +Y down
         z = corners_cam[:, 2]
+<<<<<<< HEAD
         # Skip boxes entirely behind the camera...
         if np.all(z <= NEAR_CLIP):
             return None
@@ -492,6 +537,12 @@ class CameraCollector(BaseNode):
         # np.any(z <= NEAR_CLIP) dropped the whole box for close trees).
         verts = self._clip_box_near(corners_cam, NEAR_CLIP)
         if verts is None or verts.shape[0] == 0:
+=======
+        # Skip the box if ANY corner is at/behind the near plane: mixed-z corners
+        # flip the perspective projection and produce a box that spuriously spans
+        # the whole frame even though the tree is not actually in view.
+        if np.any(z <= NEAR_CLIP):
+>>>>>>> 8dfe850 (Migrated James' sample generation plugin to Gazebo6 and to using our tree models.)
             return None
 
         fx = self.K[0, 0]
@@ -499,10 +550,16 @@ class CameraCollector(BaseNode):
         cx = self.K[0, 2]
         cy = self.K[1, 2]
 
+<<<<<<< HEAD
         zc = verts[:, 2]
         with np.errstate(divide="ignore", invalid="ignore"):
             u = fx * verts[:, 0] / zc + cx
             v = fy * verts[:, 1] / zc + cy
+=======
+        with np.errstate(divide="ignore", invalid="ignore"):
+            u = fx * corners_cam[:, 0] / z + cx
+            v = fy * corners_cam[:, 1] / z + cy
+>>>>>>> 8dfe850 (Migrated James' sample generation plugin to Gazebo6 and to using our tree models.)
 
         corners_px = np.column_stack([u, v]).astype(np.float32)
 
@@ -715,6 +772,7 @@ class CameraCollector(BaseNode):
             projected.append((box, proj, float(centre_cam[2]), corners_px))
         projected.sort(key=lambda item: item[2])
 
+<<<<<<< HEAD
         # Drop boxes that do not actually show the tree in the image: either the
         # centre is sky-bright (not rendered) or the depth image shows a nearer
         # surface occluding it (leaves / another tree / a hill).
@@ -726,6 +784,8 @@ class CameraCollector(BaseNode):
                 self.get_logger().info(f"Skipping not-visible tree {box['name']}")
         projected = visible
 
+=======
+>>>>>>> 8dfe850 (Migrated James' sample generation plugin to Gazebo6 and to using our tree models.)
         # Drop trees that are mostly hidden behind a nearer tree, judged by the
         # overlap of their projected convex hulls (not the loose bounding rects,
         # which previously removed trees that only overlapped in 2D).
