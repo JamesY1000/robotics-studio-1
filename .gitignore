@@ -4,6 +4,12 @@
 
 sample_generator/sample_gen/database/
 
+yolo_training/database/
+yolo_training/datasets/
+yolo_training/runs/
+yolo_training/*.pt
+
 .vscode
+.venv
 
 # /milo_ws/.vscode
