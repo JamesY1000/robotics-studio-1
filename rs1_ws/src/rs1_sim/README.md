@@ -229,10 +229,11 @@ Each RViz instance is namespaced and loads its robot-specific configuration:
 - `simple_trees` references a `grass_plane` model that is not currently shipped
   by `rs1_sim`. It must be available from another installed package or the local
   Gazebo model cache.
-- `v2_forest` currently contains absolute asset paths for the project
-  devcontainer (`/robotics-studio-1/rs1_ws/install/...`). It works in that
-  layout, but those paths must be made portable before the package can run from
-  an arbitrary workspace location.
+- `v2_forest` uses `model://...` URIs for models installed by `rs1_sim`. Build
+  the workspace and source its `install/setup.*` file before launching so
+  Gazebo can discover those models from any workspace location.
+- The `ground_station` model used by `v2_forest` includes assets from Gazebo
+  Fuel, so its first launch may require network access while they are cached.
 
 ## Operational notes
 
