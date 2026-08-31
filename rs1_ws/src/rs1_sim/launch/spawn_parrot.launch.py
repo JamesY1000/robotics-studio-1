@@ -19,13 +19,14 @@ ROBOT_NAMESPACE = "parrot1"
 FRAME_PREFIX = "parrot1_"
 GZ_MODEL_NAME = "parrot1"
 
+SPAWN_X = "90.0"
+SPAWN_Y = "-48.0"
+SPAWN_Z = "8.0"
+SPAWN_YAW = "0.0"
+
 
 def generate_launch_description():
     use_sim_time = LaunchConfiguration("use_sim_time")
-    x = LaunchConfiguration("parrot_x")
-    y = LaunchConfiguration("parrot_y")
-    z = LaunchConfiguration("parrot_z")
-    yaw = LaunchConfiguration("parrot_yaw")
     spawn_delay = LaunchConfiguration("parrot_spawn_delay")
 
     description_path = PathJoinSubstitution(
@@ -103,23 +104,19 @@ def generate_launch_description():
             "-name",
             GZ_MODEL_NAME,
             "-x",
-            x,
+            SPAWN_X,
             "-y",
-            y,
+            SPAWN_Y,
             "-z",
-            z,
+            SPAWN_Z,
             "-Y",
-            yaw,
+            SPAWN_YAW,
         ],
     )
 
     return LaunchDescription(
         [
             DeclareLaunchArgument("use_sim_time", default_value="True"),
-            DeclareLaunchArgument("parrot_x", default_value="2.0"),
-            DeclareLaunchArgument("parrot_y", default_value="0.0"),
-            DeclareLaunchArgument("parrot_z", default_value="0.8"),
-            DeclareLaunchArgument("parrot_yaw", default_value="0.0"),
             DeclareLaunchArgument("parrot_spawn_delay", default_value="6.0"),
             robot_state_publisher,
             gazebo_bridge,

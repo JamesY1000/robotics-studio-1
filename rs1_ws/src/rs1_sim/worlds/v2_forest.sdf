@@ -22,6 +22,13 @@
       <heading_deg>0</heading_deg>
       <surface_model>EARTH_WGS84</surface_model>
     </spherical_coordinates>
+
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/ground_station</uri>
+      <name>ground_station</name>
+      <pose>90 -45 4 0 -0 0</pose>
+    </include>
+
     <include>
       <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_plane</uri>
       <name>forest_plane</name>
