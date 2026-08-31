@@ -31,7 +31,10 @@ alias grs='git reset'
 alias grsh='git reset --hard'
 
 # ROS2 alises
-alias sw='source /robotics-studio-1/rs1_ws/install/setup.zsh'
+sw() {
+  source /robotics-studio-1/rs1_ws/install/setup.zsh || return
+  eval "$(register-python-argcomplete3 ros2)"
+}
 alias cb='colcon build'
 alias cbps='colcon build --packages-select'
 alias cbput='colcon build --packages-up-to'
