@@ -21,7 +21,7 @@ GZ_MODEL_NAME = "husky1"
 
 SPAWN_X = "95.0"
 SPAWN_Y = "-45.0"
-SPAWN_Z = "4.0"
+SPAWN_Z = "6.0"
 SPAWN_YAW = "0.0"
 
 
