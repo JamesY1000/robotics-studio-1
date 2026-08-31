@@ -1,0 +1,2507 @@
+<?xml version="1.0"?>
+<sdf version='1.9'>
+  <world name='v2_forest'>
+    <gravity>0 0 -9.81</gravity>
+    <magnetic_field>6e-06 2.3e-05 -4.2e-05</magnetic_field>
+    <atmosphere type='adiabatic'/>
+    <physics name='default_physics' type='ignored'>
+      <max_step_size>0.01</max_step_size>
+      <real_time_factor>1</real_time_factor>
+      <real_time_update_rate>100</real_time_update_rate>
+    </physics>
+    <scene>
+      <ambient>1 1 1 1</ambient>
+      <background>0.6 0.8 1 1</background>
+      <shadows>false</shadows>
+      <grid>false</grid>
+    </scene>
+    <spherical_coordinates>
+      <latitude_deg>0</latitude_deg>
+      <longitude_deg>0</longitude_deg>
+      <elevation>0</elevation>
+      <heading_deg>0</heading_deg>
+      <surface_model>EARTH_WGS84</surface_model>
+    </spherical_coordinates>
+
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/ground_station</uri>
+      <name>ground_station</name>
+      <pose>90 -45 4 0 -0 0</pose>
+    </include>
+
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_plane</uri>
+      <name>forest_plane</name>
+      <pose>0 0 0 0 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_south_01</name>
+      <pose>-97.86 -99.9 4.76824 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_south_02</name>
+      <pose>-88.54 -99.9 4.71895 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_south_03</name>
+      <pose>-79.22 -99.9 4.607 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_south_04</name>
+      <pose>-69.9 -99.9 4.4663 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_south_05</name>
+      <pose>-60.58 -99.9 4.41675 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_south_06</name>
+      <pose>-51.26 -99.9 2.78324 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_south_07</name>
+      <pose>-41.94 -99.9 1.90024 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_south_08</name>
+      <pose>-32.62 -99.9 1.90002 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_south_09</name>
+      <pose>-23.3 -99.9 2.70075 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_south_10</name>
+      <pose>-13.98 -99.9 4.36088 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_south_11</name>
+      <pose>-4.66 -99.9 4.74373 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_south_12</name>
+      <pose>4.66 -99.9 5.48189 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_south_13</name>
+      <pose>13.98 -99.9 5.94305 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_south_14</name>
+      <pose>23.3 -99.9 5.65837 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_south_15</name>
+      <pose>32.62 -99.9 5.28243 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_south_16</name>
+      <pose>41.94 -99.9 4.92364 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_south_17</name>
+      <pose>51.26 -99.9 4.63447 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_south_18</name>
+      <pose>60.58 -99.9 4.49303 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_south_19</name>
+      <pose>69.9 -99.9 4.48672 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_south_20</name>
+      <pose>79.22 -99.9 4.52751 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_south_21</name>
+      <pose>88.54 -99.9 4.62504 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_south_22</name>
+      <pose>97.86 -99.9 4.68234 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_north_01</name>
+      <pose>-97.86 99.9 5.31044 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_north_02</name>
+      <pose>-88.54 99.9 5.40306 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_north_03</name>
+      <pose>-79.22 99.9 5.50044 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_north_04</name>
+      <pose>-69.9 99.9 5.29851 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_north_05</name>
+      <pose>-60.58 99.9 4.84501 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_north_06</name>
+      <pose>-51.26 99.9 4.43981 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_north_07</name>
+      <pose>-41.94 99.9 4.32971 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_north_08</name>
+      <pose>-32.62 99.9 4.33981 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_north_09</name>
+      <pose>-23.3 99.9 4.48147 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_north_10</name>
+      <pose>-13.98 99.9 4.60421 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_north_11</name>
+      <pose>-4.66 99.9 4.56513 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_north_12</name>
+      <pose>4.66 99.9 4.4573 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_north_13</name>
+      <pose>13.98 99.9 3.85099 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_north_14</name>
+      <pose>23.3 99.9 2.07784 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_north_15</name>
+      <pose>32.62 99.9 1.9 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_north_16</name>
+      <pose>41.94 99.9 1.90005 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_north_17</name>
+      <pose>51.26 99.9 1.9 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_north_18</name>
+      <pose>60.58 99.9 1.9 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_north_19</name>
+      <pose>69.9 99.9 1.90001 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_north_20</name>
+      <pose>79.22 99.9 2.65158 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_north_21</name>
+      <pose>88.54 99.9 4.40071 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_north_22</name>
+      <pose>97.86 99.9 5.13866 1.5708 -0 0</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_west_01</name>
+      <pose>-99.9 -97.86 4.75171 1.5708 -0 1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_west_02</name>
+      <pose>-99.9 -88.54 4.56365 1.5708 -0 1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_west_03</name>
+      <pose>-99.9 -79.22 4.26957 1.5708 -0 1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_west_04</name>
+      <pose>-99.9 -69.9 4.25 1.5708 -0 1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_west_05</name>
+      <pose>-99.9 -60.58 4.25 1.5708 -0 1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_west_06</name>
+      <pose>-99.9 -51.26 4.25316 1.5708 -0 1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_west_07</name>
+      <pose>-99.9 -41.94 4.45788 1.5708 -0 1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_west_08</name>
+      <pose>-99.9 -32.62 4.55299 1.5708 -0 1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_west_09</name>
+      <pose>-99.9 -23.3 4.62134 1.5708 -0 1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_west_10</name>
+      <pose>-99.9 -13.98 4.81277 1.5708 -0 1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_west_11</name>
+      <pose>-99.9 -4.66 5.12305 1.5708 -0 1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_west_12</name>
+      <pose>-99.9 4.66 5.50941 1.5708 -0 1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_west_13</name>
+      <pose>-99.9 13.98 6.01936 1.5708 -0 1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_west_14</name>
+      <pose>-99.9 23.3 6.45327 1.5708 -0 1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_west_15</name>
+      <pose>-99.9 32.62 6.58125 1.5708 -0 1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_west_16</name>
+      <pose>-99.9 41.94 6.55093 1.5708 -0 1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_west_17</name>
+      <pose>-99.9 51.26 6.55831 1.5708 -0 1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_west_18</name>
+      <pose>-99.9 60.58 6.59757 1.5708 -0 1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_west_19</name>
+      <pose>-99.9 69.9 6.39267 1.5708 -0 1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_west_20</name>
+      <pose>-99.9 79.22 6.03428 1.5708 -0 1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_west_21</name>
+      <pose>-99.9 88.54 5.6053 1.5708 -0 1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_west_22</name>
+      <pose>-99.9 97.86 5.31044 1.5708 -0 1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_east_01</name>
+      <pose>99.9 -97.86 4.68234 1.5708 0 -1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_east_02</name>
+      <pose>99.9 -88.54 4.71225 1.5708 0 -1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_east_03</name>
+      <pose>99.9 -79.22 4.77608 1.5708 0 -1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_east_04</name>
+      <pose>99.9 -69.9 4.8808 1.5708 0 -1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_east_05</name>
+      <pose>99.9 -60.58 5.09345 1.5708 0 -1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_east_06</name>
+      <pose>99.9 -51.26 5.42281 1.5708 0 -1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_east_07</name>
+      <pose>99.9 -41.94 5.76639 1.5708 0 -1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_east_08</name>
+      <pose>99.9 -32.62 6.04518 1.5708 0 -1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_east_09</name>
+      <pose>99.9 -23.3 6.22898 1.5708 0 -1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_east_10</name>
+      <pose>99.9 -13.98 6.18555 1.5708 0 -1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_east_11</name>
+      <pose>99.9 -4.66 6.141 1.5708 0 -1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_east_12</name>
+      <pose>99.9 4.66 6.14351 1.5708 0 -1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_east_13</name>
+      <pose>99.9 13.98 6.25369 1.5708 0 -1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_east_14</name>
+      <pose>99.9 23.3 6.2698 1.5708 0 -1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_east_15</name>
+      <pose>99.9 32.62 6.02358 1.5708 0 -1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_east_16</name>
+      <pose>99.9 41.94 5.93123 1.5708 0 -1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_east_17</name>
+      <pose>99.9 51.26 5.94934 1.5708 0 -1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_east_18</name>
+      <pose>99.9 60.58 6.23603 1.5708 0 -1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_east_19</name>
+      <pose>99.9 69.9 6.77361 1.5708 0 -1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_east_20</name>
+      <pose>99.9 79.22 6.89358 1.5708 0 -1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_east_21</name>
+      <pose>99.9 88.54 6.21862 1.5708 0 -1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/forest_wall</uri>
+      <name>forest_wall_east_22</name>
+      <pose>99.9 97.86 5.86112 1.5708 0 -1.5708</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_001</name>
+      <pose>77.4072 -76.3158 2.85089 -0.012968 -0.012925 -1.31211</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_002</name>
+      <pose>84.4959 -80.2181 2.93455 -0.009428 -0.006428 -0.750124</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_003</name>
+      <pose>89.5998 -65.907 3.24231 0.007221 -0.008673 -1.13891</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_004</name>
+      <pose>-61.3502 86.9046 3.67117 0.001238 -0.000957 1.69496</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_005</name>
+      <pose>80.1218 -58.9064 3.51893 0.006075 0.014886 -2.88969</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_006</name>
+      <pose>21.3582 -89.1559 4.58318 -0.006845 -0.008157 2.14907</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_007</name>
+      <pose>90.2508 -77.6552 3.01393 0.012946 -0.01107 -2.91888</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_008</name>
+      <pose>69.6466 -83.7761 2.71992 0.006585 0.005399 1.5944</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_009</name>
+      <pose>78.3729 -65.884 3.13046 0.005557 0.001946 1.90623</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_010</name>
+      <pose>-10.0786 86.4414 2.81718 -0.004219 0.005465 -2.87188</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_011</name>
+      <pose>67.9032 -11.1388 5.14773 0.001315 0.003459 -1.68797</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_012</name>
+      <pose>-29.6491 85.8194 2.94357 -0.008587 -0.004665 0.243912</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_013</name>
+      <pose>93.3255 -71.373 3.12646 0.010803 -0.002715 1.43195</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_014</name>
+      <pose>69.5445 -57.3396 3.37106 -0.003467 -0.011947 -2.37174</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_015</name>
+      <pose>-12.8372 47.5068 2.83708 -0.014185 -0.006041 -2.97056</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_016</name>
+      <pose>-65.1648 -73.0772 2.6507 0.000158 0.011867 -1.96615</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_017</name>
+      <pose>21.7045 7.7785 2.58295 -0.003642 -0.008465 -1.96591</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_018</name>
+      <pose>11.3843 70.2487 0.199284 -0.013155 0.014732 3.10682</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_019</name>
+      <pose>35.9824 -68.0736 4.49797 -0.013322 0.00872 1.73486</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_020</name>
+      <pose>26.4116 -76.2383 4.83435 -0.005796 -0.00852 -3.09224</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_021</name>
+      <pose>90.3415 -56.7463 3.61216 0.008703 0.008395 -0.410213</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_022</name>
+      <pose>70.4481 -18.1569 4.80511 0.014375 -0.009529 -0.661058</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_023</name>
+      <pose>64.3083 -65.9421 3.13953 -0.002499 0.001474 -0.0934</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_024</name>
+      <pose>-96.5277 -55.4124 2.36084 -0.014898 -0.002869 3.0143</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_025</name>
+      <pose>-63.248 44.9513 5.51322 0.014936 0.006407 -0.302</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_026</name>
+      <pose>17.8127 -1.19144 2.44957 -0.007678 -0.012112 0.428505</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_027</name>
+      <pose>95.2747 36.6194 4.41441 0.011867 -0.00046 -0.538253</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_028</name>
+      <pose>-59.5494 30.2473 6.54569 -0.014426 -0.002504 -0.516149</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_029</name>
+      <pose>33.3293 -86.4889 4.08509 0.009383 0.014574 2.35724</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_030</name>
+      <pose>9.68095 -57.8051 3.35339 0.013607 0.011322 -0.050389</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_031</name>
+      <pose>77.8656 -90.7156 2.76003 -0.014795 -0.014759 -0.342887</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_032</name>
+      <pose>68.159 -45.2383 3.88159 0.000688 0.013332 1.41437</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_033</name>
+      <pose>59.0654 8.32993 6.09246 -0.006967 0.000763 -0.402115</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_034</name>
+      <pose>95.6143 47.8161 4.29368 -0.008406 0.001012 1.68178</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_035</name>
+      <pose>83.2719 -72.441 3.00581 -1e-06 0.007811 0.292529</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_036</name>
+      <pose>18.5086 -82.4817 4.95888 0.00118 0.005853 1.2312</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_038</name>
+      <pose>-85.1155 -67.3821 2.40629 0.004571 0.01025 0.4982</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_039</name>
+      <pose>66.6931 -75.2544 2.84868 0.002544 -0.005961 1.60329</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_040</name>
+      <pose>-39.5252 -4.23458 3.46569 0.013788 -0.013036 1.93441</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_042</name>
+      <pose>15.0558 -20.4989 2.57408 0.003956 -0.002302 0.707069</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_043</name>
+      <pose>2.79369 -17.7958 1.27084 -0.012541 -0.006284 -1.64979</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_044</name>
+      <pose>-52.3872 81.8458 3.42338 -0.003137 0.001322 3.10907</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_045</name>
+      <pose>-12.4578 -71.6196 1.82912 -0.012154 0.013652 -1.21907</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_046</name>
+      <pose>64.5369 -52.4914 3.45167 0.00738 0.002478 -0.214824</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_047</name>
+      <pose>1.53518 47.403 1.25875 -0.002868 -0.0003 -2.90981</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_048</name>
+      <pose>40.1577 -59.0225 4.12035 -0.007894 0.014752 -0.541211</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_049</name>
+      <pose>40.1844 21.863 3.84818 -0.002916 -0.001709 2.36916</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_050</name>
+      <pose>-63.0436 -93.6991 2.59636 -0.008527 -0.007574 -0.825515</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_051</name>
+      <pose>25.1472 -3.97752 2.83544 0.005197 -0.003108 2.65706</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_052</name>
+      <pose>17.4743 -55.005 4.37604 -0.008403 -0.013145 -1.72803</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_053</name>
+      <pose>72.1855 16.1236 6.09184 0.002268 0.003015 0.115093</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_054</name>
+      <pose>91.5169 -90.6714 2.83164 -0.004668 -0.007525 2.53824</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_055</name>
+      <pose>32.825 4.80102 3.80308 -0.000523 -0.001382 -3.11449</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_057</name>
+      <pose>75.6256 -41.0179 4.29598 -0.008963 -0.004904 -1.99231</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_058</name>
+      <pose>71.6362 -3.96285 5.59247 -0.002519 0.002168 -3.04475</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_059</name>
+      <pose>-55.835 45.8002 5.52072 -0.010186 0.012916 -0.896922</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_060</name>
+      <pose>63.8193 -6.22898 5.33707 -0.000741 0.003626 -0.583765</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_061</name>
+      <pose>-1.30847 35.1824 1.2571 0.006865 -0.002415 1.08147</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_062</name>
+      <pose>36.8372 -15.249 3.70037 0.000588 0.013201 -0.975005</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_063</name>
+      <pose>28.5613 -32.6528 3.90073 -0.00806 -0.00748 -2.91593</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_064</name>
+      <pose>12.032 -14.2435 2.11241 -0.00579 0.01469 -0.354421</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_066</name>
+      <pose>65.9791 -29.9956 4.19853 0.011739 0.00781 -0.615396</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_068</name>
+      <pose>-69.821 -68.9763 2.62186 0.008124 -0.011299 2.66855</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_069</name>
+      <pose>-74.4818 40.0996 5.6282 -0.003485 -0.00743 0.955563</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_070</name>
+      <pose>18.3439 -72.2862 5.13693 0.005239 -0.011417 0.147884</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_071</name>
+      <pose>44.7253 -81.9661 3.72048 0.01274 -0.003782 2.56661</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_072</name>
+      <pose>79.352 28.7271 5.80183 0.005748 0.006538 -1.14247</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_073</name>
+      <pose>23.4353 -15.3223 2.82218 -0.001517 -0.006994 -2.99765</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_074</name>
+      <pose>69.3033 3.54 5.91639 0.002072 -0.002108 2.649</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_076</name>
+      <pose>-87.6566 -1.33656 4.4498 -0.010134 -0.002607 1.14257</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_077</name>
+      <pose>27.0417 -91.9956 4.20502 0.013764 -0.00199 -0.759837</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_078</name>
+      <pose>87.613 42.5507 4.91815 -0.01489 0.013375 -0.443427</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_079</name>
+      <pose>85.3705 13.8832 5.45828 -0.005912 -0.010285 -0.082691</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_080</name>
+      <pose>-93.4255 64.1498 5.04966 -0.001446 -0.000476 1.78766</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_081</name>
+      <pose>-70.4797 -75.5578 2.66347 -0.011903 -0.012636 2.89262</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_082</name>
+      <pose>67.3075 66.9149 2.55932 -0.010689 0.001 0.181272</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_083</name>
+      <pose>58.1208 -75.8054 3.17307 -0.000583 0.007144 2.43145</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_084</name>
+      <pose>-52.9451 76.3977 3.69083 0.014812 -0.001803 -0.199844</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_085</name>
+      <pose>50.0447 -70.0375 3.71153 0.003846 0.007261 1.80848</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_086</name>
+      <pose>79.3882 5.21713 5.69778 0.014689 0.014703 -1.5927</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_087</name>
+      <pose>76.1483 69.6206 3.03147 -0.008342 0.013658 2.23425</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_088</name>
+      <pose>18.2611 -8.75449 2.55529 0.007754 -0.009458 -0.166059</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_089</name>
+      <pose>1.71042 93.8545 2.63797 0.011476 0.008927 -2.26666</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_090</name>
+      <pose>53.8554 48.7424 3.19379 0.005335 0.008717 -1.06486</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_091</name>
+      <pose>59.1891 -26.7989 3.88747 0.000429 -0.009706 2.69039</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_092</name>
+      <pose>30.6598 44.5924 0.403613 -0.013222 -0.00406 2.54923</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_093</name>
+      <pose>45.1407 59.3498 1.85731 0.013532 0.005893 0.078493</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_094</name>
+      <pose>28.7458 -45.7782 4.49035 -0.013879 -0.014883 0.106122</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_095</name>
+      <pose>76.7436 -10.3797 5.27665 0.003637 -0.010061 0.152054</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_097</name>
+      <pose>0.461317 77.3055 2.50106 -0.004254 -0.002881 1.08605</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_098</name>
+      <pose>54.0352 -83.0207 3.13451 0.006563 -0.009032 -1.50066</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_099</name>
+      <pose>-29.4061 73.0735 3.55238 0.00096 -0.014638 0.680082</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_100</name>
+      <pose>-42.3976 60.7894 4.48071 0.00636 0.013423 1.32299</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_101</name>
+      <pose>-11.2613 -56.0133 0.643204 0.002148 0.007145 2.76229</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_102</name>
+      <pose>60.5684 57.7191 2.85488 0.013847 0.002528 1.32992</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_103</name>
+      <pose>96.6339 57.2503 4.53664 -0.000978 0.012669 1.75247</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_104</name>
+      <pose>43.5801 52.3466 1.9226 -0.004789 0.005836 -2.01031</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_106</name>
+      <pose>41.4276 -88.2714 3.57767 -0.006175 0.005181 0.546722</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_107</name>
+      <pose>-5.35011 -49.5526 1.12717 0.008455 -0.00704 -3.00582</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_108</name>
+      <pose>-39.1594 75.5543 3.48214 0.009384 0.003108 -0.189397</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_109</name>
+      <pose>68.377 32.9799 6.60066 0.002216 -0.004038 2.79414</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_110</name>
+      <pose>78.1303 -3.01516 5.50278 0.005336 -0.009431 -1.25024</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_111</name>
+      <pose>-52.4987 51.845 5.17007 -0.005473 0.013912 -0.873361</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_112</name>
+      <pose>81.9488 -95.5617 2.72416 0.003377 0.001719 -2.34645</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_113</name>
+      <pose>55.3051 -90.7388 2.93354 0.007131 -0.012371 0.130066</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_114</name>
+      <pose>28.7666 -68.6731 4.87378 -0.005937 -0.004467 -1.55535</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_115</name>
+      <pose>-17.705 28.6504 3.16764 -0.007512 -0.013445 -0.521622</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_116</name>
+      <pose>47.8401 12.9109 6.07474 -0.0024 9.9e-05 1.52842</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_117</name>
+      <pose>-76.9982 5.00516 5.66137 0.001855 -0.007537 -1.44622</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_118</name>
+      <pose>93.3799 68.5324 5.05931 -0.012212 -0.01021 -1.36676</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_119</name>
+      <pose>-55.8344 -70.1653 2.55113 -0.004073 -0.002851 1.75043</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_120</name>
+      <pose>-31.516 32.9954 6.20062 0.00662 -0.009599 -2.8616</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_121</name>
+      <pose>-2.78424 -56.4014 2.1716 -0.012994 -0.014752 -1.24788</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_122</name>
+      <pose>-3.50578 81.3127 2.59084 0.007119 0.014444 2.21788</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_123</name>
+      <pose>-90.4613 73.1276 4.89851 0.00709 0.004055 -2.19805</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_124</name>
+      <pose>32.3239 -57.0323 4.53218 -0.004276 0.010325 -0.643728</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_125</name>
+      <pose>71.2918 93.0508 0.8618 0.00047 -0.008841 2.62041</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_126</name>
+      <pose>37.2216 48.8976 1.44676 -0.008903 0.001971 -0.375742</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_127</name>
+      <pose>37.2118 56.4181 0.314711 0.012848 -0.011932 0.275004</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_128</name>
+      <pose>-9.18804 -78.282 2.56552 -0.014189 0.013538 -2.9666</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_129</name>
+      <pose>-55.3484 60.8922 4.60013 -0.014074 0.014711 0.971087</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_130</name>
+      <pose>-77.7437 45.9941 5.43165 0.008556 0.008739 1.58596</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_131</name>
+      <pose>58.6428 28.9534 6.53587 -0.001627 -0.005993 0.126537</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_132</name>
+      <pose>72.6345 -30.7009 4.51837 0.009501 -0.003111 -0.523584</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_133</name>
+      <pose>-85.5948 6.38448 4.9979 -0.009295 0.003498 -1.03454</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_134</name>
+      <pose>-33.5429 77.6936 3.2876 3.3e-05 0.010921 0.737174</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_135</name>
+      <pose>-94.9078 9.39752 4.45385 -0.002365 0.006229 1.93541</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_136</name>
+      <pose>67.9449 48.8227 5.35378 0.01047 -0.006406 2.58822</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_137</name>
+      <pose>-64.6357 -53.2095 2.82205 0.003063 0.006516 -0.172455</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_138</name>
+      <pose>85.5628 -1.88509 5.21716 -0.009355 0.001886 2.04481</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_139</name>
+      <pose>-70.858 -59.1853 2.65956 0.009146 0.012352 -0.435126</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_140</name>
+      <pose>-75.5834 -63.6638 2.59859 -0.012388 0.003644 2.565</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_141</name>
+      <pose>-78.9246 -10.0226 4.75937 0.001805 0.008723 -0.462483</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_142</name>
+      <pose>-24.1777 90.9828 2.84313 -0.006788 -0.008591 1.50877</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_143</name>
+      <pose>83.0514 -20.2265 5.03627 0.01247 0.007744 2.32826</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_144</name>
+      <pose>-61.65 -44.5017 3.06481 -0.010016 -0.003888 0.824615</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_145</name>
+      <pose>3.80713 -70.6831 3.42614 0.00363 -0.013644 0.015532</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_146</name>
+      <pose>88.8434 52.8341 4.89749 0.00245 0.007049 2.06881</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_147</name>
+      <pose>21.5615 -48.9993 4.55445 -0.01158 -0.009147 1.45667</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_148</name>
+      <pose>-89.6026 -94.2588 2.83526 -9.2e-05 -0.0071 3.04509</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_149</name>
+      <pose>-76.7538 -82.2162 2.69309 0.010764 0.002124 -2.5688</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_150</name>
+      <pose>65.6091 12.8858 6.22393 -0.008783 0.008387 0.566386</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_151</name>
+      <pose>43.5372 -69.1897 4.10745 0.009613 -0.013128 -1.7169</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_152</name>
+      <pose>19.3942 -32.6539 3.74007 -0.013337 0.004259 -0.360149</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_153</name>
+      <pose>71.1511 23.7521 6.23841 -0.005867 -0.010797 1.94928</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_154</name>
+      <pose>2.53339 -62.8528 2.77061 -0.014857 -0.003577 0.04837</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_155</name>
+      <pose>-8.87978 24.6403 2.35421 0.003935 0.004807 -2.77702</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_156</name>
+      <pose>23.2906 -59.6501 5.0042 -0.008559 -0.002035 -0.321835</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_157</name>
+      <pose>-66.143 68.5197 4.58039 0.012358 0.006386 -1.055</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_158</name>
+      <pose>79.0787 60.7064 4.30203 0.006554 -0.002991 0.032926</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_159</name>
+      <pose>51.8913 41.7983 3.74486 0.012075 -0.006679 1.7061</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_160</name>
+      <pose>51.4874 25.894 5.5992 0.000658 0.014511 -0.375671</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_161</name>
+      <pose>79.4563 -28.6704 4.77576 0.014887 -0.010868 -1.29377</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_162</name>
+      <pose>-70.4622 22.4511 6.27514 0.001133 -0.001032 -1.4791</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_163</name>
+      <pose>-73.8874 -17.1636 4.78872 0.005763 -0.00374 -2.48949</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_164</name>
+      <pose>-40.3104 5.79713 4.14615 -6.7e-05 0.008896 -2.393</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_165</name>
+      <pose>-46.572 83.2138 3.091 -0.012919 -0.001847 -0.180769</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_166</name>
+      <pose>8.57116 77.6517 1.56016 0.001845 0.003734 -1.5413</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_167</name>
+      <pose>52.1027 -59.4886 3.53778 0.011534 0.009869 -2.6703</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_168</name>
+      <pose>59.2233 68.5623 1.88032 -0.001456 -0.013658 -1.92524</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_169</name>
+      <pose>87.7252 32.4235 5.13878 -0.014909 0.002792 2.54485</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_170</name>
+      <pose>48.4301 32.7507 3.99386 0.007363 -0.004958 -0.982159</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_171</name>
+      <pose>14.4764 -78.2088 5.06581 -0.013734 0.010471 3.12754</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_172</name>
+      <pose>45.6195 25.0769 4.42984 -0.005641 0.008536 -0.195124</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_173</name>
+      <pose>-28.3284 23.0527 4.41651 0.013825 -0.013709 -1.78258</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_174</name>
+      <pose>-84.8972 18.4561 5.53594 0.012993 -0.014899 2.83433</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_175</name>
+      <pose>63.1445 2.67261 5.81968 -0.010304 0.003295 -2.79321</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_176</name>
+      <pose>-65.7549 -39.4972 3.34302 0.005375 -0.01061 -3.0827</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_177</name>
+      <pose>-55.7361 -17.2704 5.51497 0.00445 -0.003921 0.569248</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_178</name>
+      <pose>-56.184 1.08021 7.46197 -0.009056 0.00398 -2.79854</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_179</name>
+      <pose>-69.0961 15.7314 6.47014 0.013538 -0.004135 2.68989</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_180</name>
+      <pose>78.8872 40.7353 5.68531 0.014769 0.012562 1.32972</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_181</name>
+      <pose>37.6125 29.6759 2.62942 -0.012927 0.001501 -2.92115</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_182</name>
+      <pose>37.4941 -41.2605 3.57655 -0.005516 0.01402 -0.018925</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_183</name>
+      <pose>-29.0977 39.649 5.55902 0.004766 0.012543 1.50112</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_184</name>
+      <pose>89.4298 87.13 3.34253 0.011957 0.009642 -0.530495</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_186</name>
+      <pose>55.5077 35.43 5.46015 0.01053 -0.003375 -1.13527</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_187</name>
+      <pose>-71.3536 -44.0458 3.10626 -0.000223 -0.006239 0.303158</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_188</name>
+      <pose>-43.3487 29.4523 7.39786 0.00357 0.014161 0.028521</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_190</name>
+      <pose>86.4253 -31.2102 4.7415 0.003788 0.003326 -2.93527</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_192</name>
+      <pose>-52.6632 32.3115 6.8095 0.011082 0.01246 -0.152568</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_193</name>
+      <pose>82.8078 53.378 5.12333 0.012228 0.009077 -0.379605</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_194</name>
+      <pose>-44.7948 20.4725 7.46851 -0.002439 -0.010984 -0.004358</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_195</name>
+      <pose>60.0337 20.5831 6.7136 -0.008366 -0.001068 2.20012</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_196</name>
+      <pose>37.3064 -33.8797 3.56379 0.000288 -0.013004 2.20192</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_197</name>
+      <pose>49.4767 -33.5485 3.27391 0.013047 0.002865 -0.543369</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/oak_tree</uri>
+      <name>generated_tree_198</name>
+      <pose>25.2784 -39.7813 4.466 0.003793 0.014085 -0.83749</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_199</name>
+      <pose>-72.0716 -38.0384 3.36809 -0.0067 -0.00479 0.035384</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/trees/pine_tree</uri>
+      <name>generated_tree_200</name>
+      <pose>61.4008 79.6847 0.327282 -0.010836 -0.005128 -1.84004</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_002</name>
+      <pose>-83.7064 14.2086 5.48039 -0.008946 0.022664 -0.648459</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_003</name>
+      <pose>-24.8202 19.1088 3.14174 -0.019465 0.014896 -3.083</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_004</name>
+      <pose>67.571 -3.31855 5.54846 -0.001266 0.004882 -0.337146</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_005</name>
+      <pose>70.2126 -49.9519 3.71899 -0.012472 -0.014935 2.05393</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_006</name>
+      <pose>79.9029 -72.5955 2.95479 -0.016804 -0.023171 -2.37933</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_007</name>
+      <pose>-14.384 -66.8386 1.00133 -0.000943 0.008112 -0.209819</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_008</name>
+      <pose>49.6742 -79.1947 3.50175 -0.014802 0.023743 1.37635</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_009</name>
+      <pose>84.3796 5.54196 5.40035 0.003375 -0.003871 1.2307</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_010</name>
+      <pose>25.2095 -69.9762 4.95603 -0.010896 -0.00414 -2.75406</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_011</name>
+      <pose>74.3084 -4.67803 5.50858 0.003749 0.017729 -2.78613</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_012</name>
+      <pose>55.3541 -37.5211 3.35762 -0.007212 -0.019269 1.13897</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_013</name>
+      <pose>-89.5352 63.8725 5.128 -0.011799 -0.013129 -2.51137</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_014</name>
+      <pose>49.461 44.2077 2.95783 -0.013627 0.012976 -1.52011</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_015</name>
+      <pose>-95.9384 -2.59239 3.70516 -0.020752 0.019396 -2.18752</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_016</name>
+      <pose>90.8065 -10.1822 4.86027 -0.003183 0.002448 2.95628</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_017</name>
+      <pose>64.3802 -8.58866 5.14161 0.011008 0.011095 -2.72343</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_018</name>
+      <pose>-2.49373 76.4003 2.54185 -0.001551 -0.021566 0.452262</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_019</name>
+      <pose>-81.095 7.16923 5.37885 -0.007791 -0.013712 1.88814</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_022</name>
+      <pose>95.9271 94.2922 3.7399 -0.006726 0.002114 -2.1965</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_023</name>
+      <pose>-85.9031 -94.9321 2.81893 0.002275 -0.000991 -0.658448</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_024</name>
+      <pose>3.04139 73.9468 1.98591 -0.015067 -0.016956 -0.124168</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_026</name>
+      <pose>-79.6355 -63.4473 2.45644 -0.020331 -0.011781 2.9731</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_027</name>
+      <pose>70.314 27.6545 6.33934 0.016348 -0.024076 -2.31082</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_028</name>
+      <pose>76.6937 -30.1483 4.6249 0.0064 0.010593 -1.13111</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_029</name>
+      <pose>29.4583 16.1872 3.34084 0.011408 0.022413 1.43416</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_030</name>
+      <pose>50.4127 -36.3101 3.21868 -0.005506 0.009162 -1.99827</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_031</name>
+      <pose>15.8737 -63.7068 4.56649 -0.020033 0.005295 -2.17871</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_032</name>
+      <pose>63.2392 -76.4745 2.90713 -0.003804 0.008336 -2.37603</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_033</name>
+      <pose>42.4209 58.3527 1.36342 -0.013778 -0.012402 -3.07497</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_034</name>
+      <pose>-78.1743 88.0155 4.17664 0.015035 0.018305 -2.47962</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_035</name>
+      <pose>-63.9894 -89.295 2.5592 0.011992 0.00765 2.30989</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_036</name>
+      <pose>-15.8396 -81.6197 2.52607 -0.007216 -0.02147 1.74298</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_037</name>
+      <pose>-26.3965 77.0612 3.30983 -0.013907 -0.000273 -2.81342</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_038</name>
+      <pose>5.4742 -81.7299 4.15322 -0.011336 -0.006843 -2.17508</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_039</name>
+      <pose>-24.7494 -86.0401 0.973695 0.009149 0.008352 -2.85249</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_040</name>
+      <pose>35.6381 -44.6981 3.82141 0.006664 -1.7e-05 0.055245</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_042</name>
+      <pose>24.9034 3.89919 2.7477 0.012323 -0.013538 -1.92979</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_043</name>
+      <pose>-32.5455 -40.472 0.338973 -0.004738 0.000716 -2.5814</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_044</name>
+      <pose>41.5031 50.98 1.66814 0.019292 -0.017892 -0.37614</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_045</name>
+      <pose>-55.927 -20.5891 4.87932 0.008938 -0.001003 -0.660456</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_046</name>
+      <pose>60.5487 54.829 3.25305 0.012804 0.000173 1.86631</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_047</name>
+      <pose>92.4441 71.4241 4.87318 0.015125 0.019039 2.37199</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_048</name>
+      <pose>-64.1363 87.6802 3.74574 -0.008134 0.006416 -2.26181</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_050</name>
+      <pose>-61.5302 -87.9776 2.54498 0.016794 0.024765 2.48703</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_051</name>
+      <pose>62.8392 -25.1248 4.14172 -0.016852 -0.003079 -0.024811</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_052</name>
+      <pose>33.2921 -90.566 3.90554 0.008231 -0.015696 1.1671</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_053</name>
+      <pose>87.0066 92.5325 2.69056 -0.005594 0.011682 0.513312</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_054</name>
+      <pose>50.6233 -85.6314 3.21385 0.018902 -0.007323 2.51948</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_056</name>
+      <pose>35.068 -47.435 3.96494 0.00489 0.017955 -0.867376</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_057</name>
+      <pose>-77.9675 -5.00301 5.07075 0.012056 -0.008948 -1.16171</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_058</name>
+      <pose>33.108 47.4973 0.653889 -0.009345 0.016227 2.32894</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_059</name>
+      <pose>-29.5906 75.9328 3.39162 0.017984 -0.012806 -0.625743</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_060</name>
+      <pose>-52.7596 -19.6842 4.73871 -0.010147 0.016241 -2.31174</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_061</name>
+      <pose>-44.7633 -30.7996 2.6369 -0.021361 0.012775 -1.49857</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_062</name>
+      <pose>-24.3614 88.5187 2.86297 0.011633 -0.002093 1.01198</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_063</name>
+      <pose>-63.3786 93.921 3.4834 -0.017322 -0.02331 -3.02894</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_064</name>
+      <pose>-47.2651 -46.6272 2.5356 0.002767 0.023973 0.09026</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_065</name>
+      <pose>-57.3865 -25.5174 4.20255 0.018551 0.0112 -0.730402</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_066</name>
+      <pose>75.7546 -83.5503 2.75229 -0.007315 -0.020364 -0.191621</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_067</name>
+      <pose>82.1647 -61.096 3.38558 0.003437 -0.000758 -3.13394</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_068</name>
+      <pose>-44.5423 25.3254 7.61794 -0.006998 -0.011082 0.608908</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_070</name>
+      <pose>32.7628 53.5629 0.206869 0.016716 0.005974 -1.53503</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_071</name>
+      <pose>-58.0961 -12.5447 6.20743 0.016325 -0.023143 1.93214</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_072</name>
+      <pose>-39.3915 42.0375 6.01761 -0.001119 0.015558 0.714055</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_073</name>
+      <pose>6.8411 -31.4629 2.72782 0.015114 0.021983 0.591608</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_075</name>
+      <pose>-32.2702 30.2511 6.20965 0.000603 -0.000607 -0.426442</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_076</name>
+      <pose>79.7205 -14.8436 5.12728 -0.018981 0.022987 -1.00162</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_077</name>
+      <pose>61.7359 -79.1304 2.90707 0.001405 -0.013989 2.13921</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_078</name>
+      <pose>13.1733 13.4237 1.77626 0.016759 -0.024101 -3.03072</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_080</name>
+      <pose>-36.0576 69.4576 3.83023 -0.015736 -0.024952 0.061983</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_081</name>
+      <pose>-3.20452 90.5578 2.68118 0.007798 -0.011162 -1.47235</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_082</name>
+      <pose>-57.7736 -68.1235 2.57738 0.021347 -0.012813 0.787326</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_083</name>
+      <pose>5.32539 -67.5591 3.43889 -0.014665 -0.002676 -1.36605</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_084</name>
+      <pose>-61.3858 -80.0272 2.55148 0.002403 0.024291 -2.97282</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_085</name>
+      <pose>90.1331 27.1395 5.06388 -0.022839 0.014679 -0.509181</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_086</name>
+      <pose>-65.9268 -69.4942 2.62509 0.024409 0.007102 -2.96727</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_087</name>
+      <pose>55.5184 -80.0483 3.14999 0.00121 0.003037 0.296492</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_088</name>
+      <pose>22.1358 -66.7829 5.07099 0.001512 0.018133 2.97198</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_089</name>
+      <pose>68.1172 -91.3983 2.65321 0.017225 -0.007146 2.72572</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_090</name>
+      <pose>72.3421 -11.0112 5.20941 -0.024911 -0.020904 -0.349954</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_091</name>
+      <pose>77.0462 -59.504 3.3898 -0.002675 -0.018591 2.48162</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_092</name>
+      <pose>67.77 7.19805 6.01055 -0.011636 0.022475 -1.38095</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_093</name>
+      <pose>-46.4541 27.4046 7.54673 -0.013655 -0.007683 1.39232</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_094</name>
+      <pose>-47.036 23.1012 7.75413 0.004039 0.019435 -1.95977</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_095</name>
+      <pose>38.7108 -84.562 3.8826 0.009796 0.006623 0.19522</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_096</name>
+      <pose>74.1597 -45.906 4.01661 -0.024841 0.019092 2.05016</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_098</name>
+      <pose>89.0641 6.56025 5.11332 0.023816 0.015576 0.966567</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_099</name>
+      <pose>70.6606 -79.7506 2.75872 -0.013316 -0.009598 2.79523</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_100</name>
+      <pose>-40.566 25.4999 7.21038 -0.008831 -0.002327 0.779345</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_101</name>
+      <pose>82.2008 -33.3852 4.62508 -0.003797 0.012631 1.47885</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_102</name>
+      <pose>65.7449 -32.9383 4.05679 0.021817 0.016541 -1.76369</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_103</name>
+      <pose>-38.1004 78.4025 3.24947 -0.010763 0.012162 -3.11607</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_104</name>
+      <pose>87.3405 -55.7197 3.67101 0.016163 0.01923 -1.55446</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_105</name>
+      <pose>40.9949 -72.0828 4.21446 -0.01647 0.020384 -0.79173</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_106</name>
+      <pose>-1.31199 -78.5916 3.07813 0.020426 0.004127 0.920411</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_107</name>
+      <pose>29.5599 -63.2416 4.80342 0.015562 0.010976 -0.263601</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_108</name>
+      <pose>32.7135 -62.372 4.62164 0.004571 0.024018 -1.27802</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_109</name>
+      <pose>-93.7821 1.94494 4.10707 -0.019841 0.012674 2.7682</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_110</name>
+      <pose>57.7681 38.2527 5.52098 0.002849 -0.00137 -0.57803</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_111</name>
+      <pose>32.8975 -70.8217 4.61861 -0.02171 -0.004919 -1.59816</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_112</name>
+      <pose>-21.8065 22.9526 3.09083 0.021135 -0.007389 0.0014</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_113</name>
+      <pose>56.7999 -66.2188 3.34382 0.002298 -0.00868 -0.031387</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_114</name>
+      <pose>-90.3309 3.95952 4.49044 -0.021002 -0.018135 -0.149259</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_115</name>
+      <pose>-44.9093 68.5628 3.98453 -0.003154 0.008132 1.07654</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_116</name>
+      <pose>-49.991 -63.7991 2.51271 0.018315 0.01906 -1.1667</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_117</name>
+      <pose>-87.8298 48.7237 5.27571 0.010237 0.015608 -0.338693</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_118</name>
+      <pose>-32.2282 27.9258 6.0286 -0.017847 0.008338 1.04119</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_119</name>
+      <pose>-49.5903 83.9003 3.1563 -0.01616 0.020999 3.03557</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_120</name>
+      <pose>-76.0081 -24.5263 4.08118 0.014038 0.023631 2.5019</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_121</name>
+      <pose>-2.49286 -39.3012 1.59235 0.004617 0.01675 1.56304</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_122</name>
+      <pose>83.1132 -36.0107 4.54119 0.018079 0.019209 1.46849</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_123</name>
+      <pose>28.1845 -88.9043 4.24365 0.021592 0.013972 -0.30817</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_124</name>
+      <pose>70.3492 -35.3876 4.23651 -0.024948 0.009502 1.5852</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_125</name>
+      <pose>-61.2215 63.8744 4.58559 -0.011526 -0.014879 -1.34763</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_126</name>
+      <pose>79.3451 -79.1214 2.83786 0.009475 0.021456 -0.69915</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_127</name>
+      <pose>51.95 -62.103 3.5528 0.004808 0.008245 -0.429787</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_128</name>
+      <pose>31.7227 -73.8807 4.61419 -0.000646 0.008097 -1.69007</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_129</name>
+      <pose>-61.0011 50.4799 5.18856 0.013394 0.012369 1.75</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_130</name>
+      <pose>-71.6373 43.9651 5.47202 0.022111 0.008301 -0.411865</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_131</name>
+      <pose>-1.07693 -69.8931 2.77896 -0.016221 0.017445 -0.00292</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_132</name>
+      <pose>-80.4097 49.9283 5.37337 -0.021643 -0.012036 0.524179</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_133</name>
+      <pose>41.1338 -38.2924 3.31283 -0.01201 -0.001703 -2.59302</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_134</name>
+      <pose>85.4748 46.1628 5.02232 0.011638 0.019231 -2.76482</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_135</name>
+      <pose>71.9512 71.2835 2.56525 0.016951 -0.014337 0.534738</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_136</name>
+      <pose>-57.2563 76.2837 3.87687 -0.024378 -0.013695 1.84177</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_137</name>
+      <pose>89.5317 56.8389 4.90724 -0.01971 0.001693 2.27948</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_138</name>
+      <pose>60.74 -58.7045 3.28126 0.009063 -0.01676 -1.03262</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_139</name>
+      <pose>71.0368 9.8712 6.01882 -0.003103 -0.023349 2.95606</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_140</name>
+      <pose>-63.6714 -8.85574 6.18121 -0.023774 -0.015005 -1.57257</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_141</name>
+      <pose>72.5538 -27.4098 4.55401 -0.017967 0.005097 -1.16128</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_142</name>
+      <pose>87.4483 -82.4433 2.88846 -0.002155 -0.008246 -2.26812</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_143</name>
+      <pose>44.8972 -73.0174 3.98059 0.021543 -0.015039 -2.76783</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_144</name>
+      <pose>-58.2446 79.8299 3.75414 0.011908 -0.001997 1.8675</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_145</name>
+      <pose>-60.8437 91.8414 3.41905 -0.005118 0.011513 -2.03919</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_146</name>
+      <pose>55.9063 3.92059 5.76105 -0.017864 0.013959 -0.602137</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_2</uri>
+      <name>generated_bush_147</name>
+      <pose>64.2157 55.5229 3.58903 -0.008233 0.013588 2.1425</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_148</name>
+      <pose>-14.1104 25.1862 2.58744 -0.00763 -0.018485 0.693735</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_149</name>
+      <pose>59.603 -34.6456 3.65214 0.004719 0.001372 -1.1847</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/bushes/bush_3</uri>
+      <name>generated_bush_150</name>
+      <pose>73.7268 35.5864 6.12648 0.001985 0.006707 0.213565</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_004</name>
+      <pose>71.6721 77.7579 2.66612 -0.005584 -0.019634 -0.580716</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_005</name>
+      <pose>-41.7198 -13.1274 4.17174 -0.129882 0.039404 -1.12919</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_006</name>
+      <pose>45.9156 15.4024 6.19961 0.135304 -0.04298 2.7016</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_007</name>
+      <pose>-84.4473 39.7435 5.97016 0.071558 0.042734 0.275689</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_008</name>
+      <pose>59.2814 80.7896 0.631377 -0.104964 0.025226 -0.505482</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_010</name>
+      <pose>86.5838 -79.2154 3.43287 0.138094 0.021182 -1.65965</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_011</name>
+      <pose>86.9988 -95.6615 3.31025 -0.029346 -0.058406 2.40999</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_014</name>
+      <pose>89.2448 19.4689 5.7576 -0.125258 0.017136 0.69584</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_017</name>
+      <pose>57.1375 -12.5247 5.05426 -0.059294 -0.076548 -2.03272</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_019</name>
+      <pose>-46.3299 -11.8513 5.59679 -0.082712 -0.086299 2.12908</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_020</name>
+      <pose>65.4607 76.2278 1.88618 0.016704 -0.126829 1.16328</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_021</name>
+      <pose>70.1534 47.3981 6.40935 0.126876 0.102122 -0.565727</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_022</name>
+      <pose>49.0243 -46.6411 3.73064 -0.012471 0.020014 0.511693</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_023</name>
+      <pose>-13.0417 77.2556 3.36154 0.079202 0.111219 -1.74758</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_024</name>
+      <pose>-27.3911 4.29919 2.56973 -0.115961 -0.117795 -0.301769</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_025</name>
+      <pose>68.755 -7.83849 5.79493 -0.136368 -0.065402 -1.34487</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_026</name>
+      <pose>-44.5522 -58.695 2.30823 -0.137438 -0.085823 -2.73967</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_027</name>
+      <pose>-96.8423 66.6367 5.29861 0.089993 -0.083065 0.804854</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_028</name>
+      <pose>68.8774 79.497 2.34964 0.008815 0.048494 2.97936</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_029</name>
+      <pose>41.1063 25.9909 3.86122 0.049297 -0.091977 3.00082</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_030</name>
+      <pose>78.7465 47.875 5.93825 -0.030717 -0.031721 -1.56106</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_031</name>
+      <pose>50.4287 -51.7164 4.00551 0.061411 -0.050757 0.648537</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_032</name>
+      <pose>-10.6423 91.2497 3.3179 -0.105963 -0.006061 0.638221</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_033</name>
+      <pose>-89.2527 36.2184 5.96278 0.068712 0.014676 1.54699</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_034</name>
+      <pose>-60.0238 -36.0479 4.02427 0.025725 -0.09001 0.624702</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_035</name>
+      <pose>-77.6671 69.944 5.56682 -0.076065 0.064517 1.9869</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_036</name>
+      <pose>58.5505 76.6245 0.778169 0.11654 -0.05179 1.56461</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_038</name>
+      <pose>-22.0569 7.98659 2.3458 -0.108883 -0.038544 -0.982034</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_039</name>
+      <pose>70.809 50.2992 5.79474 -0.106551 -0.076342 1.81286</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_040</name>
+      <pose>51.7894 60.1514 2.94787 -0.00873 0.026674 2.20229</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_041</name>
+      <pose>21.9125 93.0483 1.10335 0.078101 -0.028234 2.0172</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_042</name>
+      <pose>-70.5304 -45.7637 3.41426 -0.11823 -0.043532 0.651229</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_044</name>
+      <pose>72.8686 46.2497 6.53507 0.128764 -0.136447 0.602561</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_045</name>
+      <pose>88.4728 -4.52667 5.46657 -0.111745 -0.004499 0.412846</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_048</name>
+      <pose>-90.9602 66.5013 5.66477 -0.12682 -0.095434 -1.66206</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_049</name>
+      <pose>-70.8341 77.3853 5.17103 0.020077 0.045766 0.447427</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_050</name>
+      <pose>41.4591 -16.6733 4.26916 -0.045315 -0.090202 1.74869</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_052</name>
+      <pose>-29.9811 53.6649 5.42747 0.073362 0.019799 0.872069</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_053</name>
+      <pose>-10.2114 76.6955 3.30653 0.102647 -0.00405 1.2544</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_054</name>
+      <pose>81.4755 -8.28181 5.80158 -0.056474 0.048345 -2.79291</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_055</name>
+      <pose>54.5812 -13.1739 4.82807 -0.006512 -0.130067 -0.536987</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_056</name>
+      <pose>32.1555 -77.9294 4.95583 0.083473 0.00795 -1.65266</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_057</name>
+      <pose>83.9242 -6.71472 5.93212 -0.039226 0.052331 0.386081</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_058</name>
+      <pose>-69.0578 66.1499 5.18879 0.094084 -0.114173 0.78379</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_059</name>
+      <pose>80.3287 43.1022 6.20448 -0.0135 0.117906 2.49873</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_060</name>
+      <pose>55.0297 -5.94247 5.59888 0.111047 -0.042405 0.065354</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_061</name>
+      <pose>44.2743 -48.0541 3.85224 -0.087002 -0.085018 -1.32808</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_065</name>
+      <pose>-72.4707 -47.6526 3.43045 -0.065158 0.020483 -0.662788</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_066</name>
+      <pose>58.1667 17.144 7.1412 0.125717 -0.095191 -2.38803</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_067</name>
+      <pose>-75.3039 -5.36297 6.01359 -0.111495 -0.131056 -1.04495</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_069</name>
+      <pose>-6.57357 94.7176 3.36368 -0.075262 0.052119 -2.59007</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_070</name>
+      <pose>-18.7461 7.27593 1.95646 0.082444 -0.020749 -2.65244</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_071</name>
+      <pose>-80.381 41.5258 6.18336 -0.063648 -0.011396 1.52714</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_072</name>
+      <pose>-66.1717 52.502 5.5754 -0.104636 0.040482 0.3581</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_073</name>
+      <pose>-24.994 39.6812 5.38604 0.066161 0.058688 -0.30706</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_075</name>
+      <pose>-90.3617 88.5654 4.61668 -0.10889 -0.044172 -0.283351</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_076</name>
+      <pose>-54.8797 -37.6011 3.60878 -0.082579 0.131611 -1.03177</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_077</name>
+      <pose>75.0674 -55.5385 4.06702 -0.039027 -0.046855 2.61011</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_078</name>
+      <pose>-67.5932 55.3213 5.49359 0.08607 -0.101876 0.698515</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_080</name>
+      <pose>69.3573 76.4751 2.59787 -0.04078 0.049283 -2.66764</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_082</name>
+      <pose>43.4325 3.34183 5.87568 -0.089991 -0.100548 -2.76674</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_083</name>
+      <pose>56.9764 -63.0128 4.06815 0.138472 0.066679 0.722662</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_084</name>
+      <pose>-91.829 30.0794 5.75799 0.002423 0.052582 3.05743</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_085</name>
+      <pose>84.8861 -3.99217 5.7392 0.105404 0.100878 -0.904769</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_086</name>
+      <pose>4.11084 -85.5764 4.65155 0.089153 -0.080031 1.49366</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_087</name>
+      <pose>-67.7214 -42.501 3.66395 0.013749 -0.090039 -1.6823</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_088</name>
+      <pose>71.056 -59.8109 3.86389 -0.024896 -0.096744 -0.66742</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_089</name>
+      <pose>67.2549 58.8833 4.03338 0.133388 -0.019582 -2.31235</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_093</name>
+      <pose>-26.58 7.16239 2.74672 -0.092979 -0.023729 -1.16487</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_095</name>
+      <pose>-15.832 9.77394 2.23915 -0.051437 0.071945 2.00482</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_097</name>
+      <pose>-82.773 42.7673 5.9174 0.122809 0.040831 1.78787</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_098</name>
+      <pose>-63.879 -15.3484 6.02353 -0.118073 0.012379 -1.96715</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_099</name>
+      <pose>59.2031 -54.3376 3.91022 0.027813 0.111209 2.34392</pose>
+    </include>
+    <include>
+      <uri>file:///robotics-studio-1/rs1_ws/install/rs1_sim/share/rs1_sim/models/rocks/rock1</uri>
+      <name>generated_rock_100</name>
+      <pose>-63.6791 -64.1814 3.11662 0.133602 0.00972 3.13964</pose>
+    </include>
+    <light name='sun' type='directional'>
+      <pose>0 0 100 0 -0 0</pose>
+      <cast_shadows>false</cast_shadows>
+      <intensity>1</intensity>
+      <direction>-0.5 0.1 -0.9</direction>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.8 0.8 0.8 1</specular>
+      <attenuation>
+        <range>10</range>
+        <linear>1</linear>
+        <constant>1</constant>
+        <quadratic>0</quadratic>
+      </attenuation>
+      <spot>
+        <inner_angle>0</inner_angle>
+        <outer_angle>0</outer_angle>
+        <falloff>0</falloff>
+      </spot>
+    </light>
+  </world>
+</sdf>

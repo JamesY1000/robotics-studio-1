@@ -1,0 +1,3200 @@
+<?xml version="1.0"?>
+<sdf version='1.8'>
+  <world name="v1_forest">
+    <!-- Basic world setup  -->
+    <light name="sun" type="directional">
+      <cast_shadows>0</cast_shadows>
+      <pose>0 0 100 0 -0 0</pose>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.8 0.8 0.8 1</specular>
+      <direction>-0.5 0.1 -0.9</direction>
+      <intensity>1</intensity>
+    </light>
+    <gravity>0 0 -9.81</gravity>
+    <magnetic_field>6e-06 2.3e-05 -4.2e-05</magnetic_field>
+    <atmosphere type="adiabatic"/>
+    <physics name="default_physics" type="ignored">
+      <max_step_size>0.01</max_step_size>
+      <real_time_factor>1</real_time_factor>
+      <real_time_update_rate>100</real_time_update_rate>
+    </physics>
+    <scene>
+      <ambient>1.0 1.0 1.0 1</ambient>
+      <background>0.6 0.8 1.0 1</background>
+      <shadows>0</shadows>
+      <grid>0</grid>
+    </scene>
+
+    <!-- Initialise spherical coordinates somewhere -->
+    <spherical_coordinates>
+      <latitude_deg>0.0</latitude_deg>
+      <longitude_deg>0.0</longitude_deg>
+      <elevation>0.0</elevation>
+      <heading_deg>0</heading_deg>
+      <surface_model>EARTH_WGS84</surface_model>
+    </spherical_coordinates>
+
+    <!-- Large forest ground terrain with collision and visual meshes -->
+    <include>
+      <uri>
+        model://forest_plane
+      </uri>
+      <name>forest_plane</name>
+      <pose>0 0 0 0 0 0</pose>
+    </include>
+
+    <!-- Forest perimeter: 22 native-width panels per side. Each panel
+         follows the local edge elevation and is buried by 0.10 m. -->
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_south_01</name>
+      <pose>-97.860000 -99.900000 4.768241 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_south_02</name>
+      <pose>-88.540000 -99.900000 4.718952 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_south_03</name>
+      <pose>-79.220000 -99.900000 4.607003 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_south_04</name>
+      <pose>-69.900000 -99.900000 4.466298 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_south_05</name>
+      <pose>-60.580000 -99.900000 4.416754 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_south_06</name>
+      <pose>-51.260000 -99.900000 2.783237 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_south_07</name>
+      <pose>-41.940000 -99.900000 1.900240 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_south_08</name>
+      <pose>-32.620000 -99.900000 1.900017 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_south_09</name>
+      <pose>-23.300000 -99.900000 2.700746 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_south_10</name>
+      <pose>-13.980000 -99.900000 4.360877 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_south_11</name>
+      <pose>-4.660000 -99.900000 4.743726 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_south_12</name>
+      <pose>4.660000 -99.900000 5.481893 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_south_13</name>
+      <pose>13.980000 -99.900000 5.943049 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_south_14</name>
+      <pose>23.300000 -99.900000 5.658373 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_south_15</name>
+      <pose>32.620000 -99.900000 5.282428 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_south_16</name>
+      <pose>41.940000 -99.900000 4.923644 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_south_17</name>
+      <pose>51.260000 -99.900000 4.634466 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_south_18</name>
+      <pose>60.580000 -99.900000 4.493028 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_south_19</name>
+      <pose>69.900000 -99.900000 4.486725 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_south_20</name>
+      <pose>79.220000 -99.900000 4.527509 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_south_21</name>
+      <pose>88.540000 -99.900000 4.625039 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_south_22</name>
+      <pose>97.860000 -99.900000 4.682340 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_north_01</name>
+      <pose>-97.860000 99.900000 5.310445 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_north_02</name>
+      <pose>-88.540000 99.900000 5.403062 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_north_03</name>
+      <pose>-79.220000 99.900000 5.500443 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_north_04</name>
+      <pose>-69.900000 99.900000 5.298508 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_north_05</name>
+      <pose>-60.580000 99.900000 4.845006 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_north_06</name>
+      <pose>-51.260000 99.900000 4.439811 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_north_07</name>
+      <pose>-41.940000 99.900000 4.329711 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_north_08</name>
+      <pose>-32.620000 99.900000 4.339807 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_north_09</name>
+      <pose>-23.300000 99.900000 4.481469 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_north_10</name>
+      <pose>-13.980000 99.900000 4.604210 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_north_11</name>
+      <pose>-4.660000 99.900000 4.565132 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_north_12</name>
+      <pose>4.660000 99.900000 4.457303 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_north_13</name>
+      <pose>13.980000 99.900000 3.850994 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_north_14</name>
+      <pose>23.300000 99.900000 2.077837 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_north_15</name>
+      <pose>32.620000 99.900000 1.900000 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_north_16</name>
+      <pose>41.940000 99.900000 1.900050 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_north_17</name>
+      <pose>51.260000 99.900000 1.900000 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_north_18</name>
+      <pose>60.580000 99.900000 1.900000 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_north_19</name>
+      <pose>69.900000 99.900000 1.900010 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_north_20</name>
+      <pose>79.220000 99.900000 2.651578 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_north_21</name>
+      <pose>88.540000 99.900000 4.400707 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_north_22</name>
+      <pose>97.860000 99.900000 5.138657 1.570796 0 0.000000</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_west_01</name>
+      <pose>-99.900000 -97.860000 4.751715 1.570796 0 1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_west_02</name>
+      <pose>-99.900000 -88.540000 4.563647 1.570796 0 1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_west_03</name>
+      <pose>-99.900000 -79.220000 4.269569 1.570796 0 1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_west_04</name>
+      <pose>-99.900000 -69.900000 4.250000 1.570796 0 1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_west_05</name>
+      <pose>-99.900000 -60.580000 4.250000 1.570796 0 1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_west_06</name>
+      <pose>-99.900000 -51.260000 4.253159 1.570796 0 1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_west_07</name>
+      <pose>-99.900000 -41.940000 4.457882 1.570796 0 1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_west_08</name>
+      <pose>-99.900000 -32.620000 4.552986 1.570796 0 1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_west_09</name>
+      <pose>-99.900000 -23.300000 4.621344 1.570796 0 1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_west_10</name>
+      <pose>-99.900000 -13.980000 4.812773 1.570796 0 1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_west_11</name>
+      <pose>-99.900000 -4.660000 5.123053 1.570796 0 1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_west_12</name>
+      <pose>-99.900000 4.660000 5.509410 1.570796 0 1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_west_13</name>
+      <pose>-99.900000 13.980000 6.019355 1.570796 0 1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_west_14</name>
+      <pose>-99.900000 23.300000 6.453272 1.570796 0 1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_west_15</name>
+      <pose>-99.900000 32.620000 6.581252 1.570796 0 1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_west_16</name>
+      <pose>-99.900000 41.940000 6.550925 1.570796 0 1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_west_17</name>
+      <pose>-99.900000 51.260000 6.558310 1.570796 0 1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_west_18</name>
+      <pose>-99.900000 60.580000 6.597575 1.570796 0 1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_west_19</name>
+      <pose>-99.900000 69.900000 6.392665 1.570796 0 1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_west_20</name>
+      <pose>-99.900000 79.220000 6.034285 1.570796 0 1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_west_21</name>
+      <pose>-99.900000 88.540000 5.605296 1.570796 0 1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_west_22</name>
+      <pose>-99.900000 97.860000 5.310445 1.570796 0 1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_east_01</name>
+      <pose>99.900000 -97.860000 4.682340 1.570796 0 -1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_east_02</name>
+      <pose>99.900000 -88.540000 4.712251 1.570796 0 -1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_east_03</name>
+      <pose>99.900000 -79.220000 4.776079 1.570796 0 -1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_east_04</name>
+      <pose>99.900000 -69.900000 4.880800 1.570796 0 -1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_east_05</name>
+      <pose>99.900000 -60.580000 5.093455 1.570796 0 -1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_east_06</name>
+      <pose>99.900000 -51.260000 5.422815 1.570796 0 -1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_east_07</name>
+      <pose>99.900000 -41.940000 5.766388 1.570796 0 -1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_east_08</name>
+      <pose>99.900000 -32.620000 6.045179 1.570796 0 -1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_east_09</name>
+      <pose>99.900000 -23.300000 6.228977 1.570796 0 -1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_east_10</name>
+      <pose>99.900000 -13.980000 6.185553 1.570796 0 -1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_east_11</name>
+      <pose>99.900000 -4.660000 6.140999 1.570796 0 -1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_east_12</name>
+      <pose>99.900000 4.660000 6.143505 1.570796 0 -1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_east_13</name>
+      <pose>99.900000 13.980000 6.253690 1.570796 0 -1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_east_14</name>
+      <pose>99.900000 23.300000 6.269800 1.570796 0 -1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_east_15</name>
+      <pose>99.900000 32.620000 6.023576 1.570796 0 -1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_east_16</name>
+      <pose>99.900000 41.940000 5.931232 1.570796 0 -1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_east_17</name>
+      <pose>99.900000 51.260000 5.949343 1.570796 0 -1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_east_18</name>
+      <pose>99.900000 60.580000 6.236027 1.570796 0 -1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_east_19</name>
+      <pose>99.900000 69.900000 6.773608 1.570796 0 -1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_east_20</name>
+      <pose>99.900000 79.220000 6.893582 1.570796 0 -1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_east_21</name>
+      <pose>99.900000 88.540000 6.218621 1.570796 0 -1.570796</pose>
+    </include>
+    <include>
+      <uri>model://forest_wall</uri>
+      <name>forest_wall_east_22</name>
+      <pose>99.900000 97.860000 5.861117 1.570796 0 -1.570796</pose>
+    </include>
+
+    <!-- BEGIN GENERATED FOREST POPULATION -->
+    <!-- Generated by scripts/generate_forest_population.py.
+         Re-run the script instead of editing this block manually. seed=41068; trees=200; bushes=150; rocks=100 edge_margin=3.00 m; max_slope=18.00 deg; min_height=0.050 m -->
+    <!-- Generated trees: 200 -->
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_001</name>
+      <pose>77.407188 -76.315773 2.850894 -0.012968 -0.012925 4.971078</pose>
+      <scale>1.0836 1.0836 1.0836</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_002</name>
+      <pose>84.495935 -80.218142 2.934550 -0.009428 -0.006428 5.533061</pose>
+      <scale>0.9312 0.9312 0.9312</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_003</name>
+      <pose>89.599846 -65.907037 3.242312 0.007221 -0.008673 5.144271</pose>
+      <scale>0.9842 0.9842 0.9842</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_004</name>
+      <pose>-61.350153 86.904619 3.671168 0.001238 -0.000957 1.694956</pose>
+      <scale>0.9295 0.9295 0.9295</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_005</name>
+      <pose>80.121810 -58.906365 3.518931 0.006075 0.014886 3.393494</pose>
+      <scale>1.0838 1.0838 1.0838</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_006</name>
+      <pose>21.358174 -89.155938 4.583183 -0.006845 -0.008157 2.149070</pose>
+      <scale>1.0062 1.0062 1.0062</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_007</name>
+      <pose>90.250754 -77.655210 3.013930 0.012946 -0.011070 3.364306</pose>
+      <scale>0.9877 0.9877 0.9877</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_008</name>
+      <pose>69.646558 -83.776106 2.719921 0.006585 0.005399 1.594403</pose>
+      <scale>1.0596 1.0596 1.0596</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_009</name>
+      <pose>78.372941 -65.884001 3.130462 0.005557 0.001946 1.906234</pose>
+      <scale>1.0892 1.0892 1.0892</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_010</name>
+      <pose>-10.078554 86.441400 2.817185 -0.004219 0.005465 3.411303</pose>
+      <scale>1.0960 1.0960 1.0960</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_011</name>
+      <pose>67.903176 -11.138825 5.147730 0.001315 0.003459 4.595214</pose>
+      <scale>1.0871 1.0871 1.0871</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_012</name>
+      <pose>-29.649084 85.819377 2.943568 -0.008587 -0.004665 0.243912</pose>
+      <scale>0.9332 0.9332 0.9332</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_013</name>
+      <pose>93.325532 -71.373046 3.126456 0.010803 -0.002715 1.431954</pose>
+      <scale>0.9341 0.9341 0.9341</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_014</name>
+      <pose>69.544502 -57.339644 3.371061 -0.003467 -0.011947 3.911443</pose>
+      <scale>1.0210 1.0210 1.0210</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_015</name>
+      <pose>-12.837157 47.506770 2.837078 -0.014185 -0.006041 3.312629</pose>
+      <scale>0.9596 0.9596 0.9596</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_016</name>
+      <pose>-65.164832 -73.077226 2.650701 0.000158 0.011867 4.317038</pose>
+      <scale>0.9989 0.9989 0.9989</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_017</name>
+      <pose>21.704478 7.778496 2.582951 -0.003642 -0.008465 4.317278</pose>
+      <scale>1.1097 1.1097 1.1097</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_018</name>
+      <pose>11.384347 70.248739 0.199284 -0.013155 0.014732 3.106817</pose>
+      <scale>1.1943 1.1943 1.1943</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_019</name>
+      <pose>35.982366 -68.073644 4.497971 -0.013322 0.008720 1.734858</pose>
+      <scale>1.0790 1.0790 1.0790</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_020</name>
+      <pose>26.411576 -76.238334 4.834350 -0.005796 -0.008520 3.190950</pose>
+      <scale>0.9391 0.9391 0.9391</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_021</name>
+      <pose>90.341537 -56.746304 3.612159 0.008703 0.008395 5.872972</pose>
+      <scale>1.0963 1.0963 1.0963</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_022</name>
+      <pose>70.448107 -18.156898 4.805114 0.014375 -0.009529 5.622127</pose>
+      <scale>1.1049 1.1049 1.1049</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_023</name>
+      <pose>64.308302 -65.942133 3.139533 -0.002499 0.001474 6.189785</pose>
+      <scale>1.0776 1.0776 1.0776</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_024</name>
+      <pose>-96.527656 -55.412390 2.360837 -0.014898 -0.002869 3.014297</pose>
+      <scale>1.0558 1.0558 1.0558</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_025</name>
+      <pose>-63.248013 44.951293 5.513224 0.014936 0.006407 5.981185</pose>
+      <scale>0.8743 0.8743 0.8743</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_026</name>
+      <pose>17.812693 -1.191443 2.449569 -0.007678 -0.012112 0.428505</pose>
+      <scale>1.0399 1.0399 1.0399</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_027</name>
+      <pose>95.274746 36.619410 4.414407 0.011867 -0.000460 5.744932</pose>
+      <scale>1.0344 1.0344 1.0344</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_028</name>
+      <pose>-59.549444 30.247253 6.545694 -0.014426 -0.002504 5.767036</pose>
+      <scale>0.9676 0.9676 0.9676</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_029</name>
+      <pose>33.329286 -86.488905 4.085092 0.009383 0.014574 2.357241</pose>
+      <scale>1.0628 1.0628 1.0628</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_030</name>
+      <pose>9.680952 -57.805127 3.353389 0.013607 0.011322 6.232796</pose>
+      <scale>1.0037 1.0037 1.0037</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_031</name>
+      <pose>77.865641 -90.715587 2.760033 -0.014795 -0.014759 5.940298</pose>
+      <scale>0.8614 0.8614 0.8614</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_032</name>
+      <pose>68.159032 -45.238259 3.881593 0.000688 0.013332 1.414371</pose>
+      <scale>1.0024 1.0024 1.0024</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_033</name>
+      <pose>59.065405 8.329926 6.092464 -0.006967 0.000763 5.881070</pose>
+      <scale>1.0353 1.0353 1.0353</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_034</name>
+      <pose>95.614259 47.816119 4.293682 -0.008406 0.001012 1.681784</pose>
+      <scale>1.0125 1.0125 1.0125</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_035</name>
+      <pose>83.271878 -72.441039 3.005808 -0.000001 0.007811 0.292529</pose>
+      <scale>0.9076 0.9076 0.9076</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_036</name>
+      <pose>18.508573 -82.481702 4.958881 0.001180 0.005853 1.231200</pose>
+      <scale>0.9620 0.9620 0.9620</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_037</name>
+      <pose>11.514256 15.158831 1.469653 0.011499 0.008648 2.623665</pose>
+      <scale>0.9929 0.9929 0.9929</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_038</name>
+      <pose>-85.115495 -67.382092 2.406290 0.004571 0.010250 0.498200</pose>
+      <scale>1.0443 1.0443 1.0443</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_039</name>
+      <pose>66.693080 -75.254422 2.848675 0.002544 -0.005961 1.603293</pose>
+      <scale>1.1744 1.1744 1.1744</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_040</name>
+      <pose>-39.525181 -4.234578 3.465685 0.013788 -0.013036 1.934406</pose>
+      <scale>1.1691 1.1691 1.1691</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_041</name>
+      <pose>-20.278786 -26.051950 1.716706 0.014506 0.007213 4.300320</pose>
+      <scale>1.1374 1.1374 1.1374</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_042</name>
+      <pose>15.055772 -20.498939 2.574081 0.003956 -0.002302 0.707069</pose>
+      <scale>1.0515 1.0515 1.0515</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_043</name>
+      <pose>2.793691 -17.795821 1.270838 -0.012541 -0.006284 4.633390</pose>
+      <scale>0.9961 0.9961 0.9961</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_044</name>
+      <pose>-52.387192 81.845823 3.423384 -0.003137 0.001322 3.109071</pose>
+      <scale>0.9638 0.9638 0.9638</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_045</name>
+      <pose>-12.457754 -71.619589 1.829123 -0.012154 0.013652 5.064110</pose>
+      <scale>1.0059 1.0059 1.0059</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_046</name>
+      <pose>64.536948 -52.491444 3.451671 0.007380 0.002478 6.068361</pose>
+      <scale>0.9815 0.9815 0.9815</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_047</name>
+      <pose>1.535181 47.402984 1.258750 -0.002868 -0.000300 3.373373</pose>
+      <scale>0.9522 0.9522 0.9522</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_048</name>
+      <pose>40.157653 -59.022470 4.120352 -0.007894 0.014752 5.741974</pose>
+      <scale>1.0186 1.0186 1.0186</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_049</name>
+      <pose>40.184394 21.863037 3.848185 -0.002916 -0.001709 2.369162</pose>
+      <scale>1.1770 1.1770 1.1770</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_050</name>
+      <pose>-63.043550 -93.699095 2.596357 -0.008527 -0.007574 5.457670</pose>
+      <scale>0.9390 0.9390 0.9390</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_051</name>
+      <pose>25.147166 -3.977524 2.835441 0.005197 -0.003108 2.657060</pose>
+      <scale>0.9218 0.9218 0.9218</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_052</name>
+      <pose>17.474300 -55.005000 4.376044 -0.008403 -0.013145 4.555153</pose>
+      <scale>0.8811 0.8811 0.8811</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_053</name>
+      <pose>72.185516 16.123575 6.091839 0.002268 0.003015 0.115093</pose>
+      <scale>0.9933 0.9933 0.9933</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_054</name>
+      <pose>91.516888 -90.671433 2.831636 -0.004668 -0.007525 2.538242</pose>
+      <scale>1.0896 1.0896 1.0896</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_055</name>
+      <pose>32.824957 4.801021 3.803077 -0.000523 -0.001382 3.168696</pose>
+      <scale>1.1841 1.1841 1.1841</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_056</name>
+      <pose>-7.896513 -24.027354 1.387896 -0.004737 -0.008473 3.991916</pose>
+      <scale>0.9168 0.9168 0.9168</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_057</name>
+      <pose>75.625623 -41.017906 4.295980 -0.008963 -0.004904 4.290873</pose>
+      <scale>0.8581 0.8581 0.8581</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_058</name>
+      <pose>71.636220 -3.962847 5.592472 -0.002519 0.002168 3.238439</pose>
+      <scale>0.9213 0.9213 0.9213</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_059</name>
+      <pose>-55.835008 45.800192 5.520724 -0.010186 0.012916 5.386263</pose>
+      <scale>1.1075 1.1075 1.1075</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_060</name>
+      <pose>63.819309 -6.228977 5.337071 -0.000741 0.003626 5.699420</pose>
+      <scale>1.0866 1.0866 1.0866</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_061</name>
+      <pose>-1.308467 35.182446 1.257102 0.006865 -0.002415 1.081472</pose>
+      <scale>1.0919 1.0919 1.0919</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_062</name>
+      <pose>36.837159 -15.248969 3.700368 0.000588 0.013201 5.308180</pose>
+      <scale>0.8834 0.8834 0.8834</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_063</name>
+      <pose>28.561347 -32.652798 3.900731 -0.008060 -0.007480 3.367258</pose>
+      <scale>1.1235 1.1235 1.1235</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_064</name>
+      <pose>12.032045 -14.243463 2.112411 -0.005790 0.014690 5.928764</pose>
+      <scale>0.8603 0.8603 0.8603</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_065</name>
+      <pose>4.322098 28.590418 0.847658 0.006330 0.001914 0.427472</pose>
+      <scale>0.9622 0.9622 0.9622</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_066</name>
+      <pose>65.979087 -29.995575 4.198529 0.011739 0.007810 5.667789</pose>
+      <scale>0.9488 0.9488 0.9488</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_067</name>
+      <pose>3.120381 15.171706 0.162821 -0.011578 -0.009251 4.657807</pose>
+      <scale>1.1262 1.1262 1.1262</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_068</name>
+      <pose>-69.821010 -68.976283 2.621862 0.008124 -0.011299 2.668546</pose>
+      <scale>1.1214 1.1214 1.1214</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_069</name>
+      <pose>-74.481811 40.099613 5.628196 -0.003485 -0.007430 0.955563</pose>
+      <scale>1.0506 1.0506 1.0506</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_070</name>
+      <pose>18.343867 -72.286181 5.136934 0.005239 -0.011417 0.147884</pose>
+      <scale>0.9113 0.9113 0.9113</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_071</name>
+      <pose>44.725294 -81.966107 3.720478 0.012740 -0.003782 2.566609</pose>
+      <scale>0.9682 0.9682 0.9682</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_072</name>
+      <pose>79.351989 28.727084 5.801833 0.005748 0.006538 5.140712</pose>
+      <scale>1.0968 1.0968 1.0968</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_073</name>
+      <pose>23.435272 -15.322324 2.822177 -0.001517 -0.006994 3.285532</pose>
+      <scale>1.0425 1.0425 1.0425</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_074</name>
+      <pose>69.303304 3.539999 5.916392 0.002072 -0.002108 2.648997</pose>
+      <scale>0.9561 0.9561 0.9561</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_075</name>
+      <pose>-26.096629 -36.238180 0.148777 0.009922 -0.003662 1.935268</pose>
+      <scale>0.8802 0.8802 0.8802</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_076</name>
+      <pose>-87.656621 -1.336556 4.449799 -0.010134 -0.002607 1.142573</pose>
+      <scale>0.9379 0.9379 0.9379</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_077</name>
+      <pose>27.041733 -91.995634 4.205019 0.013764 -0.001990 5.523348</pose>
+      <scale>1.0987 1.0987 1.0987</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_078</name>
+      <pose>87.612995 42.550718 4.918153 -0.014890 0.013375 5.839758</pose>
+      <scale>1.0853 1.0853 1.0853</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_079</name>
+      <pose>85.370522 13.883217 5.458284 -0.005912 -0.010285 6.200494</pose>
+      <scale>0.9741 0.9741 0.9741</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_080</name>
+      <pose>-93.425491 64.149770 5.049656 -0.001446 -0.000476 1.787659</pose>
+      <scale>0.9421 0.9421 0.9421</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_081</name>
+      <pose>-70.479670 -75.557770 2.663467 -0.011903 -0.012636 2.892623</pose>
+      <scale>1.0527 1.0527 1.0527</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_082</name>
+      <pose>67.307477 66.914922 2.559318 -0.010689 0.001000 0.181272</pose>
+      <scale>1.1492 1.1492 1.1492</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_083</name>
+      <pose>58.120817 -75.805381 3.173073 -0.000583 0.007144 2.431452</pose>
+      <scale>0.9297 0.9297 0.9297</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_084</name>
+      <pose>-52.945055 76.397746 3.690832 0.014812 -0.001803 6.083341</pose>
+      <scale>0.9399 0.9399 0.9399</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_085</name>
+      <pose>50.044656 -70.037536 3.711528 0.003846 0.007261 1.808476</pose>
+      <scale>1.1677 1.1677 1.1677</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_086</name>
+      <pose>79.388189 5.217135 5.697779 0.014689 0.014703 4.690483</pose>
+      <scale>0.9711 0.9711 0.9711</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_087</name>
+      <pose>76.148285 69.620640 3.031467 -0.008342 0.013658 2.234253</pose>
+      <scale>0.8588 0.8588 0.8588</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_088</name>
+      <pose>18.261094 -8.754493 2.555288 0.007754 -0.009458 6.117126</pose>
+      <scale>1.0372 1.0372 1.0372</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_089</name>
+      <pose>1.710417 93.854467 2.637972 0.011476 0.008927 4.016529</pose>
+      <scale>0.9903 0.9903 0.9903</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_090</name>
+      <pose>53.855450 48.742384 3.193790 0.005335 0.008717 5.218324</pose>
+      <scale>1.0457 1.0457 1.0457</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_091</name>
+      <pose>59.189121 -26.798942 3.887475 0.000429 -0.009706 2.690390</pose>
+      <scale>0.9744 0.9744 0.9744</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_092</name>
+      <pose>30.659805 44.592449 0.403613 -0.013222 -0.004060 2.549230</pose>
+      <scale>0.9868 0.9868 0.9868</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_093</name>
+      <pose>45.140731 59.349788 1.857313 0.013532 0.005893 0.078493</pose>
+      <scale>1.1888 1.1888 1.1888</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_094</name>
+      <pose>28.745759 -45.778204 4.490353 -0.013879 -0.014883 0.106122</pose>
+      <scale>1.0799 1.0799 1.0799</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_095</name>
+      <pose>76.743624 -10.379658 5.276648 0.003637 -0.010061 0.152054</pose>
+      <scale>1.0136 1.0136 1.0136</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_096</name>
+      <pose>-28.585840 -27.849126 1.721053 -0.013275 0.009967 2.669169</pose>
+      <scale>1.1935 1.1935 1.1935</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_097</name>
+      <pose>0.461317 77.305535 2.501056 -0.004254 -0.002881 1.086052</pose>
+      <scale>1.1232 1.1232 1.1232</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_098</name>
+      <pose>54.035205 -83.020739 3.134509 0.006563 -0.009032 4.782529</pose>
+      <scale>0.9852 0.9852 0.9852</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_099</name>
+      <pose>-29.406126 73.073498 3.552376 0.000960 -0.014638 0.680082</pose>
+      <scale>1.0487 1.0487 1.0487</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_100</name>
+      <pose>-42.397632 60.789416 4.480713 0.006360 0.013423 1.322988</pose>
+      <scale>0.9502 0.9502 0.9502</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_101</name>
+      <pose>-11.261314 -56.013307 0.643204 0.002148 0.007145 2.762295</pose>
+      <scale>0.9257 0.9257 0.9257</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_102</name>
+      <pose>60.568355 57.719090 2.854878 0.013847 0.002528 1.329922</pose>
+      <scale>1.1470 1.1470 1.1470</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_103</name>
+      <pose>96.633938 57.250272 4.536638 -0.000978 0.012669 1.752473</pose>
+      <scale>1.0040 1.0040 1.0040</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_104</name>
+      <pose>43.580149 52.346609 1.922595 -0.004789 0.005836 4.272874</pose>
+      <scale>0.9763 0.9763 0.9763</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_105</name>
+      <pose>21.344458 18.226450 2.636844 0.005957 -0.003756 3.018267</pose>
+      <scale>1.1032 1.1032 1.1032</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_106</name>
+      <pose>41.427625 -88.271374 3.577670 -0.006175 0.005181 0.546722</pose>
+      <scale>1.1955 1.1955 1.1955</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_107</name>
+      <pose>-5.350114 -49.552567 1.127169 0.008455 -0.007040 3.277364</pose>
+      <scale>0.9839 0.9839 0.9839</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_108</name>
+      <pose>-39.159408 75.554310 3.482143 0.009384 0.003108 6.093788</pose>
+      <scale>0.8610 0.8610 0.8610</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_109</name>
+      <pose>68.376968 32.979853 6.600662 0.002216 -0.004038 2.794141</pose>
+      <scale>1.0531 1.0531 1.0531</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_110</name>
+      <pose>78.130265 -3.015158 5.502781 0.005336 -0.009431 5.032945</pose>
+      <scale>1.1339 1.1339 1.1339</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_111</name>
+      <pose>-52.498684 51.844968 5.170073 -0.005473 0.013912 5.409824</pose>
+      <scale>1.0471 1.0471 1.0471</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_112</name>
+      <pose>81.948794 -95.561737 2.724157 0.003377 0.001719 3.936738</pose>
+      <scale>0.9504 0.9504 0.9504</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_113</name>
+      <pose>55.305145 -90.738753 2.933544 0.007131 -0.012371 0.130066</pose>
+      <scale>1.0536 1.0536 1.0536</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_114</name>
+      <pose>28.766585 -68.673085 4.873783 -0.005937 -0.004467 4.727835</pose>
+      <scale>1.0013 1.0013 1.0013</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_115</name>
+      <pose>-17.705007 28.650444 3.167643 -0.007512 -0.013445 5.761563</pose>
+      <scale>1.1907 1.1907 1.1907</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_116</name>
+      <pose>47.840073 12.910855 6.074742 -0.002400 0.000099 1.528417</pose>
+      <scale>1.0946 1.0946 1.0946</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_117</name>
+      <pose>-76.998151 5.005165 5.661374 0.001855 -0.007537 4.836970</pose>
+      <scale>0.9246 0.9246 0.9246</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_118</name>
+      <pose>93.379931 68.532367 5.059313 -0.012212 -0.010210 4.916427</pose>
+      <scale>0.9797 0.9797 0.9797</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_119</name>
+      <pose>-55.834350 -70.165318 2.551133 -0.004073 -0.002851 1.750429</pose>
+      <scale>1.1194 1.1194 1.1194</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_120</name>
+      <pose>-31.515980 32.995378 6.200623 0.006620 -0.009599 3.421584</pose>
+      <scale>0.9120 0.9120 0.9120</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_121</name>
+      <pose>-2.784236 -56.401447 2.171604 -0.012994 -0.014752 5.035305</pose>
+      <scale>1.1237 1.1237 1.1237</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_122</name>
+      <pose>-3.505785 81.312688 2.590838 0.007119 0.014444 2.217877</pose>
+      <scale>0.9093 0.9093 0.9093</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_123</name>
+      <pose>-90.461280 73.127559 4.898510 0.007090 0.004055 4.085134</pose>
+      <scale>0.9992 0.9992 0.9992</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_124</name>
+      <pose>32.323922 -57.032302 4.532183 -0.004276 0.010325 5.639457</pose>
+      <scale>0.9931 0.9931 0.9931</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_125</name>
+      <pose>71.291850 93.050842 0.861800 0.000470 -0.008841 2.620411</pose>
+      <scale>1.0514 1.0514 1.0514</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_126</name>
+      <pose>37.221587 48.897590 1.446756 -0.008903 0.001971 5.907443</pose>
+      <scale>1.0080 1.0080 1.0080</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_127</name>
+      <pose>37.211806 56.418149 0.314711 0.012848 -0.011932 0.275004</pose>
+      <scale>1.0233 1.0233 1.0233</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_128</name>
+      <pose>-9.188037 -78.282008 2.565521 -0.014189 0.013538 3.316586</pose>
+      <scale>0.9927 0.9927 0.9927</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_129</name>
+      <pose>-55.348352 60.892190 4.600131 -0.014074 0.014711 0.971087</pose>
+      <scale>0.9247 0.9247 0.9247</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_130</name>
+      <pose>-77.743659 45.994131 5.431650 0.008556 0.008739 1.585956</pose>
+      <scale>0.9037 0.9037 0.9037</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_131</name>
+      <pose>58.642848 28.953399 6.535865 -0.001627 -0.005993 0.126537</pose>
+      <scale>1.1601 1.1601 1.1601</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_132</name>
+      <pose>72.634459 -30.700905 4.518367 0.009501 -0.003111 5.759601</pose>
+      <scale>1.0619 1.0619 1.0619</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_133</name>
+      <pose>-85.594804 6.384484 4.997900 -0.009295 0.003498 5.248649</pose>
+      <scale>0.9943 0.9943 0.9943</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_134</name>
+      <pose>-33.542904 77.693566 3.287600 0.000033 0.010921 0.737174</pose>
+      <scale>1.1765 1.1765 1.1765</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_135</name>
+      <pose>-94.907795 9.397520 4.453846 -0.002365 0.006229 1.935407</pose>
+      <scale>1.1131 1.1131 1.1131</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_136</name>
+      <pose>67.944887 48.822676 5.353778 0.010470 -0.006406 2.588223</pose>
+      <scale>0.8982 0.8982 0.8982</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_137</name>
+      <pose>-64.635697 -53.209475 2.822053 0.003063 0.006516 6.110730</pose>
+      <scale>1.0646 1.0646 1.0646</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_138</name>
+      <pose>85.562791 -1.885091 5.217164 -0.009355 0.001886 2.044812</pose>
+      <scale>0.9399 0.9399 0.9399</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_139</name>
+      <pose>-70.857986 -59.185300 2.659557 0.009146 0.012352 5.848059</pose>
+      <scale>0.9392 0.9392 0.9392</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_140</name>
+      <pose>-75.583389 -63.663778 2.598592 -0.012388 0.003644 2.564996</pose>
+      <scale>1.0961 1.0961 1.0961</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_141</name>
+      <pose>-78.924613 -10.022623 4.759374 0.001805 0.008723 5.820702</pose>
+      <scale>0.9374 0.9374 0.9374</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_142</name>
+      <pose>-24.177660 90.982817 2.843126 -0.006788 -0.008591 1.508772</pose>
+      <scale>0.9234 0.9234 0.9234</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_143</name>
+      <pose>83.051392 -20.226486 5.036269 0.012470 0.007744 2.328256</pose>
+      <scale>1.0437 1.0437 1.0437</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_144</name>
+      <pose>-61.650034 -44.501661 3.064814 -0.010016 -0.003888 0.824615</pose>
+      <scale>0.9640 0.9640 0.9640</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_145</name>
+      <pose>3.807125 -70.683142 3.426142 0.003630 -0.013644 0.015532</pose>
+      <scale>0.9378 0.9378 0.9378</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_146</name>
+      <pose>88.843350 52.834144 4.897490 0.002450 0.007049 2.068814</pose>
+      <scale>0.9380 0.9380 0.9380</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_147</name>
+      <pose>21.561515 -48.999326 4.554455 -0.011580 -0.009147 1.456666</pose>
+      <scale>1.1859 1.1859 1.1859</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_148</name>
+      <pose>-89.602633 -94.258766 2.835260 -0.000092 -0.007100 3.045087</pose>
+      <scale>0.9557 0.9557 0.9557</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_149</name>
+      <pose>-76.753751 -82.216195 2.693094 0.010764 0.002124 3.714383</pose>
+      <scale>1.0192 1.0192 1.0192</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_150</name>
+      <pose>65.609117 12.885845 6.223929 -0.008783 0.008387 0.566386</pose>
+      <scale>1.1761 1.1761 1.1761</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_151</name>
+      <pose>43.537231 -69.189674 4.107445 0.009613 -0.013128 4.566285</pose>
+      <scale>0.9230 0.9230 0.9230</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_152</name>
+      <pose>19.394174 -32.653878 3.740070 -0.013337 0.004259 5.923036</pose>
+      <scale>1.0729 1.0729 1.0729</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_153</name>
+      <pose>71.151138 23.752081 6.238413 -0.005867 -0.010797 1.949275</pose>
+      <scale>1.1266 1.1266 1.1266</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_154</name>
+      <pose>2.533394 -62.852759 2.770612 -0.014857 -0.003577 0.048370</pose>
+      <scale>1.1632 1.1632 1.1632</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_155</name>
+      <pose>-8.879776 24.640283 2.354208 0.003935 0.004807 3.506163</pose>
+      <scale>0.9244 0.9244 0.9244</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_156</name>
+      <pose>23.290627 -59.650138 5.004198 -0.008559 -0.002035 5.961350</pose>
+      <scale>1.0893 1.0893 1.0893</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_157</name>
+      <pose>-66.143014 68.519696 4.580394 0.012358 0.006386 5.228188</pose>
+      <scale>0.9656 0.9656 0.9656</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_158</name>
+      <pose>79.078733 60.706388 4.302029 0.006554 -0.002991 0.032926</pose>
+      <scale>1.0642 1.0642 1.0642</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_159</name>
+      <pose>51.891268 41.798283 3.744865 0.012075 -0.006679 1.706097</pose>
+      <scale>1.0971 1.0971 1.0971</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_160</name>
+      <pose>51.487422 25.893996 5.599199 0.000658 0.014511 5.907514</pose>
+      <scale>1.0370 1.0370 1.0370</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_161</name>
+      <pose>79.456339 -28.670364 4.775763 0.014887 -0.010868 4.989410</pose>
+      <scale>0.8715 0.8715 0.8715</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_162</name>
+      <pose>-70.462200 22.451141 6.275141 0.001133 -0.001032 4.804083</pose>
+      <scale>0.9647 0.9647 0.9647</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_163</name>
+      <pose>-73.887414 -17.163640 4.788719 0.005763 -0.003740 3.793697</pose>
+      <scale>0.9193 0.9193 0.9193</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_164</name>
+      <pose>-40.310437 5.797130 4.146150 -0.000067 0.008896 3.890183</pose>
+      <scale>1.0128 1.0128 1.0128</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_165</name>
+      <pose>-46.572004 83.213785 3.091004 -0.012919 -0.001847 6.102416</pose>
+      <scale>0.9581 0.9581 0.9581</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_166</name>
+      <pose>8.571157 77.651688 1.560162 0.001845 0.003734 4.741888</pose>
+      <scale>1.0343 1.0343 1.0343</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_167</name>
+      <pose>52.102719 -59.488630 3.537780 0.011534 0.009869 3.612887</pose>
+      <scale>0.9705 0.9705 0.9705</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_168</name>
+      <pose>59.223282 68.562283 1.880320 -0.001456 -0.013658 4.357941</pose>
+      <scale>1.0148 1.0148 1.0148</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_169</name>
+      <pose>87.725219 32.423457 5.138780 -0.014909 0.002792 2.544846</pose>
+      <scale>1.0603 1.0603 1.0603</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_170</name>
+      <pose>48.430077 32.750650 3.993859 0.007363 -0.004958 5.301026</pose>
+      <scale>1.1475 1.1475 1.1475</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_171</name>
+      <pose>14.476381 -78.208751 5.065814 -0.013734 0.010471 3.127542</pose>
+      <scale>1.0828 1.0828 1.0828</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_172</name>
+      <pose>45.619481 25.076918 4.429842 -0.005641 0.008536 6.088061</pose>
+      <scale>1.0515 1.0515 1.0515</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_173</name>
+      <pose>-28.328441 23.052748 4.416511 0.013825 -0.013709 4.500610</pose>
+      <scale>1.1741 1.1741 1.1741</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_174</name>
+      <pose>-84.897236 18.456132 5.535935 0.012993 -0.014899 2.834333</pose>
+      <scale>1.0567 1.0567 1.0567</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_175</name>
+      <pose>63.144469 2.672607 5.819684 -0.010304 0.003295 3.489972</pose>
+      <scale>1.0837 1.0837 1.0837</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_176</name>
+      <pose>-65.754934 -39.497214 3.343024 0.005375 -0.010610 3.200485</pose>
+      <scale>0.9271 0.9271 0.9271</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_177</name>
+      <pose>-55.736068 -17.270357 5.514965 0.004450 -0.003921 0.569248</pose>
+      <scale>0.9981 0.9981 0.9981</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_178</name>
+      <pose>-56.184030 1.080208 7.461975 -0.009056 0.003980 3.484641</pose>
+      <scale>0.9286 0.9286 0.9286</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_179</name>
+      <pose>-69.096141 15.731352 6.470141 0.013538 -0.004135 2.689893</pose>
+      <scale>0.8750 0.8750 0.8750</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_180</name>
+      <pose>78.887211 40.735287 5.685313 0.014769 0.012562 1.329722</pose>
+      <scale>1.0170 1.0170 1.0170</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_181</name>
+      <pose>37.612514 29.675896 2.629424 -0.012927 0.001501 3.362031</pose>
+      <scale>1.1515 1.1515 1.1515</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_182</name>
+      <pose>37.494081 -41.260459 3.576547 -0.005516 0.014020 6.264260</pose>
+      <scale>1.1444 1.1444 1.1444</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_183</name>
+      <pose>-29.097685 39.649017 5.559017 0.004766 0.012543 1.501120</pose>
+      <scale>1.1115 1.1115 1.1115</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_184</name>
+      <pose>89.429823 87.130018 3.342525 0.011957 0.009642 5.752690</pose>
+      <scale>0.8919 0.8919 0.8919</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_185</name>
+      <pose>-33.295587 -55.700248 0.118011 -0.003020 0.012003 0.006863</pose>
+      <scale>0.9359 0.9359 0.9359</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_186</name>
+      <pose>55.507724 35.430006 5.460151 0.010530 -0.003375 5.147917</pose>
+      <scale>1.0787 1.0787 1.0787</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_187</name>
+      <pose>-71.353556 -44.045838 3.106258 -0.000223 -0.006239 0.303158</pose>
+      <scale>1.0292 1.0292 1.0292</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_188</name>
+      <pose>-43.348727 29.452293 7.397858 0.003570 0.014161 0.028521</pose>
+      <scale>0.9758 0.9758 0.9758</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_189</name>
+      <pose>11.859982 30.853199 0.294455 0.014012 0.004996 6.164137</pose>
+      <scale>1.1730 1.1730 1.1730</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_190</name>
+      <pose>86.425292 -31.210235 4.741498 0.003788 0.003326 3.347914</pose>
+      <scale>1.0493 1.0493 1.0493</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_191</name>
+      <pose>-10.421156 5.576357 0.438279 -0.003971 -0.001307 2.095818</pose>
+      <scale>1.0451 1.0451 1.0451</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_192</name>
+      <pose>-52.663169 32.311475 6.809499 0.011082 0.012460 6.130617</pose>
+      <scale>0.9610 0.9610 0.9610</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_193</name>
+      <pose>82.807831 53.378016 5.123331 0.012228 0.009077 5.903580</pose>
+      <scale>0.9852 0.9852 0.9852</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_194</name>
+      <pose>-44.794777 20.472463 7.468510 -0.002439 -0.010984 6.278827</pose>
+      <scale>0.9598 0.9598 0.9598</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_195</name>
+      <pose>60.033653 20.583076 6.713599 -0.008366 -0.001068 2.200117</pose>
+      <scale>1.0226 1.0226 1.0226</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_196</name>
+      <pose>37.306432 -33.879669 3.563792 0.000288 -0.013004 2.201920</pose>
+      <scale>0.8560 0.8560 0.8560</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_197</name>
+      <pose>49.476700 -33.548524 3.273911 0.013047 0.002865 5.739816</pose>
+      <scale>1.0531 1.0531 1.0531</scale>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_198</name>
+      <pose>25.278372 -39.781279 4.465995 0.003793 0.014085 5.445695</pose>
+      <scale>1.0298 1.0298 1.0298</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_199</name>
+      <pose>-72.071615 -38.038390 3.368088 -0.006700 -0.004790 0.035384</pose>
+      <scale>1.0756 1.0756 1.0756</scale>
+    </include>
+    <include>
+      <uri>model://trees/pine_tree</uri>
+      <name>generated_tree_200</name>
+      <pose>61.400794 79.684679 0.327282 -0.010836 -0.005128 4.443147</pose>
+      <scale>0.9012 0.9012 0.9012</scale>
+    </include>
+
+    <!-- Generated bushes: 150 -->
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_001</name>
+      <pose>-72.546229 -60.865734 2.619708 -0.014767 -0.021822 1.658044</pose>
+      <scale>1.0115 1.0115 1.0115</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_002</name>
+      <pose>-83.706372 14.208648 5.480385 -0.008946 0.022664 5.634726</pose>
+      <scale>1.1253 1.1253 1.1253</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_003</name>
+      <pose>-24.820234 19.108764 3.141741 -0.019465 0.014896 3.200188</pose>
+      <scale>0.8225 0.8225 0.8225</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_004</name>
+      <pose>67.571008 -3.318546 5.548457 -0.001266 0.004882 5.946039</pose>
+      <scale>0.8054 0.8054 0.8054</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_005</name>
+      <pose>70.212618 -49.951921 3.718993 -0.012472 -0.014935 2.053931</pose>
+      <scale>1.0097 1.0097 1.0097</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_006</name>
+      <pose>79.902869 -72.595468 2.954795 -0.016804 -0.023171 3.903852</pose>
+      <scale>0.8078 0.8078 0.8078</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_007</name>
+      <pose>-14.384027 -66.838623 1.001330 -0.000943 0.008112 6.073366</pose>
+      <scale>0.8156 0.8156 0.8156</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_008</name>
+      <pose>49.674224 -79.194739 3.501748 -0.014802 0.023743 1.376353</pose>
+      <scale>0.9632 0.9632 0.9632</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_009</name>
+      <pose>84.379577 5.541963 5.400348 0.003375 -0.003871 1.230699</pose>
+      <scale>1.0665 1.0665 1.0665</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_010</name>
+      <pose>25.209466 -69.976156 4.956032 -0.010896 -0.004140 3.529128</pose>
+      <scale>1.0228 1.0228 1.0228</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_011</name>
+      <pose>74.308440 -4.678028 5.508576 0.003749 0.017729 3.497058</pose>
+      <scale>1.1124 1.1124 1.1124</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_012</name>
+      <pose>55.354104 -37.521137 3.357620 -0.007212 -0.019269 1.138974</pose>
+      <scale>0.8936 0.8936 0.8936</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_013</name>
+      <pose>-89.535157 63.872523 5.128003 -0.011799 -0.013129 3.771816</pose>
+      <scale>0.9770 0.9770 0.9770</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_014</name>
+      <pose>49.460954 44.207706 2.957834 -0.013627 0.012976 4.763076</pose>
+      <scale>0.9278 0.9278 0.9278</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_015</name>
+      <pose>-95.938388 -2.592386 3.705164 -0.020752 0.019396 4.095665</pose>
+      <scale>0.8579 0.8579 0.8579</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_016</name>
+      <pose>90.806500 -10.182246 4.860275 -0.003183 0.002448 2.956280</pose>
+      <scale>0.8244 0.8244 0.8244</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_017</name>
+      <pose>64.380203 -8.588662 5.141613 0.011008 0.011095 3.559757</pose>
+      <scale>0.9343 0.9343 0.9343</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_018</name>
+      <pose>-2.493732 76.400341 2.541850 -0.001551 -0.021566 0.452262</pose>
+      <scale>0.8670 0.8670 0.8670</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_019</name>
+      <pose>-81.094993 7.169226 5.378853 -0.007791 -0.013712 1.888136</pose>
+      <scale>0.9828 0.9828 0.9828</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_020</name>
+      <pose>-1.872041 -20.628802 1.046204 0.019656 -0.010861 4.927322</pose>
+      <scale>0.9234 0.9234 0.9234</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_021</name>
+      <pose>10.764528 -15.618386 2.018976 0.017753 -0.024670 5.692606</pose>
+      <scale>0.8559 0.8559 0.8559</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_022</name>
+      <pose>95.927137 94.292214 3.739900 -0.006726 0.002114 4.086689</pose>
+      <scale>1.0629 1.0629 1.0629</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_023</name>
+      <pose>-85.903125 -94.932140 2.818934 0.002275 -0.000991 5.624737</pose>
+      <scale>0.8398 0.8398 0.8398</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_024</name>
+      <pose>3.041388 73.946781 1.985912 -0.015067 -0.016956 6.159017</pose>
+      <scale>0.8051 0.8051 0.8051</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_025</name>
+      <pose>14.187272 22.733203 2.009588 0.021950 -0.013268 1.992889</pose>
+      <scale>0.9098 0.9098 0.9098</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_026</name>
+      <pose>-79.635520 -63.447342 2.456440 -0.020331 -0.011781 2.973097</pose>
+      <scale>0.8984 0.8984 0.8984</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_027</name>
+      <pose>70.314033 27.654536 6.339335 0.016348 -0.024076 3.972362</pose>
+      <scale>0.8492 0.8492 0.8492</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_028</name>
+      <pose>76.693731 -30.148270 4.624903 0.006400 0.010593 5.152075</pose>
+      <scale>0.9892 0.9892 0.9892</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_029</name>
+      <pose>29.458269 16.187162 3.340839 0.011408 0.022413 1.434158</pose>
+      <scale>0.9282 0.9282 0.9282</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_030</name>
+      <pose>50.412699 -36.310069 3.218679 -0.005506 0.009162 4.284913</pose>
+      <scale>0.9071 0.9071 0.9071</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_031</name>
+      <pose>15.873676 -63.706804 4.566492 -0.020033 0.005295 4.104474</pose>
+      <scale>1.1031 1.1031 1.1031</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_032</name>
+      <pose>63.239195 -76.474549 2.907131 -0.003804 0.008336 3.907150</pose>
+      <scale>0.9484 0.9484 0.9484</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_033</name>
+      <pose>42.420941 58.352732 1.363418 -0.013778 -0.012402 3.208211</pose>
+      <scale>1.0366 1.0366 1.0366</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_034</name>
+      <pose>-78.174317 88.015539 4.176638 0.015035 0.018305 3.803561</pose>
+      <scale>0.9619 0.9619 0.9619</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_035</name>
+      <pose>-63.989376 -89.295036 2.559201 0.011992 0.007650 2.309889</pose>
+      <scale>1.1045 1.1045 1.1045</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_036</name>
+      <pose>-15.839648 -81.619719 2.526074 -0.007216 -0.021470 1.742976</pose>
+      <scale>0.9853 0.9853 0.9853</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_037</name>
+      <pose>-26.396468 77.061168 3.309827 -0.013907 -0.000273 3.469766</pose>
+      <scale>0.8597 0.8597 0.8597</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_038</name>
+      <pose>5.474201 -81.729906 4.153216 -0.011336 -0.006843 4.108105</pose>
+      <scale>1.0763 1.0763 1.0763</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_039</name>
+      <pose>-24.749419 -86.040132 0.973695 0.009149 0.008352 3.430693</pose>
+      <scale>0.8389 0.8389 0.8389</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_040</name>
+      <pose>35.638062 -44.698118 3.821410 0.006664 -0.000017 0.055245</pose>
+      <scale>1.1123 1.1123 1.1123</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_041</name>
+      <pose>-81.182452 17.012819 5.701529 -0.002885 0.005516 6.065926</pose>
+      <scale>0.8545 0.8545 0.8545</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_042</name>
+      <pose>24.903406 3.899190 2.747699 0.012323 -0.013538 4.353393</pose>
+      <scale>0.8416 0.8416 0.8416</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_043</name>
+      <pose>-32.545506 -40.471962 0.338973 -0.004738 0.000716 3.701784</pose>
+      <scale>0.9223 0.9223 0.9223</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_044</name>
+      <pose>41.503129 50.980038 1.668138 0.019292 -0.017892 5.907045</pose>
+      <scale>1.1318 1.1318 1.1318</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_045</name>
+      <pose>-55.927013 -20.589052 4.879325 0.008938 -0.001003 5.622729</pose>
+      <scale>0.9086 0.9086 0.9086</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_046</name>
+      <pose>60.548747 54.828973 3.253053 0.012804 0.000173 1.866313</pose>
+      <scale>0.9556 0.9556 0.9556</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_047</name>
+      <pose>92.444125 71.424103 4.873179 0.015125 0.019039 2.371989</pose>
+      <scale>1.0783 1.0783 1.0783</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_048</name>
+      <pose>-64.136268 87.680151 3.745741 -0.008134 0.006416 4.021377</pose>
+      <scale>1.0577 1.0577 1.0577</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_049</name>
+      <pose>-0.739722 16.458715 0.196347 0.019962 -0.019694 3.048959</pose>
+      <scale>0.9963 0.9963 0.9963</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_050</name>
+      <pose>-61.530243 -87.977558 2.544982 0.016794 0.024765 2.487029</pose>
+      <scale>0.9588 0.9588 0.9588</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_051</name>
+      <pose>62.839217 -25.124802 4.141718 -0.016852 -0.003079 6.258374</pose>
+      <scale>0.9610 0.9610 0.9610</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_052</name>
+      <pose>33.292050 -90.565961 3.905543 0.008231 -0.015696 1.167103</pose>
+      <scale>0.8583 0.8583 0.8583</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_053</name>
+      <pose>87.006617 92.532546 2.690561 -0.005594 0.011682 0.513312</pose>
+      <scale>0.8267 0.8267 0.8267</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_054</name>
+      <pose>50.623325 -85.631448 3.213846 0.018902 -0.007323 2.519485</pose>
+      <scale>1.1338 1.1338 1.1338</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_055</name>
+      <pose>21.418883 -79.468415 4.906395 -0.010702 0.020233 2.742180</pose>
+      <scale>1.0375 1.0375 1.0375</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_056</name>
+      <pose>35.068030 -47.434991 3.964942 0.004890 0.017955 5.415809</pose>
+      <scale>1.0207 1.0207 1.0207</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_057</name>
+      <pose>-77.967500 -5.003010 5.070752 0.012056 -0.008948 5.121476</pose>
+      <scale>1.0850 1.0850 1.0850</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_058</name>
+      <pose>33.107996 47.497318 0.653889 -0.009345 0.016227 2.328941</pose>
+      <scale>0.8145 0.8145 0.8145</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_059</name>
+      <pose>-29.590581 75.932774 3.391625 0.017984 -0.012806 5.657442</pose>
+      <scale>0.9701 0.9701 0.9701</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_060</name>
+      <pose>-52.759608 -19.684155 4.738707 -0.010147 0.016241 3.971446</pose>
+      <scale>1.1067 1.1067 1.1067</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_061</name>
+      <pose>-44.763334 -30.799599 2.636901 -0.021361 0.012775 4.784619</pose>
+      <scale>0.9374 0.9374 0.9374</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_062</name>
+      <pose>-24.361382 88.518709 2.862966 0.011633 -0.002093 1.011984</pose>
+      <scale>0.9846 0.9846 0.9846</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_063</name>
+      <pose>-63.378557 93.920971 3.483396 -0.017322 -0.023310 3.254242</pose>
+      <scale>0.8543 0.8543 0.8543</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_064</name>
+      <pose>-47.265058 -46.627207 2.535598 0.002767 0.023973 0.090260</pose>
+      <scale>1.1207 1.1207 1.1207</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_065</name>
+      <pose>-57.386455 -25.517394 4.202550 0.018551 0.011200 5.552783</pose>
+      <scale>1.1250 1.1250 1.1250</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_066</name>
+      <pose>75.754626 -83.550285 2.752292 -0.007315 -0.020364 6.091564</pose>
+      <scale>1.0298 1.0298 1.0298</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_067</name>
+      <pose>82.164745 -61.095989 3.385581 0.003437 -0.000758 3.149243</pose>
+      <scale>1.1014 1.1014 1.1014</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_068</name>
+      <pose>-44.542339 25.325398 7.617944 -0.006998 -0.011082 0.608908</pose>
+      <scale>0.9905 0.9905 0.9905</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_069</name>
+      <pose>-15.275493 -25.211903 1.323409 0.009566 0.013331 0.468386</pose>
+      <scale>1.0567 1.0567 1.0567</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_070</name>
+      <pose>32.762782 53.562904 0.206869 0.016716 0.005974 4.748160</pose>
+      <scale>1.0484 1.0484 1.0484</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_071</name>
+      <pose>-58.096149 -12.544743 6.207428 0.016325 -0.023143 1.932140</pose>
+      <scale>1.1205 1.1205 1.1205</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_072</name>
+      <pose>-39.391483 42.037467 6.017612 -0.001119 0.015558 0.714055</pose>
+      <scale>1.0673 1.0673 1.0673</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_073</name>
+      <pose>6.841096 -31.462876 2.727824 0.015114 0.021983 0.591608</pose>
+      <scale>0.8728 0.8728 0.8728</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_074</name>
+      <pose>-5.256696 93.182691 2.719832 -0.021245 0.000066 4.385445</pose>
+      <scale>1.0797 1.0797 1.0797</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_075</name>
+      <pose>-32.270167 30.251052 6.209651 0.000603 -0.000607 5.856743</pose>
+      <scale>0.8098 0.8098 0.8098</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_076</name>
+      <pose>79.720478 -14.843617 5.127279 -0.018981 0.022987 5.281569</pose>
+      <scale>1.0680 1.0680 1.0680</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_077</name>
+      <pose>61.735902 -79.130369 2.907068 0.001405 -0.013989 2.139210</pose>
+      <scale>0.9825 0.9825 0.9825</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_078</name>
+      <pose>13.173306 13.423723 1.776264 0.016759 -0.024101 3.252462</pose>
+      <scale>1.1295 1.1295 1.1295</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_079</name>
+      <pose>5.653954 -19.985617 2.017951 0.009236 0.012222 1.755450</pose>
+      <scale>0.8924 0.8924 0.8924</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_080</name>
+      <pose>-36.057646 69.457597 3.830230 -0.015736 -0.024952 0.061983</pose>
+      <scale>0.9149 0.9149 0.9149</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_081</name>
+      <pose>-3.204518 90.557793 2.681183 0.007798 -0.011162 4.810834</pose>
+      <scale>0.8693 0.8693 0.8693</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_082</name>
+      <pose>-57.773643 -68.123477 2.577377 0.021347 -0.012813 0.787326</pose>
+      <scale>1.0746 1.0746 1.0746</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_083</name>
+      <pose>5.325390 -67.559121 3.438888 -0.014665 -0.002676 4.917137</pose>
+      <scale>0.8096 0.8096 0.8096</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_084</name>
+      <pose>-61.385752 -80.027237 2.551483 0.002403 0.024291 3.310368</pose>
+      <scale>0.8148 0.8148 0.8148</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_085</name>
+      <pose>90.133064 27.139478 5.063879 -0.022839 0.014679 5.774004</pose>
+      <scale>0.8195 0.8195 0.8195</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_086</name>
+      <pose>-65.926760 -69.494229 2.625095 0.024409 0.007102 3.315911</pose>
+      <scale>0.8169 0.8169 0.8169</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_087</name>
+      <pose>55.518360 -80.048331 3.149988 0.001210 0.003037 0.296492</pose>
+      <scale>0.9417 0.9417 0.9417</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_088</name>
+      <pose>22.135778 -66.782948 5.070991 0.001512 0.018133 2.971979</pose>
+      <scale>1.0335 1.0335 1.0335</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_089</name>
+      <pose>68.117181 -91.398257 2.653211 0.017225 -0.007146 2.725724</pose>
+      <scale>1.0562 1.0562 1.0562</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_090</name>
+      <pose>72.342052 -11.011155 5.209410 -0.024911 -0.020904 5.933231</pose>
+      <scale>1.0614 1.0614 1.0614</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_091</name>
+      <pose>77.046168 -59.503970 3.389796 -0.002675 -0.018591 2.481616</pose>
+      <scale>1.0635 1.0635 1.0635</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_092</name>
+      <pose>67.769967 7.198048 6.010553 -0.011636 0.022475 4.902239</pose>
+      <scale>0.9877 0.9877 0.9877</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_093</name>
+      <pose>-46.454105 27.404570 7.546732 -0.013655 -0.007683 1.392317</pose>
+      <scale>1.0592 1.0592 1.0592</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_094</name>
+      <pose>-47.036028 23.101223 7.754129 0.004039 0.019435 4.323418</pose>
+      <scale>1.0637 1.0637 1.0637</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_095</name>
+      <pose>38.710818 -84.561991 3.882605 0.009796 0.006623 0.195220</pose>
+      <scale>0.8948 0.8948 0.8948</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_096</name>
+      <pose>74.159686 -45.905968 4.016613 -0.024841 0.019092 2.050158</pose>
+      <scale>0.9302 0.9302 0.9302</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_097</name>
+      <pose>-10.891510 83.984373 2.767586 -0.024566 -0.001949 4.398082</pose>
+      <scale>1.0152 1.0152 1.0152</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_098</name>
+      <pose>89.064064 6.560248 5.113315 0.023816 0.015576 0.966567</pose>
+      <scale>0.9986 0.9986 0.9986</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_099</name>
+      <pose>70.660562 -79.750578 2.758723 -0.013316 -0.009598 2.795235</pose>
+      <scale>0.9130 0.9130 0.9130</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_100</name>
+      <pose>-40.566012 25.499910 7.210380 -0.008831 -0.002327 0.779345</pose>
+      <scale>1.0303 1.0303 1.0303</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_101</name>
+      <pose>82.200808 -33.385161 4.625081 -0.003797 0.012631 1.478851</pose>
+      <scale>0.8843 0.8843 0.8843</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_102</name>
+      <pose>65.744871 -32.938349 4.056791 0.021817 0.016541 4.519493</pose>
+      <scale>1.0372 1.0372 1.0372</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_103</name>
+      <pose>-38.100378 78.402512 3.249469 -0.010763 0.012162 3.167111</pose>
+      <scale>1.0724 1.0724 1.0724</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_104</name>
+      <pose>87.340453 -55.719697 3.671009 0.016163 0.019230 4.728727</pose>
+      <scale>1.0547 1.0547 1.0547</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_105</name>
+      <pose>40.994864 -72.082826 4.214462 -0.016470 0.020384 5.491455</pose>
+      <scale>0.9205 0.9205 0.9205</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_106</name>
+      <pose>-1.311986 -78.591634 3.078133 0.020426 0.004127 0.920411</pose>
+      <scale>0.9438 0.9438 0.9438</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_107</name>
+      <pose>29.559900 -63.241625 4.803422 0.015562 0.010976 6.019584</pose>
+      <scale>0.8086 0.8086 0.8086</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_108</name>
+      <pose>32.713500 -62.371964 4.621637 0.004571 0.024018 5.005162</pose>
+      <scale>1.0015 1.0015 1.0015</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_109</name>
+      <pose>-93.782056 1.944935 4.107068 -0.019841 0.012674 2.768203</pose>
+      <scale>1.0256 1.0256 1.0256</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_110</name>
+      <pose>57.768100 38.252738 5.520984 0.002849 -0.001370 5.705155</pose>
+      <scale>1.1323 1.1323 1.1323</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_111</name>
+      <pose>32.897504 -70.821750 4.618610 -0.021710 -0.004919 4.685021</pose>
+      <scale>0.8789 0.8789 0.8789</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_112</name>
+      <pose>-21.806507 22.952573 3.090830 0.021135 -0.007389 0.001400</pose>
+      <scale>0.9359 0.9359 0.9359</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_113</name>
+      <pose>56.799860 -66.218828 3.343816 0.002298 -0.008680 6.251798</pose>
+      <scale>0.9939 0.9939 0.9939</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_114</name>
+      <pose>-90.330865 3.959519 4.490444 -0.021002 -0.018135 6.133926</pose>
+      <scale>1.0883 1.0883 1.0883</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_115</name>
+      <pose>-44.909345 68.562824 3.984526 -0.003154 0.008132 1.076540</pose>
+      <scale>1.0341 1.0341 1.0341</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_116</name>
+      <pose>-49.990975 -63.799104 2.512707 0.018315 0.019060 5.116490</pose>
+      <scale>0.9502 0.9502 0.9502</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_117</name>
+      <pose>-87.829791 48.723699 5.275711 0.010237 0.015608 5.944492</pose>
+      <scale>1.1332 1.1332 1.1332</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_118</name>
+      <pose>-32.228209 27.925763 6.028597 -0.017847 0.008338 1.041185</pose>
+      <scale>1.0586 1.0586 1.0586</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_119</name>
+      <pose>-49.590326 83.900300 3.156297 -0.016160 0.020999 3.035571</pose>
+      <scale>1.0617 1.0617 1.0617</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_120</name>
+      <pose>-76.008126 -24.526321 4.081180 0.014038 0.023631 2.501901</pose>
+      <scale>1.0829 1.0829 1.0829</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_121</name>
+      <pose>-2.492860 -39.301171 1.592355 0.004617 0.016750 1.563041</pose>
+      <scale>0.9717 0.9717 0.9717</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_122</name>
+      <pose>83.113208 -36.010657 4.541191 0.018079 0.019209 1.468491</pose>
+      <scale>1.0203 1.0203 1.0203</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_123</name>
+      <pose>28.184534 -88.904259 4.243650 0.021592 0.013972 5.975015</pose>
+      <scale>1.0823 1.0823 1.0823</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_124</name>
+      <pose>70.349235 -35.387629 4.236511 -0.024948 0.009502 1.585205</pose>
+      <scale>1.1175 1.1175 1.1175</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_125</name>
+      <pose>-61.221499 63.874409 4.585586 -0.011526 -0.014879 4.935559</pose>
+      <scale>1.0919 1.0919 1.0919</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_126</name>
+      <pose>79.345054 -79.121445 2.837861 0.009475 0.021456 5.584035</pose>
+      <scale>1.0146 1.0146 1.0146</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_127</name>
+      <pose>51.949967 -62.102981 3.552795 0.004808 0.008245 5.853398</pose>
+      <scale>0.9111 0.9111 0.9111</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_128</name>
+      <pose>31.722714 -73.880691 4.614190 -0.000646 0.008097 4.593115</pose>
+      <scale>0.8249 0.8249 0.8249</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_129</name>
+      <pose>-61.001060 50.479862 5.188561 0.013394 0.012369 1.749998</pose>
+      <scale>0.8450 0.8450 0.8450</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_130</name>
+      <pose>-71.637320 43.965075 5.472023 0.022111 0.008301 5.871320</pose>
+      <scale>0.9217 0.9217 0.9217</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_131</name>
+      <pose>-1.076926 -69.893122 2.778961 -0.016221 0.017445 6.280265</pose>
+      <scale>0.8865 0.8865 0.8865</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_132</name>
+      <pose>-80.409669 49.928339 5.373371 -0.021643 -0.012036 0.524179</pose>
+      <scale>1.0347 1.0347 1.0347</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_133</name>
+      <pose>41.133772 -38.292413 3.312833 -0.012010 -0.001703 3.690164</pose>
+      <scale>1.1454 1.1454 1.1454</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_134</name>
+      <pose>85.474849 46.162790 5.022322 0.011638 0.019231 3.518367</pose>
+      <scale>1.1257 1.1257 1.1257</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_135</name>
+      <pose>71.951168 71.283509 2.565249 0.016951 -0.014337 0.534738</pose>
+      <scale>0.8484 0.8484 0.8484</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_136</name>
+      <pose>-57.256270 76.283731 3.876874 -0.024378 -0.013695 1.841772</pose>
+      <scale>0.8275 0.8275 0.8275</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_137</name>
+      <pose>89.531737 56.838922 4.907235 -0.019710 0.001693 2.279478</pose>
+      <scale>0.9152 0.9152 0.9152</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_138</name>
+      <pose>60.739969 -58.704484 3.281261 0.009063 -0.016760 5.250563</pose>
+      <scale>0.9566 0.9566 0.9566</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_139</name>
+      <pose>71.036759 9.871198 6.018818 -0.003103 -0.023349 2.956060</pose>
+      <scale>0.9259 0.9259 0.9259</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_140</name>
+      <pose>-63.671390 -8.855740 6.181215 -0.023774 -0.015005 4.710611</pose>
+      <scale>0.9525 0.9525 0.9525</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_141</name>
+      <pose>72.553807 -27.409786 4.554011 -0.017967 0.005097 5.121905</pose>
+      <scale>1.0762 1.0762 1.0762</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_142</name>
+      <pose>87.448290 -82.443255 2.888463 -0.002155 -0.008246 4.015064</pose>
+      <scale>1.0133 1.0133 1.0133</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_143</name>
+      <pose>44.897245 -73.017380 3.980593 0.021543 -0.015039 3.515360</pose>
+      <scale>0.9856 0.9856 0.9856</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_144</name>
+      <pose>-58.244616 79.829935 3.754145 0.011908 -0.001997 1.867502</pose>
+      <scale>0.8546 0.8546 0.8546</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_145</name>
+      <pose>-60.843747 91.841425 3.419045 -0.005118 0.011513 4.243991</pose>
+      <scale>0.8507 0.8507 0.8507</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_146</name>
+      <pose>55.906271 3.920591 5.761046 -0.017864 0.013959 5.681048</pose>
+      <scale>1.1490 1.1490 1.1490</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_2</uri>
+      <name>generated_bush_147</name>
+      <pose>64.215685 55.522873 3.589027 -0.008233 0.013588 2.142499</pose>
+      <scale>1.0495 1.0495 1.0495</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_148</name>
+      <pose>-14.110415 25.186176 2.587436 -0.007630 -0.018485 0.693735</pose>
+      <scale>0.8669 0.8669 0.8669</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_149</name>
+      <pose>59.603004 -34.645563 3.652144 0.004719 0.001372 5.098484</pose>
+      <scale>0.8259 0.8259 0.8259</scale>
+    </include>
+    <include>
+      <uri>model://bushes/bush_3</uri>
+      <name>generated_bush_150</name>
+      <pose>73.726764 35.586415 6.126482 0.001985 0.006707 0.213565</pose>
+      <scale>0.8451 0.8451 0.8451</scale>
+    </include>
+
+    <!-- Generated rocks: 100 -->
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_001</name>
+      <pose>-38.494339 -11.835868 3.528033 0.007572 0.085818 2.267126</pose>
+      <scale>0.7274 0.7274 0.7274</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_002</name>
+      <pose>91.850250 -84.643341 3.412919 -0.132589 -0.065865 3.576291</pose>
+      <scale>0.9432 0.9432 0.9432</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_003</name>
+      <pose>85.652069 -84.354442 3.279617 -0.058753 0.087269 0.524743</pose>
+      <scale>0.7610 0.7610 0.7610</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_004</name>
+      <pose>71.672094 77.757869 2.666122 -0.005584 -0.019634 5.702469</pose>
+      <scale>0.7094 0.7094 0.7094</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_005</name>
+      <pose>-41.719836 -13.127374 4.171745 -0.129882 0.039404 5.153990</pose>
+      <scale>0.7678 0.7678 0.7678</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_006</name>
+      <pose>45.915613 15.402433 6.199609 0.135304 -0.042980 2.701601</pose>
+      <scale>0.9436 0.9436 0.9436</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_007</name>
+      <pose>-84.447334 39.743523 5.970157 0.071558 0.042734 0.275689</pose>
+      <scale>0.9263 0.9263 0.9263</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_008</name>
+      <pose>59.281391 80.789632 0.631377 -0.104964 0.025226 5.777703</pose>
+      <scale>0.9476 0.9476 0.9476</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_009</name>
+      <pose>79.096362 -85.999756 3.269210 -0.116715 0.119190 4.012880</pose>
+      <scale>0.8956 0.8956 0.8956</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_010</name>
+      <pose>86.583751 -79.215404 3.432870 0.138094 0.021182 4.623540</pose>
+      <scale>0.9136 0.9136 0.9136</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_011</name>
+      <pose>86.998782 -95.661455 3.310250 -0.029346 -0.058406 2.409988</pose>
+      <scale>0.9630 0.9630 0.9630</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_012</name>
+      <pose>-20.619505 -20.340040 1.595034 0.054173 0.046920 5.649030</pose>
+      <scale>0.9954 0.9954 0.9954</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_013</name>
+      <pose>88.389910 -86.618186 3.405053 -0.058870 -0.128503 4.469432</pose>
+      <scale>0.9868 0.9868 0.9868</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_014</name>
+      <pose>89.244825 19.468927 5.757605 -0.125258 0.017136 0.695840</pose>
+      <scale>0.9316 0.9316 0.9316</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_015</name>
+      <pose>43.346879 93.838596 1.118773 -0.077177 0.127466 0.987958</pose>
+      <scale>1.1860 1.1860 1.1860</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_016</name>
+      <pose>19.889836 26.597264 2.478748 0.130345 -0.039060 5.989975</pose>
+      <scale>0.9169 0.9169 0.9169</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_017</name>
+      <pose>57.137521 -12.524671 5.054261 -0.059294 -0.076548 4.250466</pose>
+      <scale>0.8689 0.8689 0.8689</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_018</name>
+      <pose>-27.041959 -21.366620 2.847704 0.094383 -0.051092 1.996625</pose>
+      <scale>1.0647 1.0647 1.0647</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_019</name>
+      <pose>-46.329925 -11.851347 5.596786 -0.082712 -0.086299 2.129085</pose>
+      <scale>1.2645 1.2645 1.2645</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_020</name>
+      <pose>65.460735 76.227752 1.886176 0.016704 -0.126829 1.163282</pose>
+      <scale>0.8949 0.8949 0.8949</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_021</name>
+      <pose>70.153447 47.398068 6.409352 0.126876 0.102122 5.717458</pose>
+      <scale>1.2859 1.2859 1.2859</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_022</name>
+      <pose>49.024263 -46.641083 3.730643 -0.012471 0.020014 0.511693</pose>
+      <scale>0.9901 0.9901 0.9901</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_023</name>
+      <pose>-13.041697 77.255566 3.361539 0.079202 0.111219 4.535610</pose>
+      <scale>0.9809 0.9809 0.9809</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_024</name>
+      <pose>-27.391104 4.299193 2.569727 -0.115961 -0.117795 5.981416</pose>
+      <scale>0.8656 0.8656 0.8656</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_025</name>
+      <pose>68.755020 -7.838491 5.794931 -0.136368 -0.065402 4.938311</pose>
+      <scale>0.8644 0.8644 0.8644</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_026</name>
+      <pose>-44.552161 -58.694982 2.308225 -0.137438 -0.085823 3.543518</pose>
+      <scale>1.0152 1.0152 1.0152</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_027</name>
+      <pose>-96.842322 66.636674 5.298613 0.089993 -0.083065 0.804854</pose>
+      <scale>0.8724 0.8724 0.8724</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_028</name>
+      <pose>68.877364 79.496972 2.349644 0.008815 0.048494 2.979360</pose>
+      <scale>1.2407 1.2407 1.2407</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_029</name>
+      <pose>41.106260 25.990875 3.861222 0.049297 -0.091977 3.000820</pose>
+      <scale>0.8645 0.8645 0.8645</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_030</name>
+      <pose>78.746523 47.874977 5.938254 -0.030717 -0.031721 4.722125</pose>
+      <scale>0.7041 0.7041 0.7041</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_031</name>
+      <pose>50.428694 -51.716408 4.005514 0.061411 -0.050757 0.648537</pose>
+      <scale>1.2648 1.2648 1.2648</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_032</name>
+      <pose>-10.642299 91.249656 3.317896 -0.105963 -0.006061 0.638221</pose>
+      <scale>0.9659 0.9659 0.9659</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_033</name>
+      <pose>-89.252680 36.218424 5.962784 0.068712 0.014676 1.546993</pose>
+      <scale>1.1334 1.1334 1.1334</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_034</name>
+      <pose>-60.023779 -36.047888 4.024274 0.025725 -0.090010 0.624702</pose>
+      <scale>1.2089 1.2089 1.2089</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_035</name>
+      <pose>-77.667089 69.944016 5.566823 -0.076065 0.064517 1.986900</pose>
+      <scale>1.1299 1.1299 1.1299</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_036</name>
+      <pose>58.550489 76.624473 0.778169 0.116540 -0.051790 1.564613</pose>
+      <scale>0.7775 0.7775 0.7775</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_037</name>
+      <pose>95.464053 -79.415030 3.559685 -0.069778 -0.101995 6.125445</pose>
+      <scale>1.1136 1.1136 1.1136</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_038</name>
+      <pose>-22.056948 7.986588 2.345805 -0.108883 -0.038544 5.301151</pose>
+      <scale>0.9011 0.9011 0.9011</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_039</name>
+      <pose>70.809013 50.299178 5.794737 -0.106551 -0.076342 1.812857</pose>
+      <scale>0.9175 0.9175 0.9175</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_040</name>
+      <pose>51.789370 60.151380 2.947866 -0.008730 0.026674 2.202293</pose>
+      <scale>1.1909 1.1909 1.1909</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_041</name>
+      <pose>21.912458 93.048309 1.103350 0.078101 -0.028234 2.017200</pose>
+      <scale>1.2788 1.2788 1.2788</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_042</name>
+      <pose>-70.530383 -45.763716 3.414261 -0.118230 -0.043532 0.651229</pose>
+      <scale>0.7577 0.7577 0.7577</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_043</name>
+      <pose>-32.100745 -23.713590 2.945768 0.095054 -0.025062 5.748712</pose>
+      <scale>0.8022 0.8022 0.8022</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_044</name>
+      <pose>72.868561 46.249730 6.535065 0.128764 -0.136447 0.602561</pose>
+      <scale>1.1718 1.1718 1.1718</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_045</name>
+      <pose>88.472819 -4.526667 5.466574 -0.111745 -0.004499 0.412846</pose>
+      <scale>0.7973 0.7973 0.7973</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_046</name>
+      <pose>45.372875 92.389617 1.198291 0.085795 -0.113579 3.721402</pose>
+      <scale>1.0180 1.0180 1.0180</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_047</name>
+      <pose>17.899292 20.998851 3.172804 -0.047565 -0.036854 4.201268</pose>
+      <scale>1.2544 1.2544 1.2544</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_048</name>
+      <pose>-90.960162 66.501287 5.664775 -0.126820 -0.095434 4.621123</pose>
+      <scale>1.1170 1.1170 1.1170</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_049</name>
+      <pose>-70.834068 77.385254 5.171030 0.020077 0.045766 0.447427</pose>
+      <scale>1.2871 1.2871 1.2871</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_050</name>
+      <pose>41.459130 -16.673309 4.269164 -0.045315 -0.090202 1.748687</pose>
+      <scale>0.8165 0.8165 0.8165</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_051</name>
+      <pose>19.366915 23.576217 2.782428 0.006162 -0.039176 5.231683</pose>
+      <scale>0.7684 0.7684 0.7684</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_052</name>
+      <pose>-29.981115 53.664851 5.427468 0.073362 0.019799 0.872069</pose>
+      <scale>1.2595 1.2595 1.2595</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_053</name>
+      <pose>-10.211421 76.695544 3.306531 0.102647 -0.004050 1.254405</pose>
+      <scale>1.0798 1.0798 1.0798</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_054</name>
+      <pose>81.475469 -8.281814 5.801576 -0.056474 0.048345 3.490278</pose>
+      <scale>0.9363 0.9363 0.9363</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_055</name>
+      <pose>54.581168 -13.173937 4.828068 -0.006512 -0.130067 5.746198</pose>
+      <scale>0.7429 0.7429 0.7429</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_056</name>
+      <pose>32.155476 -77.929428 4.955831 0.083473 0.007950 4.630528</pose>
+      <scale>0.8440 0.8440 0.8440</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_057</name>
+      <pose>83.924247 -6.714717 5.932116 -0.039226 0.052331 0.386081</pose>
+      <scale>1.2602 1.2602 1.2602</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_058</name>
+      <pose>-69.057786 66.149948 5.188791 0.094084 -0.114173 0.783790</pose>
+      <scale>0.7545 0.7545 0.7545</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_059</name>
+      <pose>80.328708 43.102226 6.204483 -0.013500 0.117906 2.498729</pose>
+      <scale>1.2842 1.2842 1.2842</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_060</name>
+      <pose>55.029677 -5.942467 5.598878 0.111047 -0.042405 0.065354</pose>
+      <scale>1.1278 1.1278 1.1278</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_061</name>
+      <pose>44.274291 -48.054129 3.852241 -0.087002 -0.085018 4.955108</pose>
+      <scale>0.9252 0.9252 0.9252</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_062</name>
+      <pose>-35.454195 -21.666711 3.099605 0.059482 -0.129573 2.459701</pose>
+      <scale>0.7918 0.7918 0.7918</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_063</name>
+      <pose>-3.555623 -19.543717 1.129191 0.019957 -0.124948 1.464059</pose>
+      <scale>0.7807 0.7807 0.7807</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_064</name>
+      <pose>86.508720 -93.231466 3.315231 0.069445 -0.130195 5.749740</pose>
+      <scale>0.9489 0.9489 0.9489</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_065</name>
+      <pose>-72.470658 -47.652626 3.430449 -0.065158 0.020483 5.620397</pose>
+      <scale>0.9737 0.9737 0.9737</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_066</name>
+      <pose>58.166676 17.144032 7.141202 0.125717 -0.095191 3.895154</pose>
+      <scale>1.0392 1.0392 1.0392</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_067</name>
+      <pose>-75.303922 -5.362966 6.013593 -0.111495 -0.131056 5.238232</pose>
+      <scale>1.2615 1.2615 1.2615</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_068</name>
+      <pose>89.387195 -92.513986 3.215241 -0.003590 0.135813 0.088581</pose>
+      <scale>0.7259 0.7259 0.7259</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_069</name>
+      <pose>-6.573569 94.717588 3.363681 -0.075262 0.052119 3.693118</pose>
+      <scale>1.1262 1.1262 1.1262</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_070</name>
+      <pose>-18.746063 7.275930 1.956459 0.082444 -0.020749 3.630741</pose>
+      <scale>1.2209 1.2209 1.2209</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_071</name>
+      <pose>-80.381006 41.525789 6.183360 -0.063648 -0.011396 1.527137</pose>
+      <scale>1.2269 1.2269 1.2269</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_072</name>
+      <pose>-66.171726 52.502013 5.575404 -0.104636 0.040482 0.358100</pose>
+      <scale>0.7804 0.7804 0.7804</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_073</name>
+      <pose>-24.994047 39.681221 5.386040 0.066161 0.058688 5.976125</pose>
+      <scale>1.0722 1.0722 1.0722</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_074</name>
+      <pose>20.818095 -81.332412 5.490567 -0.100288 0.038724 2.240738</pose>
+      <scale>1.1032 1.1032 1.1032</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_075</name>
+      <pose>-90.361658 88.565376 4.616683 -0.108890 -0.044172 5.999834</pose>
+      <scale>0.9092 0.9092 0.9092</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_076</name>
+      <pose>-54.879720 -37.601075 3.608780 -0.082579 0.131611 5.251419</pose>
+      <scale>1.2115 1.2115 1.2115</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_077</name>
+      <pose>75.067409 -55.538462 4.067023 -0.039027 -0.046855 2.610112</pose>
+      <scale>0.9075 0.9075 0.9075</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_078</name>
+      <pose>-67.593221 55.321272 5.493589 0.086070 -0.101876 0.698515</pose>
+      <scale>0.7716 0.7716 0.7716</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_079</name>
+      <pose>88.845482 -84.138085 3.309339 -0.012599 0.055516 0.166736</pose>
+      <scale>0.7681 0.7681 0.7681</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_080</name>
+      <pose>69.357287 76.475127 2.597866 -0.040780 0.049283 3.615543</pose>
+      <scale>0.8766 0.8766 0.8766</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_081</name>
+      <pose>3.124134 -16.057789 1.402856 0.090031 0.043355 1.404593</pose>
+      <scale>0.7715 0.7715 0.7715</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_082</name>
+      <pose>43.432465 3.341830 5.875680 -0.089991 -0.100548 3.516440</pose>
+      <scale>1.1225 1.1225 1.1225</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_083</name>
+      <pose>56.976408 -63.012846 4.068149 0.138472 0.066679 0.722662</pose>
+      <scale>1.2900 1.2900 1.2900</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_084</name>
+      <pose>-91.829003 30.079363 5.757989 0.002423 0.052582 3.057429</pose>
+      <scale>0.9047 0.9047 0.9047</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_085</name>
+      <pose>84.886102 -3.992168 5.739203 0.105404 0.100878 5.378416</pose>
+      <scale>0.9201 0.9201 0.9201</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_086</name>
+      <pose>4.110837 -85.576365 4.651546 0.089153 -0.080031 1.493660</pose>
+      <scale>0.8767 0.8767 0.8767</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_087</name>
+      <pose>-67.721433 -42.500994 3.663946 0.013749 -0.090039 4.600886</pose>
+      <scale>0.8642 0.8642 0.8642</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_088</name>
+      <pose>71.056017 -59.810856 3.863891 -0.024896 -0.096744 5.615765</pose>
+      <scale>1.0362 1.0362 1.0362</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_089</name>
+      <pose>67.254936 58.883300 4.033376 0.133388 -0.019582 3.970839</pose>
+      <scale>1.1847 1.1847 1.1847</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_090</name>
+      <pose>81.054857 -89.688024 3.322887 -0.006285 0.114086 3.785939</pose>
+      <scale>1.0071 1.0071 1.0071</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_091</name>
+      <pose>-14.517868 2.515473 0.805561 -0.038462 -0.058710 4.171398</pose>
+      <scale>1.1297 1.1297 1.1297</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_092</name>
+      <pose>15.692898 21.813628 2.691422 -0.042018 0.057755 5.003385</pose>
+      <scale>0.7507 0.7507 0.7507</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_093</name>
+      <pose>-26.579985 7.162392 2.746717 -0.092979 -0.023729 5.118318</pose>
+      <scale>0.8528 0.8528 0.8528</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_094</name>
+      <pose>-30.944656 -86.203882 0.620427 0.031462 0.039502 2.771464</pose>
+      <scale>0.9492 0.9492 0.9492</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_095</name>
+      <pose>-15.831966 9.773945 2.239153 -0.051437 0.071945 2.004821</pose>
+      <scale>1.1986 1.1986 1.1986</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_096</name>
+      <pose>-39.181982 -8.361719 3.746957 0.057092 -0.083296 0.870178</pose>
+      <scale>0.7094 0.7094 0.7094</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_097</name>
+      <pose>-82.772977 42.767272 5.917397 0.122809 0.040831 1.787868</pose>
+      <scale>0.8474 0.8474 0.8474</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_098</name>
+      <pose>-63.878990 -15.348431 6.023528 -0.118073 0.012379 4.316038</pose>
+      <scale>0.7069 0.7069 0.7069</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_099</name>
+      <pose>59.203092 -54.337611 3.910222 0.027813 0.111209 2.343918</pose>
+      <scale>1.0501 1.0501 1.0501</scale>
+    </include>
+    <include>
+      <uri>model://rocks/rock1</uri>
+      <name>generated_rock_100</name>
+      <pose>-63.679058 -64.181391 3.116620 0.133602 0.009720 3.139642</pose>
+      <scale>0.8240 0.8240 0.8240</scale>
+    </include>
+    <!-- END GENERATED FOREST POPULATION -->
+
+  </world>
+</sdf>

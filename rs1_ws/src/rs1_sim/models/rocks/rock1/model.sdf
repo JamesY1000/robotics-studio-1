@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<sdf version="1.6">
+  <model name="rock1">
+    <static>true</static>
+
+    <link name="base_link">
+      <collision name="collision">
+        <geometry>
+          <mesh>
+            <uri>meshes/FallingRock01_Collider.dae</uri>
+          </mesh>
+        </geometry>
+      </collision>
+
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/FallingRock01.dae</uri>
+          </mesh>
+        </geometry>
+
+        <material>
+          <ambient>1 1 1 1</ambient>
+          <diffuse>1 1 1 1</diffuse>
+
+          <pbr>
+            <metal>
+              <albedo_map>model://rocks/rock1/materials/textures/FallingRocks_Albedo.jpg</albedo_map>
+              <normal_map>model://rocks/rock1/materials/textures/FallingRocks_Normal.jpg</normal_map>
+              <roughness_map>model://rocks/rock1/materials/textures/FallingRocks_Roughness.jpg</roughness_map>
+              <metalness>0.0</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>

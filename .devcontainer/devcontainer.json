@@ -7,33 +7,44 @@
     "overrideCommand": false,
     "shutdownAction": "stopContainer",
     "postCreateCommand": "bash .devcontainer/scripts/post_create.sh",
+    "initializeCommand": "xhost +SI:localuser:${localEnv:USER}",
     // Handle port forwarding in the future for foxglove/lichtblick and webdev stuff
     "customizations": {
         "vscode": {
-        "settings": {
-            "terminal.integrated.defaultProfile.linux": "zsh",
-            "terminal.integrated.profiles.linux": {
-            "zsh": { "path": "/usr/bin/zsh" }
+            "settings": {
+                "terminal.integrated.defaultProfile.linux": "zsh",
+                "terminal.integrated.profiles.linux": {
+                    "zsh": {
+                        "path": "/usr/bin/zsh"
+                    }
+                },
+                "python.defaultInterpreterPath": "/usr/local/bin/python",
+                "editor.formatOnSave": true,
+                "files.trimTrailingWhitespace": true
             },
-            "python.defaultInterpreterPath": "/usr/local/bin/python",
-            "editor.formatOnSave": true,
-            "files.trimTrailingWhitespace": true
-        },
-        "extensions": [
-            // Python
-            "ms-python.python",
-            "ms-python.vscode-pylance",
-            "ms-python.debugpy",
-            "charliermarsh.ruff",
-            "ms-python.mypy-type-checker",
-            // Git
-            "eamodio.gitlens",
-            // QOL
-            "christian-kohler.path-intellisense",
-            "usernamehw.errorlens",
-            "shardulm94.trailing-spaces",
-            "davidanson.vscode-markdownlint"
-      ]
+            "extensions": [
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "ms-python.debugpy",
+                "charliermarsh.ruff",
+                "ms-python.mypy-type-checker",
+                "eamodio.gitlens",
+                "christian-kohler.path-intellisense",
+                "usernamehw.errorlens",
+                "shardulm94.trailing-spaces",
+                "davidanson.vscode-markdownlint",
+                "ms-vscode.cpptools",
+                "ms-vscode.cpp-devtools",
+                "ms-vscode.cmake-tools",
+                "openai.chatgpt",
+                "DavidAnson.vscode-markdownlint",
+                "ms-python.vscode-python-envs",
+                "Ranch-Hand-Robotics.rde-ros-2",
+                "Ranch-Hand-Robotics.urdf-editor",
+                "Ranch-Hand-Robotics.rde-pack",
+                "ZainChen.json",
+                "redhat.vscode-yaml"
+            ]
+        }
     }
-  }
 }
