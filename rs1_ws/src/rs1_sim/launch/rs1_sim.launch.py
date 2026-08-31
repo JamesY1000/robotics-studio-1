@@ -75,8 +75,6 @@ def generate_launch_description():
             description="Seconds to wait before spawning the Husky.",
         ),
         DeclareLaunchArgument(
-            "parrot_spawn_delay",
-            default_value="2.0",
             description="Seconds to wait before spawning the Parrot.",
         ),
         DeclareLaunchArgument(
@@ -97,7 +95,6 @@ def generate_launch_description():
             PathJoinSubstitution(
                 [
                     package_share,
-                    LAUNCH_DIRECTORY,
                     "gz_world.launch.py",
                 ]
             )
@@ -160,6 +157,7 @@ def generate_launch_description():
             ("/tf_static", "/husky1/tf_static"),
         ],
     )
+
     parrot_rviz = Node(
         package="rviz2",
         executable="rviz2",

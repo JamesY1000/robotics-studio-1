@@ -313,7 +313,7 @@ Visualization Manager:
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
-    Fixed Frame: parrot1_map
+    Fixed Frame: parrot1_base_link
     Frame Rate: 30
   Name: root
   Tools:
