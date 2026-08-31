@@ -19,13 +19,14 @@ ROBOT_NAMESPACE = "husky1"
 FRAME_PREFIX = "husky1_"
 GZ_MODEL_NAME = "husky1"
 
+SPAWN_X = "95.0"
+SPAWN_Y = "-45.0"
+SPAWN_Z = "4.0"
+SPAWN_YAW = "0.0"
+
 
 def generate_launch_description():
     use_sim_time = LaunchConfiguration("use_sim_time")
-    x = LaunchConfiguration("husky_x")
-    y = LaunchConfiguration("husky_y")
-    z = LaunchConfiguration("husky_z")
-    yaw = LaunchConfiguration("husky_yaw")
     spawn_delay = LaunchConfiguration("husky_spawn_delay")
 
     description_path = PathJoinSubstitution(
@@ -103,23 +104,19 @@ def generate_launch_description():
             "-name",
             GZ_MODEL_NAME,
             "-x",
-            x,
+            SPAWN_X,
             "-y",
-            y,
+            SPAWN_Y,
             "-z",
-            z,
+            SPAWN_Z,
             "-Y",
-            yaw,
+            SPAWN_YAW,
         ],
     )
 
     return LaunchDescription(
         [
             DeclareLaunchArgument("use_sim_time", default_value="True"),
-            DeclareLaunchArgument("husky_x", default_value="0.0"),
-            DeclareLaunchArgument("husky_y", default_value="0.0"),
-            DeclareLaunchArgument("husky_z", default_value="0.4"),
-            DeclareLaunchArgument("husky_yaw", default_value="0.0"),
             DeclareLaunchArgument("husky_spawn_delay", default_value="3.0"),
             robot_state_publisher,
             gazebo_bridge,

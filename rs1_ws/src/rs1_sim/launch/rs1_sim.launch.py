@@ -38,17 +38,7 @@ def generate_launch_description():
     rviz_enabled = LaunchConfiguration("rviz")
     slam_enabled = LaunchConfiguration("slam")
     nav2_enabled = LaunchConfiguration("nav2")
-
-    # Spawn positions passed into husky and parrot launch files
-    husky_x = LaunchConfiguration("husky_x")
-    husky_y = LaunchConfiguration("husky_y")
-    husky_z = LaunchConfiguration("husky_z")
-    husky_yaw = LaunchConfiguration("husky_yaw")
     husky_spawn_delay = LaunchConfiguration("husky_spawn_delay")
-    parrot_x = LaunchConfiguration("parrot_x")
-    parrot_y = LaunchConfiguration("parrot_y")
-    parrot_z = LaunchConfiguration("parrot_z")
-    parrot_yaw = LaunchConfiguration("parrot_yaw")
     parrot_spawn_delay = LaunchConfiguration("parrot_spawn_delay")
 
     # Launch args
@@ -80,49 +70,9 @@ def generate_launch_description():
             description="Open one RViz window for each enabled robot.",
         ),
         DeclareLaunchArgument(
-            "husky_x",
-            default_value="0.0",
-            description="Husky initial x position.",
-        ),
-        DeclareLaunchArgument(
-            "husky_y",
-            default_value="0.0",
-            description="Husky initial y position.",
-        ),
-        DeclareLaunchArgument(
-            "husky_z",
-            default_value="0.4",
-            description="Husky initial z position.",
-        ),
-        DeclareLaunchArgument(
-            "husky_yaw",
-            default_value="0.0",
-            description="Husky initial yaw in radians.",
-        ),
-        DeclareLaunchArgument(
             "husky_spawn_delay",
             default_value="2.0",
             description="Seconds to wait before spawning the Husky.",
-        ),
-        DeclareLaunchArgument(
-            "parrot_x",
-            default_value="2.0",
-            description="Parrot initial x position.",
-        ),
-        DeclareLaunchArgument(
-            "parrot_y",
-            default_value="0.0",
-            description="Parrot initial y position.",
-        ),
-        DeclareLaunchArgument(
-            "parrot_z",
-            default_value="0.8",
-            description="Parrot initial z position.",
-        ),
-        DeclareLaunchArgument(
-            "parrot_yaw",
-            default_value="0.0",
-            description="Parrot initial yaw in radians.",
         ),
         DeclareLaunchArgument(
             "parrot_spawn_delay",
@@ -171,10 +121,6 @@ def generate_launch_description():
         ),
         launch_arguments={
             "use_sim_time": use_sim_time,
-            "husky_x": husky_x,
-            "husky_y": husky_y,
-            "husky_z": husky_z,
-            "husky_yaw": husky_yaw,
             "husky_spawn_delay": husky_spawn_delay,
         }.items(),
     )
@@ -192,10 +138,6 @@ def generate_launch_description():
         ),
         launch_arguments={
             "use_sim_time": use_sim_time,
-            "parrot_x": parrot_x,
-            "parrot_y": parrot_y,
-            "parrot_z": parrot_z,
-            "parrot_yaw": parrot_yaw,
             "parrot_spawn_delay": parrot_spawn_delay,
         }.items(),
     )
