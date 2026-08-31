@@ -16,7 +16,7 @@ find_package(std_msgs REQUIRED)
 
 # Install additional package folders
 install(
-  DIRECTORY config
+  DIRECTORY config launch
   DESTINATION share/${PROJECT_NAME}
 )
 
