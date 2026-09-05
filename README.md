@@ -26,8 +26,25 @@ I've already set up a docker devcontainer that will be able to handle everything
 
 ### Docker setup (if you want to use the devcontainer)
 
-- Docker installed and running.
-- VS Code with Dev Containers extension.
+- **Docker installed and running**
+
+  1. Open the [Docker Engine installation guide for Ubuntu](https://docs.docker.com/engine/install/ubuntu/).
+
+  2. Under **Install from the apt repository**, complete the following steps:
+
+     1. Set up Docker's apt repository.
+     2. Install the Docker packages.
+     3. Verify that the installation was successful by running the `hello-world` image.
+
+  3. Continue to [Linux post-installation steps for Docker Engine](https://docs.docker.com/engine/install/linux-postinstall/) and complete the following steps:
+
+     1. Create the `docker` group.
+     2. Add your user to the `docker` group.
+     3. Log out and log back in so that your group membership is re-evaluated.
+        - If you are using an Azure VM, you may need to restart the VM completely.
+     4. Verify that you can run Docker commands without `sudo`.
+
+- VS Code with the 'Dev Containers' extension installed.
 - A local workspace directory at ~/git.
 - A valid git config on your machine.
 - ccache installed/configured (recommended).
