@@ -22,6 +22,7 @@ SLAM_CONFIG = "slam_params_parrot1.yml"
 def generate_launch_description():
     use_sim_time = LaunchConfiguration("use_sim_time")
     slam_enabled = LaunchConfiguration("slam")
+    log_level = LaunchConfiguration("log_level")
     package_share = FindPackageShare(PKG_NAME)
 
     ekf_config = PathJoinSubstitution(
@@ -57,6 +58,7 @@ def generate_launch_description():
         namespace=ROBOT_NAMESPACE,
         name="robot_localization",
         output="screen",
+        arguments=["--ros-args", "--log-level", log_level],
         parameters=[
             ekf_config,
             {"use_sim_time": use_sim_time},
@@ -74,6 +76,7 @@ def generate_launch_description():
         namespace=ROBOT_NAMESPACE,
         name="slam_toolbox",
         output="screen",
+        arguments=["--ros-args", "--log-level", log_level],
         condition=IfCondition(slam_enabled),
         parameters=[
             slam_config,
@@ -91,6 +94,8 @@ def generate_launch_description():
         [
             use_sim_time_arg,
             slam_arg,
+            DeclareLaunchArgument("log_level", default_value="warn",
+                                  description="Localisation logging level."),
             ekf,
             slam_toolbox,
         ]

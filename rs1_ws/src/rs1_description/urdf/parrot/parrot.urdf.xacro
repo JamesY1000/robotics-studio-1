@@ -92,8 +92,18 @@
     </inertial>
   </link>
 
+  <!-- The lidar's +X measurement axis points down along the drone's -Z axis -->
+  <joint name="${prefix}downwards_scan_joint" type="fixed">
+    <parent link="${prefix}base_link"/>
+    <child link="${prefix}downwards_scan"/>
+    <origin xyz="0 0 -0.1" rpy="0 ${pi / 2} 0"/>
+  </joint>
+
+  <link name="${prefix}downwards_scan"/>
+
+  <!-- RGBD camera looks forward, level with the drone's base frame. -->
   <joint name="${prefix}camera_joint" type="fixed">
-    <origin xyz="0.25 0.0 0.25" rpy="0 0.785398 0"/> <!-- 0.5 0.0 0.9 -->
+    <origin xyz="0.25 0.0 0.25" rpy="0 0 0"/>
     <parent link="${prefix}base_link"/>
     <child link="${prefix}camera_link"/>
   </joint>

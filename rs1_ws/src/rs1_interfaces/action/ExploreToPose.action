@@ -1,0 +1,9 @@
+# Goal
+geometry_msgs/PoseStamped target_pose
+---
+# Result
+string message
+---
+# Feedback
+string stage
+float32 distance_to_target

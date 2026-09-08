@@ -64,7 +64,7 @@ def generate_launch_description():
 
     log_level_arg = DeclareLaunchArgument(
         "log_level",
-        default_value="info",
+        default_value="warn",
         description="Nav2 logging level.",
     )
 

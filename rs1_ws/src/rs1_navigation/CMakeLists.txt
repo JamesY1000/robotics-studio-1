@@ -5,20 +5,36 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-# TODO (james): Clean up dependencies
-
 # find dependencies
 find_package(ament_cmake REQUIRED)
-find_package(ament_cmake_python REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(rclpy REQUIRED)
-find_package(std_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 
-# Install additional package folders
-install(
-  DIRECTORY config launch maps
+# Include the 'include' directory
+include_directories(include)
+
+add_executable(terrain_following
+  src/terrain_following.cpp
+  src/terrain_following_node.cpp
+)
+
+ament_target_dependencies(terrain_following rclcpp geometry_msgs sensor_msgs)
+
+# Install cpp executables
+install(TARGETS
+  terrain_following
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+# Install cpp executables
+install(DIRECTORY
+  config
+  launch
+  maps
   DESTINATION share/${PROJECT_NAME}
 )
+
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

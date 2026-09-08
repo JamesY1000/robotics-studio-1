@@ -1,0 +1,8 @@
+# Goal: the target ROI pose this robot must reach
+geometry_msgs/PoseStamped target_roi
+---
+# Result: explanation of the outcome
+string message
+---
+# Feedback: what stage the robot is currently executing
+string stage

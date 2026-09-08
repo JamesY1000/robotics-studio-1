@@ -112,16 +112,26 @@
       <pose relative_to='${prefix}base_scan'>0 0 0 0 0 0</pose>
       <visualize>$(arg laser_visual)</visualize>
       <topic>model/${gz_model_name}/scan</topic>
+      <!-- Limit the cloud to 24,480 samples/frame at 3 Hz for close-range DBH. -->
       <update_rate>3</update_rate>
       <gz_frame_id>${prefix}base_scan</gz_frame_id>
       <ray>
         <scan>
           <horizontal>
-            <samples>360</samples>
+            <samples>1440</samples>
             <resolution>1</resolution>
             <min_angle>0.0</min_angle>
             <max_angle>6.28319</max_angle>
           </horizontal>
+          <!-- Symmetric, odd layer count keeps the middle row horizontal.
+               ros_gz_bridge exposes that row as scan for 2D SLAM/Nav2;
+               scan/points contains every layer for tree measurements. -->
+          <vertical>
+            <samples>17</samples>
+            <resolution>1</resolution>
+            <min_angle>-0.5235987756</min_angle>
+            <max_angle>0.5235987756</max_angle>
+          </vertical>
         </scan>
         <range>
           <min>0.2</min>
