@@ -21,6 +21,8 @@ install(
              scripts/yolo_format.py
              scripts/camera_collector.py
              scripts/parrot_world_broadcaster.py
+             scripts/parrot_patrol.py
+             scripts/make_labeled_world.py
     DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)

@@ -50,12 +50,14 @@ camera_collector_node:
     database_dir: "/home/tim/git/robotics-studio-1/sample_generator/sample_gen/database"
     visualize: true
     image_topic: "/parrot1/camera/image"
+    depth_image_topic: "/parrot1/camera/depth/image" # used to skip occluded / not-visible trees
     camera_info_topic: "" # optional; if empty, intrinsics are computed from hfov + image size
     hfov: 2.0944 # Parrot rgbd camera horizontal FOV (rad)
     frame_id: "world"
     # Standard ROS optical frame of the parrot RGB camera (+Z forward), where
     # the pinhole projection u=fx*X/Z+cx, v=fy*Y/Z+cy is valid.
     camera_frame: "parrot1_camera_rgb_optical_frame"
+    oak_z_center_offset: 0.0 # oak box vertical shift (m); forest launch overrides to 0.65
     class_config_yml: class_configs.yml
     class_config_name: class_config
     class_config_dict_name: classes
@@ -69,8 +71,34 @@ parrot_world_broadcaster_node:
     odom_frame: "parrot1_odom"
     tf_topic: "/parrot1/tf"
     tf_static_topic: "/parrot1/tf_static"
-    # Must match the pose used to spawn the parrot in 41068_ignition.launch.py
-    spawn_pose: [2.0, 0.0, 0.8, 0.0] # x, y, z, yaw
+    odometry_topic: "/parrot1/odometry"
+    # Must match the pose used to spawn the parrot in rs1_sim spawn_parrot.launch.py
+    spawn_pose: [90.0, -48.0, 8.0, 0.0] # x, y, z, yaw
+
+# Teleports the parrot around the v2_forest world and collects one YOLO sample
+# per viewpoint. The labelled trees are already in the world, so no model
+# spawning/moving is required - this node only moves the drone and asks the
+# camera_collector to capture the current frame.
+parrot_patrol_node:
+  ros__parameters:
+    world_name: "v2_forest"
+    parrot_model_name: "parrot1"
+    derive_from_trees: true          # derive viewpoints from the labelled tree TFs
+    num_viewpoints: 0                # 0 = visit every labelled tree once
+    view_distance: 15.0              # horizontal distance camera -> tree (m)
+    camera_height: 3.0               # camera altitude above the tree base (m)
+    min_altitude: 2.0                # absolute floor for the viewpoint z
+    min_clearance: 4.0               # min dist from viewpoint to any other tree base (m)
+    max_viewpoint_tries: 30          # random angles tried per tree before skipping
+    min_trees: 50                    # wait until at least this many trees have been discovered
+    wait_for_trees_timeout: 120.0
+    waypoints_yml: "patrol_config.yml"
+    waypoints_key: "parrot_waypoints"
+    wait_after_teleport: 0.5
+    max_collect_retries: 500
+    num_passes: 3                     # full passes over the waypoints (upper bound)
+    target_samples: 400               # stop once this many samples exist (resume-aware)
+    seed: 0
 
 # Be careful not to exceed ~24 models spawned into the simulation at once
 

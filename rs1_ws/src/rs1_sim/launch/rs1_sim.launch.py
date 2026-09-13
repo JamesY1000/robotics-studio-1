@@ -46,7 +46,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "world",
             default_value="v2_forest",
-            choices=["large_demo", "simple_trees", "v1_forest", "v2_forest"],
+            choices=["large_demo", "simple_trees", "v1_forest", "v2_forest", "v2_forest_labeled"],
             description="Gazebo world to load.",
         ),
         DeclareLaunchArgument(

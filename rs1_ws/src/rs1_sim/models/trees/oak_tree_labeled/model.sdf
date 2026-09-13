@@ -1,0 +1,74 @@
+<sdf version="1.7">
+  <model name="Oak Tree Labeled">
+    <static>true</static>
+    <link name="link">
+      <collision name="collision">
+        <geometry>
+          <mesh>
+            <uri>model://trees/oak_tree/meshes/oak_tree.dae</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name="branch">
+        <geometry>
+          <mesh>
+            <uri>model://trees/oak_tree/meshes/oak_tree.dae</uri>
+            <submesh>
+              <name>Branch</name>
+            </submesh>
+          </mesh>
+        </geometry>
+        <material>
+          <double_sided>true</double_sided>
+          <diffuse>1.0 1.0 1.0</diffuse>
+          <script>
+            <uri>model://trees/oak_tree/materials/scripts/</uri>
+            <uri>model://trees/oak_tree/materials/textures/</uri>
+            <name>OakTree/Branch</name>
+          </script>
+
+          <pbr>
+            <metal>
+              <albedo_map>model://trees/oak_tree/materials/textures/branch_diffuse.png</albedo_map>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <visual name="bark">
+        <geometry>
+          <mesh>
+            <uri>model://trees/oak_tree/meshes/oak_tree.dae</uri>
+            <submesh>
+              <name>Bark</name>
+            </submesh>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>1.0 1.0 1.0</diffuse>
+          <script>
+            <uri>model://trees/oak_tree/materials/scripts/</uri>
+            <uri>model://trees/oak_tree/materials/textures/</uri>
+            <name>OakTree/Bark</name>
+          </script>
+
+          <pbr>
+            <metal>
+              <albedo_map>model://trees/oak_tree/materials/textures/bark_diffuse.png</albedo_map>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+
+    <!-- ObjectLabelPlugin: publishes ground-truth ObjectLabel + TF used by the
+         sample generator. <classification> MUST match the class id in
+         class_configs.yml (1 = OAK_TREE). -->
+    <plugin
+      filename="libobject_label_plugin.so"
+      name="object_label_plugin::ObjectLabelPlugin">
+      <linkName>link</linkName>
+      <classification>1</classification>
+      <updateRate>10</updateRate>
+    </plugin>
+  </model>
+</sdf>
