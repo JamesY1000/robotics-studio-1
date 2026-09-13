@@ -51,13 +51,9 @@ camera_collector_node:
     visualize: true
     image_topic: "/parrot1/camera/image"
 <<<<<<< HEAD
-<<<<<<< HEAD
     depth_image_topic: "/parrot1/camera/depth/image" # used to skip occluded / not-visible trees
 =======
 >>>>>>> 8dfe850 (Migrated James' sample generation plugin to Gazebo6 and to using our tree models.)
-=======
-    depth_image_topic: "/parrot1/camera/depth/image" # used to skip occluded / not-visible trees
->>>>>>> 7b76567 (In environment sample generation)
     camera_info_topic: "" # optional; if empty, intrinsics are computed from hfov + image size
     hfov: 2.0944 # Parrot rgbd camera horizontal FOV (rad)
     frame_id: "world"
@@ -65,13 +61,9 @@ camera_collector_node:
     # the pinhole projection u=fx*X/Z+cx, v=fy*Y/Z+cy is valid.
     camera_frame: "parrot1_camera_rgb_optical_frame"
 <<<<<<< HEAD
-<<<<<<< HEAD
     oak_z_center_offset: 0.0 # oak box vertical shift (m); forest launch overrides to 0.65
 =======
 >>>>>>> 8dfe850 (Migrated James' sample generation plugin to Gazebo6 and to using our tree models.)
-=======
-    oak_z_center_offset: 0.0 # oak box vertical shift (m); forest launch overrides to 0.65
->>>>>>> 7b76567 (In environment sample generation)
     class_config_yml: class_configs.yml
     class_config_name: class_config
     class_config_dict_name: classes
@@ -85,10 +77,6 @@ parrot_world_broadcaster_node:
     odom_frame: "parrot1_odom"
     tf_topic: "/parrot1/tf"
     tf_static_topic: "/parrot1/tf_static"
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 7b76567 (In environment sample generation)
     odometry_topic: "/parrot1/odometry"
     # Must match the pose used to spawn the parrot in rs1_sim spawn_parrot.launch.py
     spawn_pose: [90.0, -48.0, 8.0, 0.0] # x, y, z, yaw
@@ -117,13 +105,6 @@ parrot_patrol_node:
     num_passes: 3                     # full passes over the waypoints (upper bound)
     target_samples: 400               # stop once this many samples exist (resume-aware)
     seed: 0
-<<<<<<< HEAD
-=======
-    # Must match the pose used to spawn the parrot in 41068_ignition.launch.py
-    spawn_pose: [2.0, 0.0, 0.8, 0.0] # x, y, z, yaw
->>>>>>> 8dfe850 (Migrated James' sample generation plugin to Gazebo6 and to using our tree models.)
-=======
->>>>>>> 7b76567 (In environment sample generation)
 
 # Be careful not to exceed ~24 models spawned into the simulation at once
 
