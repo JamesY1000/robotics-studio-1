@@ -12,7 +12,7 @@ A custom RViz2 panel plugin (E-stop,) built with `rviz_common`, `pluginlib`, and
 ## Build
 
 ```bash
-cd ~/ros2_ws
+cd ros2_ws
 colcon build --packages-select rs1_ui
 source install/setup.zsh
 ```
