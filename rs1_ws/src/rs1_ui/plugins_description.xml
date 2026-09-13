@@ -1,4 +1,4 @@
-<library path="command_panel">
+<library path="rs1_ui">
   <class name="command_panel/CommandPanel"
          type="command_panel::CommandPanel"
          base_class_type="rviz_common::Panel">
