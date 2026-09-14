@@ -2,11 +2,11 @@
 
 A custom RViz2 panel plugin (E-stop,) built with `rviz_common`, `pluginlib`, and Qt5 Widgets.
 
-## What it publishes
+## What the buttons do
 
 | Control                      | Topic                  | Message type             | Note                                                 |
 |------------------------------|----------------------  |--------------------------|------------------------------------------------------|
-| Forward/Reverse/Stop Buttons | `[robot_type]/cmd_vel` | `geometry_msgs/msg/Twist`| -                                                    |
+| Forward/Reverse/Stop Buttons | `[robot_type]/cmd_vel` | `geometry_msgs/msg/Twist`| Controls the respective robot                        |
 | Robot Selection dropdown     | -                      | -                        | Changes topic names for buttons based on robot chosen|
 
 ## Build
