@@ -30,6 +30,9 @@ CommandPanel::CommandPanel(QWidget * parent)
   forward_button_ = new QPushButton("Forward");
   reverse_button_ = new QPushButton("Reverse");
   e_stop_button_ = new QPushButton("E-Stop");
+  forward_button_->setCheckable(true);
+  reverse_button_->setCheckable(true);
+  e_stop_button_->setCheckable(true);
   robot_control_layout->addWidget(forward_button_);
   robot_control_layout->addWidget(reverse_button_);
   robot_control_layout->addWidget(e_stop_button_);
@@ -83,6 +86,18 @@ void CommandPanel::onRobotChanged(int index)
 
 void CommandPanel::onForwardClicked()
 {
+  if (e_stop_button_->isChecked()) {
+    // If E-Stop is active, ignore forward command
+    return;
+  }
+
+  if (!forward_button_->isChecked()) {
+    // If the forward button is unchecked, reset velocity to zero
+    velocity_value_ = 0.0;
+    velocity_label_->setText("0.00 m/s");
+    return;
+  }
+
   // Set the velocity to a positive value to indicate forward motion
   velocity_value_ = 25.0;
   velocity_label_->setText("0.25 m/s");
@@ -90,6 +105,10 @@ void CommandPanel::onForwardClicked()
 
 void CommandPanel::onReverseClicked()
 {
+  if (e_stop_button_->isChecked()) {
+    // If E-Stop is active, ignore reverse command
+    return;
+  }
   // Set the velocity to a negative value to indicate reverse motion
   velocity_value_ = -25.0;
   velocity_label_->setText("-0.25 m/s");
@@ -97,9 +116,17 @@ void CommandPanel::onReverseClicked()
 
 void CommandPanel::onEStopClicked()
 {
-  // Stop the robot by setting velocity to zero
-  velocity_value_ = 0.0;
-  velocity_label_->setText("0.00 m/s");
+  // Check if the E-Stop button is checked (activated)
+  if (e_stop_button_->isChecked()) {
+    e_stop_button_->setStyleSheet("background-color: red; color: white;");
+    e_stop_button_->setText("E-Stop Activated");
+    // Reset the velocity to zero when E-Stop is activated
+    velocity_value_ = 0.0;
+    velocity_label_->setText("0.00 m/s");
+  } else {
+    e_stop_button_->setStyleSheet("");
+    e_stop_button_->setText("E-Stop");
+  }
 }
 
 void CommandPanel::publishVelocity()
