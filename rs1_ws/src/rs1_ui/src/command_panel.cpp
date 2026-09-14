@@ -86,18 +86,24 @@ void CommandPanel::onRobotChanged(int index)
 
 void CommandPanel::onForwardClicked()
 {
+  // Check if E-Stop is active; if so, ignore forward command
   if (e_stop_button_->isChecked()) {
-    // If E-Stop is active, ignore forward command
     return;
   }
 
+  // Check if the forward button is checked (activated)
   if (!forward_button_->isChecked()) {
     // If the forward button is unchecked, reset velocity to zero
+    forward_button_->setStyleSheet("");  // Reset forward button style
     velocity_value_ = 0.0;
     velocity_label_->setText("0.00 m/s");
     return;
   }
 
+  // Set the forward button style to indicate it's active and deactivate the reverse button
+  forward_button_->setStyleSheet("background-color: green; color: white;");
+  reverse_button_->setChecked(false);
+  reverse_button_->setStyleSheet("");  // Reset reverse button style
   // Set the velocity to a positive value to indicate forward motion
   velocity_value_ = 25.0;
   velocity_label_->setText("0.25 m/s");
@@ -105,10 +111,24 @@ void CommandPanel::onForwardClicked()
 
 void CommandPanel::onReverseClicked()
 {
+  // Check if E-Stop is active; if so, ignore reverse command
   if (e_stop_button_->isChecked()) {
-    // If E-Stop is active, ignore reverse command
     return;
   }
+
+  // Check if the reverse button is checked (activated)
+  if (!reverse_button_->isChecked()) {
+    // If the reverse button is unchecked, reset velocity to zero
+    reverse_button_->setStyleSheet("");  // Reset reverse button style
+    velocity_value_ = 0.0;
+    velocity_label_->setText("0.00 m/s");
+    return;
+  }
+
+  // Set the reverse button style to indicate it's active and deactivate the forward button
+  reverse_button_->setStyleSheet("background-color: blue; color: white;");
+  forward_button_->setChecked(false);
+  forward_button_->setStyleSheet("");  // Reset forward button style
   // Set the velocity to a negative value to indicate reverse motion
   velocity_value_ = -25.0;
   velocity_label_->setText("-0.25 m/s");
@@ -118,8 +138,14 @@ void CommandPanel::onEStopClicked()
 {
   // Check if the E-Stop button is checked (activated)
   if (e_stop_button_->isChecked()) {
+    // Change the E-Stop button style to indicate it's active
     e_stop_button_->setStyleSheet("background-color: red; color: white;");
     e_stop_button_->setText("E-Stop Activated");
+    // deactivate the forward and reverse buttons
+    forward_button_->setChecked(false);
+    forward_button_->setStyleSheet("");  // Reset forward button style
+    reverse_button_->setChecked(false);
+    reverse_button_->setStyleSheet("");  // Reset reverse button style
     // Reset the velocity to zero when E-Stop is activated
     velocity_value_ = 0.0;
     velocity_label_->setText("0.00 m/s");
