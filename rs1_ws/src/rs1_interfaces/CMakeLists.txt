@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(rs1_msgs)
+project(rs1_interfaces)
 
 # TODO (james): Clean up dependencies
 

@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>rs1_msgs</name>
+  <name>rs1_interfaces</name>
   <version>0.0.1</version>
-  <description>Custom msgs for RS1 project</description>
+  <description>Custom interfaces for RS1 project</description>
   <maintainer email="timolly2202@hotmail.com">Tim</maintainer>
   <license>TODO: License declaration</license>
 
