@@ -1,0 +1,19 @@
+<library path="rs1_ui">
+  <class name="rs1_ui/CommandPanel"
+         type="command_panel::CommandPanel"
+         base_class_type="rqt_gui_cpp::Plugin">
+    <description>
+      RQT plugin: E-Stop and other functions to be added.
+    </description>
+    <qtgui>
+      <group>
+        <label>Robot Tools</label>
+        <icon type="theme">system-run</icon>
+        <statustip>Command panel (C++) for TODO</statustip>
+      </group>
+      <label>Command Panel (C++)</label>
+      <icon type="theme">system-run</icon>
+      <statustip>Button stop commands.</statustip>
+    </qtgui>
+  </class>
+</library>

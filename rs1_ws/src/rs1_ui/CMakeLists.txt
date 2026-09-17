@@ -8,7 +8,7 @@ endif()
 
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(rviz_common REQUIRED)
+find_package(rqt_gui_cpp REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
@@ -32,7 +32,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 
 ament_target_dependencies(${PROJECT_NAME}
   rclcpp
-  rviz_common
+  rqt_gui_cpp
   pluginlib
   std_msgs
   geometry_msgs
@@ -40,8 +40,8 @@ ament_target_dependencies(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME} Qt5::Widgets)
 
-# Register the plugin with pluginlib / rviz_common
-pluginlib_export_plugin_description_file(rviz_common plugins_description.xml)
+# Register the plugin with pluginlib / rqt_gui_cpp
+pluginlib_export_plugin_description_file(rqt_gui plugin.xml)
 
 install(
   TARGETS ${PROJECT_NAME}
@@ -57,12 +57,12 @@ install(
 )
 
 install(
-  FILES plugins_description.xml
+  FILES plugin.xml
   DESTINATION share/${PROJECT_NAME}
 )
 
 ament_export_include_directories(include)
 ament_export_libraries(${PROJECT_NAME})
-ament_export_dependencies(rclcpp rviz_common pluginlib std_msgs geometry_msgs)
+ament_export_dependencies(rclcpp rqt_gui_cpp pluginlib std_msgs geometry_msgs)
 
 ament_package()

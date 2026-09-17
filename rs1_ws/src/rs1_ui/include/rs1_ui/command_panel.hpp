@@ -1,9 +1,9 @@
-#ifndef COMMAND_PANEL__COMMAND_PANEL_HPP_
-#define COMMAND_PANEL__COMMAND_PANEL_HPP_
+#ifndef RS1_UI__COMMAND_PANEL_HPP_
+#define RS1_UI__COMMAND_PANEL_HPP_
 
 #include <string>
 
-#include <rviz_common/panel.hpp>
+#include <rqt_gui_cpp/plugin.h>
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 #include <std_msgs/msg/bool.hpp>
@@ -19,18 +19,18 @@ namespace command_panel
 {
 
 // An RViz2 panel with Forward, Reverse, and E-Stop controls for husky and parrot.
-class CommandPanel : public rviz_common::Panel
+class CommandPanel : public rqt_gui_cpp::Plugin
 {
   Q_OBJECT
 
 public:
-  explicit CommandPanel(QWidget * parent = nullptr);
-  ~CommandPanel() override;
+  CommandPanel();
 
-  // Called by RViz once the panel has a DisplayContext (and therefore a
-  // ROS node) available. Publishers must be created here, not in the
-  // constructor.
-  void onInitialize() override;
+  // rqt_gui_cpp calls initPlugin() once the plugin's node_ (inherited
+  // from rqt_gui_cpp::Plugin) is ready - publishers must be created
+  // here, not in the constructor.
+  void initPlugin(qt_gui_cpp::PluginContext & context) override;
+  void shutdownPlugin() override;
 
 private Q_SLOTS:
 
@@ -50,10 +50,11 @@ private Q_SLOTS:
   void publishVelocity();
 
 private:
-  rclcpp::Node::SharedPtr node_; // The ROS node used for publishing messages
+  void buildUI();
 
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub_; // Publisher to send velocity commands
 
+  QWidget * widget_; // The main widget for the panel
   QPushButton * forward_button_; // Button to move the robot forward
   QPushButton * reverse_button_; // Button to move the robot backward
   QPushButton * e_stop_button_; // Button to stop the robot immediately
@@ -69,4 +70,4 @@ private:
 
 }  // namespace command_panel
 
-#endif  // COMMAND_PANEL__COMMAND_PANEL_HPP_
+#endif  // RS1_UI__COMMAND_PANEL_HPP_

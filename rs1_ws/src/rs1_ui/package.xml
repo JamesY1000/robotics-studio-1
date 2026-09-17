@@ -4,7 +4,7 @@
   <name>rs1_ui</name>
   <version>0.1.0</version>
   <description>
-    Custom RViz2 panel plugin with e-stop and other commands
+    Custom rqt panel plugin with e-stop and other commands
   </description>
   <maintainer email="nikhil.kumar@todo.todo">root</maintainer>
   <license>TODO: License declaration</license>
@@ -12,7 +12,8 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <depend>rclcpp</depend>
-  <depend>rviz_common</depend>
+  <depend>rqt_gui</depend>
+  <depend>rqt_gui_cpp</depend>
   <depend>pluginlib</depend>
   <depend>std_msgs</depend>
   <depend>geometry_msgs</depend>
@@ -20,6 +21,6 @@
 
   <export>
     <build_type>ament_cmake</build_type>
-    <rviz plugin="${prefix}/plugins_description.xml"/>
+    <rqt_gui plugin="${prefix}/plugin.xml"/>
   </export>
 </package>

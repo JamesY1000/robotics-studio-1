@@ -4,17 +4,24 @@
 #include <QVBoxLayout>
 #include <QString>
 
-#include <rviz_common/display_context.hpp>
+#include <pluginlib/class_list_macros.hpp>
 
 namespace command_panel
 {
 
-CommandPanel::CommandPanel(QWidget * parent)
-: rviz_common::Panel(parent),
+CommandPanel::CommandPanel()
+: rqt_gui_cpp::Plugin(),
+  widget_(nullptr),
   linear_velocity_scale_(1.0),
   velocity_value_(0.0),
   cmd_vel_topic_("/husky1/cmd_vel")
 {
+  setObjectName("CommandPanel");
+}
+
+void CommandPanel::buildUI()
+{
+  widget_ = new QWidget;
   auto * layout = new QVBoxLayout;
 
   // --- Robot selection ---
@@ -45,8 +52,8 @@ CommandPanel::CommandPanel(QWidget * parent)
   velocity_layout->addWidget(velocity_label_);
   layout->addLayout(velocity_layout);
 
-  // Set the layout for the panel
-  setLayout(layout);
+  widget_->setLayout(layout); // Set the layout for the main widget
+  widget_->setWindowTitle("Command Panel"); // Set the window title for the main widget
 
   // Connect button signals to their respective slots
   connect(forward_button_, &QPushButton::clicked, this, &CommandPanel::onForwardClicked);
@@ -54,23 +61,33 @@ CommandPanel::CommandPanel(QWidget * parent)
   connect(e_stop_button_, &QPushButton::clicked, this, &CommandPanel::onEStopClicked);
   connect(robot_combo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
     this, &CommandPanel::onRobotChanged);
-
-  // Republish cmd_vel continuously at 10 Hz, matching common ROS 2 driver expectations.
-  publish_timer_ = new QTimer(this);
-  connect(publish_timer_, &QTimer::timeout, this, &CommandPanel::publishVelocity);
 }
 
-CommandPanel::~CommandPanel() = default;
-
-void CommandPanel::onInitialize()
+void CommandPanel::initPlugin(qt_gui_cpp::PluginContext & context)
 {
-  // RViz2 panels get their ROS node from the DisplayContext, not from
-  // rclcpp::init() directly - the node already belongs to the RViz process.
-  node_ = getDisplayContext()->getRosNodeAbstraction().lock()->get_raw_node();
+  buildUI();
 
   cmd_vel_pub_ = node_->create_publisher<geometry_msgs::msg::Twist>(cmd_vel_topic_, 10);
 
+  // Add the widget to the user interface
+  if (context.serialNumber() > 1) {
+    widget_->setWindowTitle(
+      widget_->windowTitle() + " (" + QString::number(context.serialNumber()) + ")");
+  }
+  context.addWidget(widget_);
+
+  // Republish cmd_vel continuously at 10 Hz, matching common ROS 2 driver expectations.
+  publish_timer_ = new QTimer(widget_);
+  connect(publish_timer_, &QTimer::timeout, this, &CommandPanel::publishVelocity);
   publish_timer_->start(100);
+}
+
+void CommandPanel::shutdownPlugin()
+{
+  // Stop the timer when shutting down the plugin
+  if (publish_timer_) {
+    publish_timer_->stop();
+  }
 }
 
 void CommandPanel::onRobotChanged(int index)
@@ -168,4 +185,4 @@ void CommandPanel::publishVelocity()
 }  // namespace command_panel
 
 #include <pluginlib/class_list_macros.hpp>
-PLUGINLIB_EXPORT_CLASS(command_panel::CommandPanel, rviz_common::Panel)
+PLUGINLIB_EXPORT_CLASS(command_panel::CommandPanel, rqt_gui_cpp::Plugin)
