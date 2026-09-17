@@ -1,0 +1,23 @@
+yolo_node:
+  ros__parameters:
+
+    # Camera topic
+    image_topic: "/parrot1/camera/image"
+
+    # YOLO model
+    model_path: "best.pt"
+
+    # Detection confidence threshold
+    confidence_threshold: 0.5
+
+    # IoU threshold for NMS
+    iou_threshold: 0.45
+
+    # Device
+    device: "auto"
+
+    # Optional
+    publish_debug_image: true
+
+    # Debug image topic
+    debug_image_topic: "/yolo/debug_image"
