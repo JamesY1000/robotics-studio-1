@@ -1,6 +1,6 @@
 # command_panel
 
-A custom RViz2 panel plugin (E-stop,) built with `rqt_gui_cpp::Plugin`, `pluginlib`, and Qt5 Widgets.
+A custom RQT panel plugin (E-stop,) built with `rqt_gui_cpp::Plugin`, `pluginlib`, and Qt5 Widgets.
 
 ## What the buttons do
 
