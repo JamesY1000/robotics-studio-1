@@ -6,7 +6,7 @@
 
 #include <pluginlib/class_list_macros.hpp>
 
-namespace command_panel
+namespace rs1_ui
 {
 
 CommandPanel::CommandPanel()
@@ -67,7 +67,12 @@ void CommandPanel::initPlugin(qt_gui_cpp::PluginContext & context)
 {
   buildUI();
 
-  cmd_vel_pub_ = node_->create_publisher<geometry_msgs::msg::Twist>(cmd_vel_topic_, 10);
+  cmd_vel_pub_ = node_->create_publisher<geometry_msgs::msg::Twist>(
+    cmd_vel_topic_, 10);
+
+  action_client_ =
+    rclcpp_action::create_client<nav2_msgs::action::FollowWaypoints>(
+      node_, "husky1/follow_waypoints");
 
   // Add the widget to the user interface
   if (context.serialNumber() > 1) {
@@ -95,9 +100,13 @@ void CommandPanel::onRobotChanged(int index)
   velocity_value_ = 0.0;
   velocity_label_->setText("0.00 m/s");
 
-  cmd_vel_topic_ = index == 0 ? "/husky1/cmd_vel" : "/parrot1/cmd_vel";
+  const std::string robot_type = index == 0 ? "/husky1" : "/parrot1";
   if (node_) {
-    cmd_vel_pub_ = node_->create_publisher<geometry_msgs::msg::Twist>(cmd_vel_topic_, 10);
+    cmd_vel_pub_ = node_->create_publisher<geometry_msgs::msg::Twist>(
+      robot_type + "/cmd_vel", 10);
+
+    action_client_ = rclcpp_action::create_client<nav2_msgs::action::FollowWaypoints>(
+      node_, robot_type + "/follow_waypoints");
   }
 }
 
@@ -163,7 +172,9 @@ void CommandPanel::onEStopClicked()
     forward_button_->setStyleSheet("");  // Reset forward button style
     reverse_button_->setChecked(false);
     reverse_button_->setStyleSheet("");  // Reset reverse button style
-    // Reset the velocity to zero when E-Stop is activated
+
+    //Reset goals and the velocity to zero when E-Stop is activated
+    action_client_->async_cancel_all_goals();
     velocity_value_ = 0.0;
     velocity_label_->setText("0.00 m/s");
   } else {
@@ -182,7 +193,7 @@ void CommandPanel::publishVelocity()
   cmd_vel_pub_->publish(msg);
 }
 
-}  // namespace command_panel
+}  // namespace rs1_ui
 
 #include <pluginlib/class_list_macros.hpp>
-PLUGINLIB_EXPORT_CLASS(command_panel::CommandPanel, rqt_gui_cpp::Plugin)
+PLUGINLIB_EXPORT_CLASS(rs1_ui::CommandPanel, rqt_gui_cpp::Plugin)

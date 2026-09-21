@@ -8,6 +8,8 @@
 #include <geometry_msgs/msg/twist.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/string.hpp>
+#include "nav2_msgs/action/follow_waypoints.hpp"
+#include "rclcpp_action/rclcpp_action.hpp"
 
 #include <QWidget>
 #include <QPushButton>
@@ -15,7 +17,7 @@
 #include <QComboBox>
 #include <QTimer>
 
-namespace command_panel
+namespace rs1_ui
 {
 
 // An RViz2 panel with Forward, Reverse, and E-Stop controls for husky and parrot.
@@ -53,6 +55,7 @@ private:
   void buildUI();
 
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub_; // Publisher to send velocity commands
+  rclcpp_action::Client<nav2_msgs::action::FollowWaypoints>::SharedPtr action_client_; // Action client to send follow waypoints commands
 
   QWidget * widget_; // The main widget for the panel
   QPushButton * forward_button_; // Button to move the robot forward
@@ -68,6 +71,6 @@ private:
   std::string cmd_vel_topic_; // The topic to publish velocity commands to
 };
 
-}  // namespace command_panel
+}  // namespace rs1_ui
 
 #endif  // RS1_UI__COMMAND_PANEL_HPP_

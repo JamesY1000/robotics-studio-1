@@ -8,6 +8,8 @@ endif()
 
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_action REQUIRED)
+find_package(nav2_msgs REQUIRED)
 find_package(rqt_gui_cpp REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(std_msgs REQUIRED)
@@ -32,6 +34,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 
 ament_target_dependencies(${PROJECT_NAME}
   rclcpp
+  rclcpp_action
+  nav2_msgs
   rqt_gui_cpp
   pluginlib
   std_msgs
@@ -63,6 +67,6 @@ install(
 
 ament_export_include_directories(include)
 ament_export_libraries(${PROJECT_NAME})
-ament_export_dependencies(rclcpp rqt_gui_cpp pluginlib std_msgs geometry_msgs)
+ament_export_dependencies(rclcpp rclcpp_action nav2_msgs rqt_gui_cpp pluginlib std_msgs geometry_msgs)
 
 ament_package()

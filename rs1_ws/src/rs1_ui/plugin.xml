@@ -1,6 +1,6 @@
 <library path="rs1_ui">
   <class name="rs1_ui/CommandPanel"
-         type="command_panel::CommandPanel"
+         type="rs1_ui::CommandPanel"
          base_class_type="rqt_gui_cpp::Plugin">
     <description>
       RQT plugin: E-Stop and other functions to be added.
