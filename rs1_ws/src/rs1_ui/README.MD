@@ -15,7 +15,7 @@ A custom RQT panel plugin (E-stop,) built with `rqt_gui_cpp::Plugin`, `pluginlib
 
 ```bash
 cd ros2_ws
-colcon build --packages-select rs1_ui
+colcon build
 source install/setup.zsh
 ros2 launch rs1_sim rs1_sim.launch.py
 ```
