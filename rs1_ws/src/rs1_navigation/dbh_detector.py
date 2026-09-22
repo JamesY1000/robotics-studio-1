@@ -17,6 +17,8 @@ class DBHDetector(Node):
 
         self.get_logger().info("DBH Detector started")
 
+        self.known_trees = [(5.0, 0.5), (5.0, -0.5)]
+
     def scan_callback(self, msg):
 
         # Process every 5th scan
@@ -84,12 +86,23 @@ class DBHDetector(Node):
             dbh, width_x, width_y = self.estimate_diameter(cluster)
 
             ratio = max(width_x, width_y) / max(min(width_x, width_y), 0.001)
-
             distance = min(math.sqrt(x * x + y * y) for x, y in cluster)
 
             cx = sum(x for x, y in cluster) / len(cluster)
-
             cy = sum(y for x, y in cluster) / len(cluster)
+            tree_id, error = self.validate_tree_location(cx, cy)
+
+            observation = {
+                "x": cx,
+                "y": cy,
+                "dbh": dbh,
+                "distance": distance,
+                "error": error,
+            }
+            self.get_logger().info(f"Observation = {observation}")
+
+            self.get_logger().info(f"Closest known tree = {tree_id}")
+            self.get_logger().info(f"Position error = {error:.2f} m")
 
             self.get_logger().info(f"Tree {i}: Estimated DBH = {dbh:.2f} m")
 
@@ -181,6 +194,19 @@ class DBHDetector(Node):
         diameter = max(width_x, width_y)
 
         return diameter, width_x, width_y
+
+    def validate_tree_location(self, detected_x, detected_y):
+        nearest_tree = None
+        nearest_error = float("inf")
+
+        for i, (tx, ty) in enumerate(self.known_trees):
+            error = math.sqrt((detected_x - tx) ** 2 + (detected_y - ty) ** 2)
+
+            if error < nearest_error:
+                nearest_error = error
+                nearest_tree = i
+
+        return nearest_tree, nearest_error
 
 
 def main():
