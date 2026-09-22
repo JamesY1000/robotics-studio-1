@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """YOLO tree identification for the RS1 Parrot camera.
 
 Uses /yolo/detect service running YOLO on the latest RGB frame and returns the detections as YoloDetections msg.

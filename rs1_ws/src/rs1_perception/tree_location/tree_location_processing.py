@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Turns YOLO tree detections into world-frame tree base locations.
 
 1. For each BoundingBox sample the RGBD depth image.

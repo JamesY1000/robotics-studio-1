@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Broadcasts the Parrot drone's TF tree onto the global ``/tf`` so the
 tree-location node can look up ``world -> parrot1_camera_*_optical_frame``.
 
