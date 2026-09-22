@@ -15,15 +15,19 @@ find_package(rclpy REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
-# find_package(rs1_interfaces REQUIRED)
+find_package(rs1_interfaces REQUIRED)
 
 install(
-  PROGRAMS tree_identification/yolo_node.py
+  PROGRAMS
+    tree_identification/yolo_node.py
+    tree_location/tree_location_processing.py
+    tree_location/parrot_world_broadcaster.py
+    scripts/test_tree_locations.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
 install(
-  DIRECTORY config launch
+  DIRECTORY config launch models
   DESTINATION share/${PROJECT_NAME}
 )
 

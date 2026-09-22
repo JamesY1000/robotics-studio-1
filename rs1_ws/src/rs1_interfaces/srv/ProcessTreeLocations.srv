@@ -1,3 +1,4 @@
 bool start_lidar
+YoloDetections detections
 ---
 TreeLocation[] tree_data

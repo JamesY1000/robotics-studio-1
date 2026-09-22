@@ -1,2 +1,2 @@
 string tree_type
-geometry_msgs/msg/Point location
+geometry_msgs/Point location
