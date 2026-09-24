@@ -7,6 +7,7 @@ Panels:
         - /Global Options1
         - /TF1
         - /TreeLocations1
+        - /TreeMap1
       Splitter Ratio: 0.5
     Tree Height: 500
   - Class: rviz_default_plugins/Image
@@ -67,6 +68,20 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /tree_locations/markers
+      Value: true
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: TreeMap
+      Namespaces:
+        {}
+      Queue Size: 100
+      Topic:
+        Depth: 5
+        Durability Policy: Transient Local
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /tree_locations/map
       Value: true
     - Class: rviz_default_plugins/Image
       Enabled: true

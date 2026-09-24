@@ -82,7 +82,7 @@ def generate_launch_description():
                               description="Wait for Enter between stops. Only useful when the "
                                           "visualiser has an interactive terminal, i.e. run it "
                                           "with `ros2 run` instead of this launch file."),
-        DeclareLaunchArgument("show_ground_truth", default_value="false",
+        DeclareLaunchArgument("show_ground_truth", default_value="true",
                               description="Draw a grey marker at every true tree position."),
         DeclareLaunchArgument("gazebo", default_value="true",
                               description="Spawn coloured marker poles in the Gazebo world."),

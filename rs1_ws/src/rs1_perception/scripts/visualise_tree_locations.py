@@ -21,7 +21,8 @@ Two extra ways to check the result against reality:
   every detected tree base, so you can see the marker sitting next to the real
   tree in the simulator's 3D view.
 * ``--show-ground-truth`` - publishes a plain grey marker at *every* tree in the
-  world SDF, so RViz shows the full forest layout next to the detections.
+  world SDF, so RViz shows the full forest layout next to the detections
+  (on by default).
 
 Typical use::
 
@@ -501,8 +502,9 @@ def main() -> int:
     ap.add_argument("--world-file", default="")
     ap.add_argument("--model-name", default="parrot1")
     ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("--show-ground-truth", action=argparse.BooleanOptionalAction, default=False,
-                    help="Also draw a grey marker at every true tree position (from the SDF).")
+    ap.add_argument("--show-ground-truth", action=argparse.BooleanOptionalAction, default=True,
+                    help="Draw a grey marker at every true tree position from the world SDF "
+                         "(default: on).")
     ap.add_argument("--gazebo", action=argparse.BooleanOptionalAction, default=False,
                     help="Also spawn coloured marker poles in the Gazebo world "
                          "(/world/<world>/create) at each detected tree, so the result "

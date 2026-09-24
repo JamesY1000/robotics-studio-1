@@ -24,6 +24,7 @@ install(
     tree_location/parrot_world_broadcaster.py
     scripts/test_tree_locations.py
     scripts/visualise_tree_locations.py
+    scripts/map_tree_locations.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
