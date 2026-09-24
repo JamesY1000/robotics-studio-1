@@ -4,5 +4,12 @@
 
 .vscode/
 
-**/__pycache__/
+yolo_training/datasets
+yolo_training/database
+yolo_training/runs
+yolo_training/to_check
+
+sample_gen/database
+
+*__pycache__/
 *.py[cod]
