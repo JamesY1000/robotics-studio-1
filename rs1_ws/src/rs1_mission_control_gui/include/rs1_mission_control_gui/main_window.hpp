@@ -14,6 +14,8 @@
 #include <vector>
 
 #include <rclcpp/rclcpp.hpp>
+#include <nav2_msgs/action/follow_waypoints.hpp>
+#include "rclcpp_action/rclcpp_action.hpp"
 #include <geometry_msgs/msg/twist.hpp>
 #include <geometry_msgs/msg/polygon_stamped.hpp>
 #include <nav_msgs/msg/odometry.hpp>
@@ -45,13 +47,15 @@ struct RobotEntry
   RobotCardWidget * card = nullptr;
 
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub;
-  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr estop_pub;
-  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr return_home_pub;
+  rclcpp_action::Client<nav2_msgs::action::FollowWaypoints>::SharedPtr action_client_; // Action client to send follow waypoints commands
+  // rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr estop_pub;
+  // rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr return_home_pub;
 
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub;
-  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr battery_sub;
-  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr mode_sub;
+  // rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr battery_sub;
+  // rclcpp::Subscription<std_msgs::msg::String>::SharedPtr mode_sub;
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr camera_sub;
+
 };
 
 class MainWindow : public QMainWindow
@@ -92,6 +96,8 @@ private:
   // Top bar
   QLabel * clock_label_;
   QLabel * ready_badge_;
+  QPushButton * start_button_;
+  QPushButton * estop_button_;
 
   // Sidebar system status
   QLabel * comms_status_dot_;
@@ -122,19 +128,19 @@ private:
   int trees_total_ = 0;
   float mission_progress_percent_value_ = 0.0f;
 
-  rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr agb_map_sub_;
-  rclcpp::Subscription<visualization_msgs::msg::MarkerArray>::SharedPtr other_trees_sub_;
-  rclcpp::Subscription<rs1_mission_interfaces::msg::TreeSampleArray>::SharedPtr selected_trees_sub_;
-  rclcpp::Subscription<geometry_msgs::msg::PolygonStamped>::SharedPtr roi_boundary_sub_;
+  // rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr agb_map_sub_;
+  // rclcpp::Subscription<visualization_msgs::msg::MarkerArray>::SharedPtr other_trees_sub_;
+  // rclcpp::Subscription<rs1_mission_interfaces::msg::TreeSampleArray>::SharedPtr selected_trees_sub_;
+  // rclcpp::Subscription<geometry_msgs::msg::PolygonStamped>::SharedPtr roi_boundary_sub_;
 
-  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr comms_ok_sub_;
-  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr mission_stage_sub_;
-  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr mission_progress_sub_;
-  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr trees_sampled_sub_;
-  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr trees_total_sub_;
+  // rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr comms_ok_sub_;
+  // rclcpp::Subscription<std_msgs::msg::String>::SharedPtr mission_stage_sub_;
+  // rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr mission_progress_sub_;
+  // rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr trees_sampled_sub_;
+  // rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr trees_total_sub_;
 
-  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr agb_current_sub_;
-  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr agb_delta_sub_;
+  // rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr agb_current_sub_;
+  // rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr agb_delta_sub_;
 };
 
 }  // namespace rs1_mission_control_gui

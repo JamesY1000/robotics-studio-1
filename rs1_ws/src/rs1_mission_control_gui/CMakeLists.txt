@@ -11,6 +11,8 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
+find_package(nav2_msgs REQUIRED)
+find_package(rclcpp_action REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(rs1_mission_interfaces REQUIRED)
@@ -45,6 +47,8 @@ ament_target_dependencies(${PROJECT_NAME}
   nav_msgs
   sensor_msgs
   visualization_msgs
+  nav2_msgs
+  rclcpp_action
   rs1_mission_interfaces
 )
 

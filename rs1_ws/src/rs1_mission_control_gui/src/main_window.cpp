@@ -214,19 +214,19 @@ QWidget * MainWindow::buildTopBar()
   ready_badge_ = new QLabel("NOT READY");
   layout->addWidget(ready_badge_);
 
-  auto * start_button = new QPushButton("\u25B6  Start Mission");
-  start_button->setStyleSheet(
+  start_button_ = new QPushButton("\u25B6  Start Mission");
+  start_button_->setStyleSheet(
     "QPushButton { background: #16a34a; color: white; padding: 8px 14px; border-radius: 6px; }"
     "QPushButton:pressed { background: #15803d; }");
-  connect(start_button, &QPushButton::clicked, this, &MainWindow::onStartMissionClicked);
-  layout->addWidget(start_button);
+  connect(start_button_, &QPushButton::clicked, this, &MainWindow::onStartMissionClicked);
+  layout->addWidget(start_button_);
 
-  auto * estop_button = new QPushButton("Emergency Stop");
-  estop_button->setStyleSheet(
+  estop_button_ = new QPushButton("Emergency Stop");
+  estop_button_->setStyleSheet(
     "QPushButton { background: #ef4444; color: white; padding: 8px 14px; border-radius: 6px; }"
     "QPushButton:pressed { background: #b91c1c; }");
-  connect(estop_button, &QPushButton::clicked, this, &MainWindow::onEstopAllClicked);
-  layout->addWidget(estop_button);
+  connect(estop_button_, &QPushButton::clicked, this, &MainWindow::onEstopAllClicked);
+  layout->addWidget(estop_button_);
 
   auto * home_button = new QPushButton("\u2302  Return Home");
   home_button->setStyleSheet(
@@ -418,10 +418,12 @@ void MainWindow::setupRosInterfaces()
 
     robot.cmd_vel_pub = node_->create_publisher<geometry_msgs::msg::Twist>(
       "/" + ns + "/cmd_vel", 10);
-    robot.estop_pub = node_->create_publisher<std_msgs::msg::Bool>(
-      "/" + ns + "/e_stop", 10);
-    robot.return_home_pub = node_->create_publisher<std_msgs::msg::Bool>(
-      "/" + ns + "/return_home", 10);
+    // robot.estop_pub = node_->create_publisher<std_msgs::msg::Bool>(
+    //   "/" + ns + "/e_stop", 10);
+    // robot.return_home_pub = node_->create_publisher<std_msgs::msg::Bool>(
+    //   "/" + ns + "/return_home", 10);
+    robot.action_client_ = rclcpp_action::create_client<nav2_msgs::action::FollowWaypoints>(
+      node_, ns + "/follow_waypoints");
 
     QString name_copy = robot.name;
     bool is_uav = robot.is_uav;
@@ -458,30 +460,30 @@ void MainWindow::setupRosInterfaces()
         }
       });
 
-    robot.battery_sub = node_->create_subscription<std_msgs::msg::Float32>(
-      "/" + ns + "/battery_percent", 10,
-      [this, name_copy](const std_msgs::msg::Float32::SharedPtr msg) {
-        for (auto & r : robots_) {
-          if (r.name == name_copy) {
-            r.card->setBatteryPercent(msg->data);
-            break;
-          }
-        }
-      });
+    // robot.battery_sub = node_->create_subscription<std_msgs::msg::Float32>(
+    //   "/" + ns + "/battery_percent", 10,
+    //   [this, name_copy](const std_msgs::msg::Float32::SharedPtr msg) {
+    //     for (auto & r : robots_) {
+    //       if (r.name == name_copy) {
+    //         r.card->setBatteryPercent(msg->data);
+    //         break;
+    //       }
+    //     }
+    //   });
 
-    robot.mode_sub = node_->create_subscription<std_msgs::msg::String>(
-      "/" + ns + "/mode", 10,
-      [this, name_copy](const std_msgs::msg::String::SharedPtr msg) {
-        for (auto & r : robots_) {
-          if (r.name == name_copy) {
-            r.card->setMode(QString::fromStdString(msg->data));
-            break;
-          }
-        }
-      });
+    // robot.mode_sub = node_->create_subscription<std_msgs::msg::String>(
+    //   "/" + ns + "/mode", 10,
+    //   [this, name_copy](const std_msgs::msg::String::SharedPtr msg) {
+    //     for (auto & r : robots_) {
+    //       if (r.name == name_copy) {
+    //         r.card->setMode(QString::fromStdString(msg->data));
+    //         break;
+    //       }
+    //     }
+    //   });
 
     robot.camera_sub = node_->create_subscription<sensor_msgs::msg::Image>(
-      "/" + ns + "/camera/image_raw", 5,
+      "/" + ns + "/camera/image", 5,
       [this, name_copy](const sensor_msgs::msg::Image::SharedPtr msg) {
         QImage image = imageMsgToQImage(*msg);
         if (image.isNull()) {
@@ -496,118 +498,118 @@ void MainWindow::setupRosInterfaces()
       });
   }
 
-  agb_map_sub_ = node_->create_subscription<nav_msgs::msg::OccupancyGrid>(
-    "/agb_map", 1,
-    [this](const nav_msgs::msg::OccupancyGrid::SharedPtr msg) {
-      map_widget_->setAgbMap(
-        msg->info.width, msg->info.height, msg->info.resolution,
-        msg->info.origin.position.x, msg->info.origin.position.y, msg->data);
-    });
+  // agb_map_sub_ = node_->create_subscription<nav_msgs::msg::OccupancyGrid>(
+  //   "/agb_map", 1,
+  //   [this](const nav_msgs::msg::OccupancyGrid::SharedPtr msg) {
+  //     map_widget_->setAgbMap(
+  //       msg->info.width, msg->info.height, msg->info.resolution,
+  //       msg->info.origin.position.x, msg->info.origin.position.y, msg->data);
+  //   });
 
-  other_trees_sub_ = node_->create_subscription<visualization_msgs::msg::MarkerArray>(
-    "/tree_detections", 10,
-    [this](const visualization_msgs::msg::MarkerArray::SharedPtr msg) {
-      std::vector<QPointF> positions;
-      positions.reserve(msg->markers.size());
-      for (const auto & marker : msg->markers) {
-        positions.emplace_back(marker.pose.position.x, marker.pose.position.y);
-      }
-      map_widget_->setOtherTrees(positions);
-    });
+  // other_trees_sub_ = node_->create_subscription<visualization_msgs::msg::MarkerArray>(
+  //   "/tree_detections", 10,
+  //   [this](const visualization_msgs::msg::MarkerArray::SharedPtr msg) {
+  //     std::vector<QPointF> positions;
+  //     positions.reserve(msg->markers.size());
+  //     for (const auto & marker : msg->markers) {
+  //       positions.emplace_back(marker.pose.position.x, marker.pose.position.y);
+  //     }
+  //     map_widget_->setOtherTrees(positions);
+  //   });
 
-  selected_trees_sub_ = node_->create_subscription<rs1_mission_interfaces::msg::TreeSampleArray>(
-    "/selected_trees", 10,
-    [this](const rs1_mission_interfaces::msg::TreeSampleArray::SharedPtr msg) {
-      selected_trees_table_->setRowCount(static_cast<int>(msg->trees.size()));
-      std::vector<QPointF> positions;
-      positions.reserve(msg->trees.size());
-      for (size_t i = 0; i < msg->trees.size(); ++i) {
-        const auto & tree = msg->trees[i];
-        bool sampled = (tree.status == rs1_mission_interfaces::msg::TreeSample::STATUS_SAMPLED);
-        int row = static_cast<int>(i);
+  // selected_trees_sub_ = node_->create_subscription<rs1_mission_interfaces::msg::TreeSampleArray>(
+  //   "/selected_trees", 10,
+  //   [this](const rs1_mission_interfaces::msg::TreeSampleArray::SharedPtr msg) {
+  //     selected_trees_table_->setRowCount(static_cast<int>(msg->trees.size()));
+  //     std::vector<QPointF> positions;
+  //     positions.reserve(msg->trees.size());
+  //     for (size_t i = 0; i < msg->trees.size(); ++i) {
+  //       const auto & tree = msg->trees[i];
+  //       bool sampled = (tree.status == rs1_mission_interfaces::msg::TreeSample::STATUS_SAMPLED);
+  //       int row = static_cast<int>(i);
 
-        selected_trees_table_->setItem(
-          row, 0, new QTableWidgetItem(QString::fromStdString(tree.id)));
-        selected_trees_table_->setItem(
-          row, 1, new QTableWidgetItem(QString::fromStdString(tree.species)));
-        QString dbh_text = sampled ? QString::number(tree.dbh_cm, 'f', 1) : QString("\u2013");
-        selected_trees_table_->setItem(row, 2, new QTableWidgetItem(dbh_text));
-        auto * status_item = new QTableWidgetItem(sampled ? "Sampled" : "Pending");
-        status_item->setForeground(
-          sampled ? QBrush(QColor("#15803d")) : QBrush(QColor("#92400e")));
-        selected_trees_table_->setItem(row, 3, status_item);
+  //       selected_trees_table_->setItem(
+  //         row, 0, new QTableWidgetItem(QString::fromStdString(tree.id)));
+  //       selected_trees_table_->setItem(
+  //         row, 1, new QTableWidgetItem(QString::fromStdString(tree.species)));
+  //       QString dbh_text = sampled ? QString::number(tree.dbh_cm, 'f', 1) : QString("\u2013");
+  //       selected_trees_table_->setItem(row, 2, new QTableWidgetItem(dbh_text));
+  //       auto * status_item = new QTableWidgetItem(sampled ? "Sampled" : "Pending");
+  //       status_item->setForeground(
+  //         sampled ? QBrush(QColor("#15803d")) : QBrush(QColor("#92400e")));
+  //       selected_trees_table_->setItem(row, 3, status_item);
 
-        positions.emplace_back(tree.position.x, tree.position.y);
-      }
-      map_widget_->setSelectedTrees(positions);
-    });
+  //       positions.emplace_back(tree.position.x, tree.position.y);
+  //     }
+  //     map_widget_->setSelectedTrees(positions);
+  //   });
 
-  roi_boundary_sub_ = node_->create_subscription<geometry_msgs::msg::PolygonStamped>(
-    "/roi_boundary", 1,
-    [this](const geometry_msgs::msg::PolygonStamped::SharedPtr msg) {
-      std::vector<QPointF> points;
-      points.reserve(msg->polygon.points.size());
-      for (const auto & pt : msg->polygon.points) {
-        points.emplace_back(pt.x, pt.y);
-      }
-      map_widget_->setRoiBoundary(points);
-    });
+  // roi_boundary_sub_ = node_->create_subscription<geometry_msgs::msg::PolygonStamped>(
+  //   "/roi_boundary", 1,
+  //   [this](const geometry_msgs::msg::PolygonStamped::SharedPtr msg) {
+  //     std::vector<QPointF> points;
+  //     points.reserve(msg->polygon.points.size());
+  //     for (const auto & pt : msg->polygon.points) {
+  //       points.emplace_back(pt.x, pt.y);
+  //     }
+  //     map_widget_->setRoiBoundary(points);
+  //   });
 
-  comms_ok_sub_ = node_->create_subscription<std_msgs::msg::Bool>(
-    "/system/comms_ok", 10,
-    [this](const std_msgs::msg::Bool::SharedPtr msg) {
-      comms_ok_ = msg->data;
-      comms_status_dot_->setStyleSheet(
-        QString("border-radius: 4px; background-color: %1;")
-        .arg(comms_ok_ ? "#22c55e" : "#ef4444"));
-      updateReadyBadge();
-    });
+  // comms_ok_sub_ = node_->create_subscription<std_msgs::msg::Bool>(
+  //   "/system/comms_ok", 10,
+  //   [this](const std_msgs::msg::Bool::SharedPtr msg) {
+  //     comms_ok_ = msg->data;
+  //     comms_status_dot_->setStyleSheet(
+  //       QString("border-radius: 4px; background-color: %1;")
+  //       .arg(comms_ok_ ? "#22c55e" : "#ef4444"));
+  //     updateReadyBadge();
+  //   });
 
-  mission_stage_sub_ = node_->create_subscription<std_msgs::msg::String>(
-    "/mission/stage", 10,
-    [this](const std_msgs::msg::String::SharedPtr msg) {
-      current_stage_ = QString::fromStdString(msg->data);
-      updateMissionProgressUi();
-    });
+  // mission_stage_sub_ = node_->create_subscription<std_msgs::msg::String>(
+  //   "/mission/stage", 10,
+  //   [this](const std_msgs::msg::String::SharedPtr msg) {
+  //     current_stage_ = QString::fromStdString(msg->data);
+  //     updateMissionProgressUi();
+  //   });
 
-  mission_progress_sub_ = node_->create_subscription<std_msgs::msg::Float32>(
-    "/mission/progress", 10,
-    [this](const std_msgs::msg::Float32::SharedPtr msg) {
-      mission_progress_percent_value_ = msg->data;
-      updateMissionProgressUi();
-    });
+  // mission_progress_sub_ = node_->create_subscription<std_msgs::msg::Float32>(
+  //   "/mission/progress", 10,
+  //   [this](const std_msgs::msg::Float32::SharedPtr msg) {
+  //     mission_progress_percent_value_ = msg->data;
+  //     updateMissionProgressUi();
+  //   });
 
-  trees_sampled_sub_ = node_->create_subscription<std_msgs::msg::Int32>(
-    "/mission/trees_sampled", 10,
-    [this](const std_msgs::msg::Int32::SharedPtr msg) {
-      trees_sampled_ = msg->data;
-      updateMissionProgressUi();
-    });
+  // trees_sampled_sub_ = node_->create_subscription<std_msgs::msg::Int32>(
+  //   "/mission/trees_sampled", 10,
+  //   [this](const std_msgs::msg::Int32::SharedPtr msg) {
+  //     trees_sampled_ = msg->data;
+  //     updateMissionProgressUi();
+  //   });
 
-  trees_total_sub_ = node_->create_subscription<std_msgs::msg::Int32>(
-    "/mission/trees_total", 10,
-    [this](const std_msgs::msg::Int32::SharedPtr msg) {
-      trees_total_ = msg->data;
-      updateMissionProgressUi();
-    });
+  // trees_total_sub_ = node_->create_subscription<std_msgs::msg::Int32>(
+  //   "/mission/trees_total", 10,
+  //   [this](const std_msgs::msg::Int32::SharedPtr msg) {
+  //     trees_total_ = msg->data;
+  //     updateMissionProgressUi();
+  //   });
 
-  agb_current_sub_ = node_->create_subscription<std_msgs::msg::Float32>(
-    "/agb_estimate/current_t_per_ha", 10,
-    [this](const std_msgs::msg::Float32::SharedPtr msg) {
-      agb_estimate_value_->setText(QString("%1 t/ha").arg(msg->data, 0, 'f', 1));
-      agb_estimate_subtext_->setText(
-        QString("Updated from %1 / %2 sampled trees").arg(trees_sampled_).arg(trees_total_));
-    });
+  // agb_current_sub_ = node_->create_subscription<std_msgs::msg::Float32>(
+  //   "/agb_estimate/current_t_per_ha", 10,
+  //   [this](const std_msgs::msg::Float32::SharedPtr msg) {
+  //     agb_estimate_value_->setText(QString("%1 t/ha").arg(msg->data, 0, 'f', 1));
+  //     agb_estimate_subtext_->setText(
+  //       QString("Updated from %1 / %2 sampled trees").arg(trees_sampled_).arg(trees_total_));
+  //   });
 
-  agb_delta_sub_ = node_->create_subscription<std_msgs::msg::Float32>(
-    "/agb_estimate/delta_percent", 10,
-    [this](const std_msgs::msg::Float32::SharedPtr msg) {
-      QString sign = msg->data >= 0 ? "+" : "";
-      agb_estimate_delta_->setText(
-        QString("%1%2%% vs initial map").arg(sign).arg(msg->data, 0, 'f', 0));
-      agb_estimate_delta_->setStyleSheet(
-        QString("color: %1; font-weight: bold;").arg(msg->data >= 0 ? "#16a34a" : "#dc2626"));
-    });
+  // agb_delta_sub_ = node_->create_subscription<std_msgs::msg::Float32>(
+  //   "/agb_estimate/delta_percent", 10,
+  //   [this](const std_msgs::msg::Float32::SharedPtr msg) {
+  //     QString sign = msg->data >= 0 ? "+" : "";
+  //     agb_estimate_delta_->setText(
+  //       QString("%1%2%% vs initial map").arg(sign).arg(msg->data, 0, 'f', 0));
+  //     agb_estimate_delta_->setStyleSheet(
+  //       QString("color: %1; font-weight: bold;").arg(msg->data >= 0 ? "#16a34a" : "#dc2626"));
+  //   });
 }
 
 void MainWindow::updateReadyBadge()
@@ -670,15 +672,27 @@ void MainWindow::updateMissionProgressUi()
 
 void MainWindow::onEstopAllClicked()
 {
-  for (auto & robot : robots_) {
-    std_msgs::msg::Bool estop_msg;
-    estop_msg.data = true;
-    robot.estop_pub->publish(estop_msg);
+  if (estop_button_->isChecked()) {
+    for (auto & robot : robots_) {
+      std_msgs::msg::Bool estop_msg;
+      estop_msg.data = true;
+      // robot.estop_pub->publish(estop_msg);
 
-    // Belt-and-braces: also push a zero Twist directly, in case a
-    // robot's driver doesn't act on /e_stop by itself.
-    geometry_msgs::msg::Twist zero_twist;
-    robot.cmd_vel_pub->publish(zero_twist);
+      // Belt-and-braces: also push a zero Twist directly, in case a
+      // robot's driver doesn't act on /e_stop by itself.
+      robot.action_client_->async_cancel_all_goals();
+      geometry_msgs::msg::Twist zero_twist;
+      robot.cmd_vel_pub->publish(zero_twist);
+
+      // Change the E-Stop button style to indicate it's active
+      estop_button_->setStyleSheet("background-color: red; color: white;");
+      estop_button_->setText("E-Stop Activated");
+    }
+  } else {
+    estop_button_->setStyleSheet(
+    "QPushButton { background: #ef4444; color: white; padding: 8px 14px; border-radius: 6px; }"
+    "QPushButton:pressed { background: #b91c1c; }");
+    estop_button_->setText("Emergency Stop");
   }
 }
 
@@ -687,7 +701,7 @@ void MainWindow::onReturnHomeAllClicked()
   for (auto & robot : robots_) {
     std_msgs::msg::Bool msg;
     msg.data = true;
-    robot.return_home_pub->publish(msg);
+    // robot.return_home_pub->publish(msg);
   }
 }
 

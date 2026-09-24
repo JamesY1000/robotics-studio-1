@@ -58,16 +58,6 @@ Two packages:
   of five separate booleans - simpler to publish from a real mission
   state machine and to derive the checklist icons from.
 
-## IMPORTANT SAFETY NOTE
-
-The Emergency Stop button is a software, network-based e-stop -
-suitable for simulation and demos, but **not a certified safety stop
-for real hardware.** It depends on the network link being up and each
-robot's driver actually subscribing to and acting on `/e_stop`. For
-real Husky/UAV hardware, use the platform's physical hardware e-stop
-as the actual safety mechanism, and treat this GUI's button as a
-convenience/secondary control layered on top of it, not a replacement.
-
 ## Topics
 
 | Purpose | Topic | Type | Package |
@@ -78,7 +68,7 @@ convenience/secondary control layered on top of it, not a replacement.
 | Return-to-home trigger | `/{robot}/return_home` | `std_msgs/Bool` | core |
 | Battery level | `/{robot}/battery_percent` | `std_msgs/Float32` (0-100) | placeholder |
 | Current mode text | `/{robot}/mode` | `std_msgs/String` | placeholder |
-| RGB camera feed | `/{robot}/camera/image_raw` | `sensor_msgs/Image` (`rgb8`/`bgr8` only) | placeholder |
+| RGB camera feed | `/{robot}/camera/image` | `sensor_msgs/Image` (`rgb8`/`bgr8` only) | placeholder |
 | AGB map | `/agb_map` | `nav_msgs/OccupancyGrid` (0-100 = biomass) | placeholder |
 | Other detected trees (gray) | `/tree_detections` | `visualization_msgs/MarkerArray` | placeholder |
 | Selected/sampled trees (green + table) | `/selected_trees` | `mission_interfaces/TreeSampleArray` | placeholder |
