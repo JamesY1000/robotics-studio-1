@@ -6,6 +6,14 @@ from rclpy.node import Node
 from sensor_msgs.msg import LaserScan
 
 
+class TreeObservation:
+    def __init__(self, tree_type, x, y, dbh):
+        self.tree_type = tree_type
+        self.x = x
+        self.y = y
+        self.dbh = dbh
+
+
 class DBHDetector(Node):
     def __init__(self):
 
@@ -17,7 +25,10 @@ class DBHDetector(Node):
 
         self.get_logger().info("DBH Detector started")
 
-        self.known_trees = [(5.0, 0.5), (5.0, -0.5)]
+        self.known_trees = [
+            (5.0, 0.5),
+            (5.0, -0.5),
+        ]  # Debug code to be replaced with TreeLocation data
 
     def scan_callback(self, msg):
 
@@ -82,23 +93,26 @@ class DBHDetector(Node):
         self.get_logger().info(f"Tree candidates = {len(tree_clusters)}")
 
         # Process candidate trees
+        # TODO: Match detected cluster centroid against TreeLocation.position provided by Parrot
         for i, cluster in enumerate(tree_clusters):
-            dbh, width_x, width_y = self.estimate_diameter(cluster)
+            radius = self.fit_circle(cluster)
+            dbh = 2 * radius
+
+            _, width_x, width_y = self.estimate_diameter(cluster)
 
             ratio = max(width_x, width_y) / max(min(width_x, width_y), 0.001)
             distance = min(math.sqrt(x * x + y * y) for x, y in cluster)
 
-            cx = sum(x for x, y in cluster) / len(cluster)
-            cy = sum(y for x, y in cluster) / len(cluster)
+            cx, cy = self.calculate_centroid(cluster)
             tree_id, error = self.validate_tree_location(cx, cy)
 
-            observation = {
-                "x": cx,
-                "y": cy,
-                "dbh": dbh,
-                "distance": distance,
-                "error": error,
-            }
+            observation = TreeObservation(
+                tree_type="unknown",
+                x=cx,
+                y=cy,
+                dbh=dbh,
+            )
+
             self.get_logger().info(f"Observation = {observation}")
 
             self.get_logger().info(f"Closest known tree = {tree_id}")
@@ -135,6 +149,34 @@ class DBHDetector(Node):
             angle += scan_msg.angle_increment
 
         return points
+
+    def calculate_centroid(self, cluster):
+        cx = sum(x for x, y in cluster) / len(cluster)
+        cy = sum(y for x, y in cluster) / len(cluster)
+        return cx, cy
+
+    def match_tree_location(self, cx, cy, tree_x, tree_y):
+        error = math.sqrt((cx - tree_x) ** 2 + (cy - tree_y) ** 2)
+        return error
+
+    def fit_circle(self, cluster):
+        xs = [p[0] for p in cluster]
+        ys = [p[1] for p in cluster]
+
+        width_x = max(xs) - min(xs)
+        width_y = max(ys) - min(ys)
+
+        radius = max(width_x, width_y) / 2.0
+        return radius
+
+    def estimate_agb(self, tree_type, dbh):
+        if tree_type == "eucalyptus":
+            return 0.0
+
+        elif tree_type == "pine":
+            return 0.0
+
+        return None
 
     def cluster_points(self, points, distance_threshold=0.20):
 
@@ -195,7 +237,9 @@ class DBHDetector(Node):
 
         return diameter, width_x, width_y
 
-    def validate_tree_location(self, detected_x, detected_y):
+    def validate_tree_location(
+        self, detected_x, detected_y
+    ):  # Debug code to be removed after getting TreeLocation data
         nearest_tree = None
         nearest_error = float("inf")
 
