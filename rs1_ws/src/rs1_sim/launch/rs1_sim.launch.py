@@ -46,7 +46,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "world",
             default_value="v2_forest",
-            choices=["large_demo", "simple_trees", "v1_forest", "v2_forest"],
+            choices=["large_demo", "simple_trees", "v1_forest", "v2_forest", "v2_forest_labeled"],
             description="Gazebo world to load.",
         ),
         DeclareLaunchArgument(
@@ -75,8 +75,6 @@ def generate_launch_description():
             description="Seconds to wait before spawning the Husky.",
         ),
         DeclareLaunchArgument(
-            "parrot_spawn_delay",
-            default_value="2.0",
             description="Seconds to wait before spawning the Parrot.",
         ),
         DeclareLaunchArgument(
@@ -97,7 +95,6 @@ def generate_launch_description():
             PathJoinSubstitution(
                 [
                     package_share,
-                    LAUNCH_DIRECTORY,
                     "gz_world.launch.py",
                 ]
             )

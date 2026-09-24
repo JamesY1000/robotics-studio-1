@@ -1,0 +1,5 @@
+uint32 num_models           # Number of models which should be available
+
+---
+bool success        # return true if new data is available
+string message      # Message containing information about response

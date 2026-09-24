@@ -1,0 +1,99 @@
+yolo_node:
+  ros__parameters:
+
+    # ---------------------------------------------------------------------
+    # Inference backend: "auto" | "pytorch" | "onnx" | "tensorrt"
+
+    #   auto     -> the first usable backend in the order
+    #               tensorrt -> onnx -> pytorch.  The choice and the reason are
+    #               logged at startup.
+    #   pytorch  -> best.pt      via Ultralytics (needs ultralytics + torch).
+    #   onnx     -> best.onnx    via ONNX Runtime (needs only onnxruntime; torch
+    #               is never imported).
+    #   tensorrt -> the SAME best.onnx, executed by ONNX Runtime's
+    #               TensorrtExecutionProvider.  Needs an NVIDIA GPU plus the GPU
+    #               build of onnxruntime and the TensorRT libraries, but NOT
+    #               ultralytics and NOT torch.
+
+    # There are therefore only two model files: best.pt (pytorch) and best.onnx
+    # (onnx + tensorrt).  Produce the onnx with:
+    #   python yolo_training/export_onnx.py --format onnx
+    # See rs1_perception/README.md for the full backend/deployment guide.
+
+    backend: "auto"
+
+    # ---------------------------------------------------------------------
+    # Execution provider for the onnx/tensorrt backends:
+    # "auto" | "tensorrt" | "cuda" | "cpu".
+    #
+    # 'auto' uses onnxruntime's own preference order (TensorRT -> CUDA -> CPU).
+    # Set it explicitly to force one, e.g. provider: "cpu" to keep the onnx
+    # backend off the GPU entirely.
+    #
+    # NOTE: the tensorrt backend also selects TensorRT implicitly; this parameter
+    # is for pinning a provider when using backend: "onnx".
+    # ---------------------------------------------------------------------
+    provider: "auto"
+
+    # Where the TensorRT engine (built from the onnx graph on first use) is
+    # cached.  Building an engine takes minutes, so it is reused across runs.
+    # Set to "" or "off" to disable caching (then expect a long first inference).
+    trt_cache_dir: "~/.cache/rs1_perception/tensorrt"
+
+    # Allow TensorRT to use FP16.  Ignored unless a TensorRT provider is active.
+    trt_fp16: true
+
+    # Camera topic
+    image_topic: "/parrot1/camera/image"
+
+    # ---------------------------------------------------------------------
+    # Model artefacts.  Leave onnx_model_path empty to derive it from model_path by
+    # swapping the extension (best.pt -> best.onnx).  The launch file overrides
+    # model_path with an absolute path into the installed share/models directory.
+    # ---------------------------------------------------------------------
+    model_path: "best.pt"
+    onnx_model_path: ""
+
+    # Model input size (px).
+    #
+    # Only the pytorch backend can change this at runtime (Ultralytics
+    # re-letterboxes for you).  The onnx and tensorrt backends run a graph with a
+    # STATIC input size, so this must equal the size it was exported at -
+    # otherwise the node refuses to start on that backend (and 'backend: auto'
+    # falls through to pytorch).  To use a different size, re-export:
+    #   python yolo_training/export_onnx.py --format onnx --imgsz 480
+    #
+    # This is independent of the camera resolution: 720x480 frames are
+    # letterboxed to this size automatically.
+    #
+    # The model was TRAINED at 640, so changing it also changes accuracy -
+    # re-validate with yolo_training before adopting a different value.
+    imgsz: 640
+
+    # Device handed to Ultralytics: "auto" | "cpu" | "0" | "0,1" ...
+    # Ignored by the onnx backend, which uses onnxruntime's execution providers.
+    device: "auto"
+
+    # Detection confidence threshold.
+    # Honoured by every backend, but note the end-to-end ONNX export bakes a
+    # confidence floor into the graph - a value below it cannot be recovered.
+    # A --raw-head export (see export_onnx.py) has no such floor.
+    confidence_threshold: 0.5
+
+    # IoU threshold for NMS.
+    # Honoured by the pytorch/tensorrt backends, and by the onnx backend when it
+    # loads a --raw-head export (which NMS-filters the graph output itself).
+    # The default end-to-end ONNX export bakes NMS into the graph, so there this
+    # value has no effect at runtime.
+    iou_threshold: 0.45
+
+    # Optional class-name override, e.g. ["OAK_TREE", "PINE_TREE"].
+    # Left as [""] the names are read from the model itself
+    # (ONNX metadata for the onnx backend, model.names for the torch backends).
+    class_names: [""]
+
+    # Publish the annotated debug image on debug_image_topic
+    publish_debug_image: true
+
+    # Debug image topic
+    debug_image_topic: "/yolo/debug_image"

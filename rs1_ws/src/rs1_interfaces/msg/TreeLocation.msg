@@ -1,0 +1,2 @@
+string tree_type
+geometry_msgs/Point location

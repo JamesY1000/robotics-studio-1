@@ -1,0 +1,15 @@
+# Explicit parrot viewpoints (x, y, z, yaw) in the v2_forest world.
+#
+# Only used when parrot_patrol_node.ros__parameters.derive_from_trees is false.
+# By default the patrol node derives waypoints automatically from the labelled
+# tree TFs published by the ObjectLabelPlugin, which is the recommended mode.
+#
+# The Parrot spawns at (90, -48, 8); these fallback waypoints circle the tree
+# clusters south/south-west of the spawn. yaw is the base_link heading that
+# points the camera (+X) toward the trees.
+parrot_waypoints:
+  - [90.0, -48.0, 8.0, -1.5708]
+  - [85.0, -70.0, 8.0, 2.3562]
+  - [75.0, -80.0, 8.0, 0.7854]
+  - [95.0, -75.0, 8.0, -2.3562]
+  - [70.0, -55.0, 8.0, -1.0472]

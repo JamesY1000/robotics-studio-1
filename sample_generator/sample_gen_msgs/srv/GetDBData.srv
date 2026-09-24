@@ -1,0 +1,9 @@
+builtin_interfaces/Time stamp       # Timestamp after models are moved
+
+---
+bool success                        # return true if call was successful
+string message                      # Message containing information about response
+geometry_msgs/Vector3 size          # Size of bounding box
+geometry_msgs/Vector3 offset        # Offsets of bounding box
+int32 classification                # Class information for current model
+string class_name                   # Class name for current model
