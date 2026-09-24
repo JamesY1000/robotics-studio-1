@@ -1,0 +1,34 @@
+tree_location_node:
+  ros__parameters:
+
+    # Inputs
+    depth_image_topic: "/parrot1/camera/depth/image"
+    lidar_topic: "/parrot1/scan"
+
+    # Frames
+    world_frame: "world"
+    base_link_frame: "parrot1_base_link"
+    lidar_frame: "parrot1_base_scan"
+    depth_optical_frame: "parrot1_camera_depth_optical_frame"
+
+    # Camera intrinsics fallback (derived from image size + hfov)
+    hfov: 2.0944
+
+    # Depth sampling
+    min_depth: 0.4
+    max_depth: 40.0
+    depth_patch: 5
+    min_box_pixels: 4
+
+    # False-positive filtering (drop boxes that show no tree)
+    rgb_image_topic: "/parrot1/camera/image"
+    dark_threshold: 100.0
+    min_dark_fraction: 0.25
+    require_foliage_check: true
+
+    # Lidar confirmation
+    lidar_angle_tolerance: 0.03
+    lidar_range_min: 0.2
+    lidar_range_max: 40.0
+    max_range_difference: 3.0
+    require_lidar_confirmation: true

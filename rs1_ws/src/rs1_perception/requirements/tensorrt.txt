@@ -1,0 +1,42 @@
+# ---------------------------------------------------------------------------
+# rs1_perception - TensorRT inference profile  (NVIDIA GPU only)
+#
+#   pip install -r requirements/onnx.txt        # base (note the warning below)
+#   pip install -r requirements/tensorrt.txt
+#
+# The `tensorrt` backend executes the SAME `best.onnx` as the `onnx` backend - it
+# only changes which engine runs it, via ONNX Runtime's TensorrtExecutionProvider.
+# Consequences:
+#
+#   * there is no separate TensorRT engine file to build or deploy;
+#   * the model is still produced once with:
+#       python yolo_training/export_onnx.py --format onnx
+#   * ultralytics and torch are NOT required for TensorRT acceleration.
+#
+# Select it with either:
+#   ros2 launch rs1_perception tree_identification.launch.py backend:=tensorrt
+#   ros2 launch rs1_perception tree_identification.launch.py provider:=tensorrt
+#
+# .. warning::
+#    `onnxruntime-gpu` and `onnxruntime` are two builds of the SAME import name
+#    (`onnxruntime`) and cannot be installed side by side.  Uninstall the CPU
+#    build first:
+#        pip uninstall -y onnxruntime
+#        pip install -r requirements/tensorrt.txt
+# ---------------------------------------------------------------------------
+
+# The GPU build of onnxruntime.  This is what provides the
+# TensorrtExecutionProvider and CUDAExecutionProvider; the CPU-only `onnxruntime`
+# wheel does not contain them and cannot be upgraded into them.
+onnxruntime-gpu>=1.18.0
+
+# The TensorRT libraries themselves.  This must match the CUDA version the
+# onnxruntime-gpu wheel was built against - check that wheel's release notes and
+# pick the matching TensorRT rather than blindly taking the latest.
+#
+# On Jetson / aarch64 do NOT use this wheel: install NVIDIA's own onnxruntime
+# build for your JetPack, which is compiled with the TensorRT provider.
+tensorrt>=10.0.0
+
+# Optional: handy for inspecting the graph on the GPU machine (e.g. with netron).
+onnx>=1.16.0

@@ -1,0 +1,12 @@
+# The Parrot spawns at (2, 0, 0.8) looking +X with a 120 deg horizontal FOV.
+# Spawn trees IN FRONT of the camera. The polygon is a trapezoid that widens with
+# distance to match the ~60 deg half-FOV cone, so trees stay in view at all
+# depths: close edge at x=5 (~3 m from the drone) up to x=35 (~33 m). The wide
+# far edge leaves room for a dense forest (6-10+ trees in view).
+spawn_area_test:
+  [
+    [5.0, -5.0],
+    [35.0, -35.0],
+    [35.0, 35.0],
+    [5.0, 5.0],
+  ]

@@ -1,0 +1,13 @@
+
+class_config:
+  classes:
+    # The `id` must match the <classification> set in each model's ObjectLabelPlugin
+    # (see rs1_ws/src/rs1_sim/models/trees/*/model.sdf).
+    # num_instances = the MAXIMUM of each class spawned per batch (a batch may
+    # use fewer, and may be all of one class - see sample_generator.py).
+    - class: OAK_TREE
+      id: 1
+      num_instances: 8
+    - class: PINE_TREE
+      id: 2
+      num_instances: 8

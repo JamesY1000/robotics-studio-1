@@ -1,0 +1,17 @@
+# Python runtime dependencies for the sample generator (ROS 2 Humble / Python 3)
+#
+# Install with:   python3 -m pip install -r requirements.txt
+#
+# Note: the ROS 2 system Python (/usr/bin/python3) may not have `pip` installed.
+# If so, bootstrap it first with:   python3 -m ensurepip --user
+# (or install the distro packages, e.g. `python3-pip` on Ubuntu).
+#
+# NOTE: if your numpy is >= 2.0, pin numpy<2 when installing numba/ros2_numpy.
+
+# Core camera YOLO collector + drivers
+numpy
+pandas              # sample_generator reads model_db.csv
+numba               # sample_gen.geometry (JIT helpers used by sample_generator)
+
+# Lidar-based pipeline only (sample_collector / bbox_3d / data_preprocessor)
+# ros2_numpy

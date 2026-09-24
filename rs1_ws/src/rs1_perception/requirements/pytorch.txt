@@ -1,0 +1,18 @@
+# ---------------------------------------------------------------------------
+# rs1_perception - PyTorch inference profile
+#
+#   pip install -r requirements/pytorch.txt
+#
+# Ultralytics pulls in torch + torchvision (and, with the default CUDA wheel,
+# several GB of nvidia/* libraries).  If this machine has no NVIDIA GPU, install
+# the CPU-only torch wheel first to avoid ~3 GB of unused CUDA libraries:
+#
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+#   pip install -r requirements/pytorch.txt
+#
+# If you only need to run inference, prefer requirements/onnx.txt instead.
+# ---------------------------------------------------------------------------
+
+ultralytics>=8.4.135
+numpy>=1.23.0
+opencv-python>=4.7.0

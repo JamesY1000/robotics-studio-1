@@ -1,0 +1,6 @@
+builtin_interfaces/Time stamp   # Timestamp after models are moved
+LoadedModelInfo[] model_info    # Info containing expected positions of models
+
+---
+bool success                    # return true if call was successful
+string message                  # Message containing information about response

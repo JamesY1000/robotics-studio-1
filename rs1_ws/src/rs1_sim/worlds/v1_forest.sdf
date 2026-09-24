@@ -34,7 +34,7 @@
       <surface_model>EARTH_WGS84</surface_model>
     </spherical_coordinates>
 
-    <!-- Large forest ground terrain with collision and visual meshes -->
+    <!-- Large ground planes with forest floor texture -->
     <include>
       <uri>
         model://forest_plane
@@ -43,448 +43,45 @@
       <pose>0 0 0 0 0 0</pose>
     </include>
 
-    <!-- Forest perimeter: 22 native-width panels per side. Each panel
-         follows the local edge elevation and is buried by 0.10 m. -->
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_south_01</name>
-      <pose>-97.860000 -99.900000 4.768241 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_south_02</name>
-      <pose>-88.540000 -99.900000 4.718952 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_south_03</name>
-      <pose>-79.220000 -99.900000 4.607003 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_south_04</name>
-      <pose>-69.900000 -99.900000 4.466298 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_south_05</name>
-      <pose>-60.580000 -99.900000 4.416754 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_south_06</name>
-      <pose>-51.260000 -99.900000 2.783237 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_south_07</name>
-      <pose>-41.940000 -99.900000 1.900240 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_south_08</name>
-      <pose>-32.620000 -99.900000 1.900017 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_south_09</name>
-      <pose>-23.300000 -99.900000 2.700746 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_south_10</name>
-      <pose>-13.980000 -99.900000 4.360877 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_south_11</name>
-      <pose>-4.660000 -99.900000 4.743726 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_south_12</name>
-      <pose>4.660000 -99.900000 5.481893 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_south_13</name>
-      <pose>13.980000 -99.900000 5.943049 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_south_14</name>
-      <pose>23.300000 -99.900000 5.658373 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_south_15</name>
-      <pose>32.620000 -99.900000 5.282428 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_south_16</name>
-      <pose>41.940000 -99.900000 4.923644 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_south_17</name>
-      <pose>51.260000 -99.900000 4.634466 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_south_18</name>
-      <pose>60.580000 -99.900000 4.493028 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_south_19</name>
-      <pose>69.900000 -99.900000 4.486725 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_south_20</name>
-      <pose>79.220000 -99.900000 4.527509 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_south_21</name>
-      <pose>88.540000 -99.900000 4.625039 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_south_22</name>
-      <pose>97.860000 -99.900000 4.682340 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_north_01</name>
-      <pose>-97.860000 99.900000 5.310445 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_north_02</name>
-      <pose>-88.540000 99.900000 5.403062 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_north_03</name>
-      <pose>-79.220000 99.900000 5.500443 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_north_04</name>
-      <pose>-69.900000 99.900000 5.298508 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_north_05</name>
-      <pose>-60.580000 99.900000 4.845006 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_north_06</name>
-      <pose>-51.260000 99.900000 4.439811 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_north_07</name>
-      <pose>-41.940000 99.900000 4.329711 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_north_08</name>
-      <pose>-32.620000 99.900000 4.339807 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_north_09</name>
-      <pose>-23.300000 99.900000 4.481469 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_north_10</name>
-      <pose>-13.980000 99.900000 4.604210 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_north_11</name>
-      <pose>-4.660000 99.900000 4.565132 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_north_12</name>
-      <pose>4.660000 99.900000 4.457303 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_north_13</name>
-      <pose>13.980000 99.900000 3.850994 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_north_14</name>
-      <pose>23.300000 99.900000 2.077837 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_north_15</name>
-      <pose>32.620000 99.900000 1.900000 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_north_16</name>
-      <pose>41.940000 99.900000 1.900050 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_north_17</name>
-      <pose>51.260000 99.900000 1.900000 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_north_18</name>
-      <pose>60.580000 99.900000 1.900000 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_north_19</name>
-      <pose>69.900000 99.900000 1.900010 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_north_20</name>
-      <pose>79.220000 99.900000 2.651578 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_north_21</name>
-      <pose>88.540000 99.900000 4.400707 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_north_22</name>
-      <pose>97.860000 99.900000 5.138657 1.570796 0 0.000000</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_west_01</name>
-      <pose>-99.900000 -97.860000 4.751715 1.570796 0 1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_west_02</name>
-      <pose>-99.900000 -88.540000 4.563647 1.570796 0 1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_west_03</name>
-      <pose>-99.900000 -79.220000 4.269569 1.570796 0 1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_west_04</name>
-      <pose>-99.900000 -69.900000 4.250000 1.570796 0 1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_west_05</name>
-      <pose>-99.900000 -60.580000 4.250000 1.570796 0 1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_west_06</name>
-      <pose>-99.900000 -51.260000 4.253159 1.570796 0 1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_west_07</name>
-      <pose>-99.900000 -41.940000 4.457882 1.570796 0 1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_west_08</name>
-      <pose>-99.900000 -32.620000 4.552986 1.570796 0 1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_west_09</name>
-      <pose>-99.900000 -23.300000 4.621344 1.570796 0 1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_west_10</name>
-      <pose>-99.900000 -13.980000 4.812773 1.570796 0 1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_west_11</name>
-      <pose>-99.900000 -4.660000 5.123053 1.570796 0 1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_west_12</name>
-      <pose>-99.900000 4.660000 5.509410 1.570796 0 1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_west_13</name>
-      <pose>-99.900000 13.980000 6.019355 1.570796 0 1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_west_14</name>
-      <pose>-99.900000 23.300000 6.453272 1.570796 0 1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_west_15</name>
-      <pose>-99.900000 32.620000 6.581252 1.570796 0 1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_west_16</name>
-      <pose>-99.900000 41.940000 6.550925 1.570796 0 1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_west_17</name>
-      <pose>-99.900000 51.260000 6.558310 1.570796 0 1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_west_18</name>
-      <pose>-99.900000 60.580000 6.597575 1.570796 0 1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_west_19</name>
-      <pose>-99.900000 69.900000 6.392665 1.570796 0 1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_west_20</name>
-      <pose>-99.900000 79.220000 6.034285 1.570796 0 1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_west_21</name>
-      <pose>-99.900000 88.540000 5.605296 1.570796 0 1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_west_22</name>
-      <pose>-99.900000 97.860000 5.310445 1.570796 0 1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_east_01</name>
-      <pose>99.900000 -97.860000 4.682340 1.570796 0 -1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_east_02</name>
-      <pose>99.900000 -88.540000 4.712251 1.570796 0 -1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_east_03</name>
-      <pose>99.900000 -79.220000 4.776079 1.570796 0 -1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_east_04</name>
-      <pose>99.900000 -69.900000 4.880800 1.570796 0 -1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_east_05</name>
-      <pose>99.900000 -60.580000 5.093455 1.570796 0 -1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_east_06</name>
-      <pose>99.900000 -51.260000 5.422815 1.570796 0 -1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_east_07</name>
-      <pose>99.900000 -41.940000 5.766388 1.570796 0 -1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_east_08</name>
-      <pose>99.900000 -32.620000 6.045179 1.570796 0 -1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_east_09</name>
-      <pose>99.900000 -23.300000 6.228977 1.570796 0 -1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_east_10</name>
-      <pose>99.900000 -13.980000 6.185553 1.570796 0 -1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_east_11</name>
-      <pose>99.900000 -4.660000 6.140999 1.570796 0 -1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_east_12</name>
-      <pose>99.900000 4.660000 6.143505 1.570796 0 -1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_east_13</name>
-      <pose>99.900000 13.980000 6.253690 1.570796 0 -1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_east_14</name>
-      <pose>99.900000 23.300000 6.269800 1.570796 0 -1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_east_15</name>
-      <pose>99.900000 32.620000 6.023576 1.570796 0 -1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_east_16</name>
-      <pose>99.900000 41.940000 5.931232 1.570796 0 -1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_east_17</name>
-      <pose>99.900000 51.260000 5.949343 1.570796 0 -1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_east_18</name>
-      <pose>99.900000 60.580000 6.236027 1.570796 0 -1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_east_19</name>
-      <pose>99.900000 69.900000 6.773608 1.570796 0 -1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_east_20</name>
-      <pose>99.900000 79.220000 6.893582 1.570796 0 -1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_east_21</name>
-      <pose>99.900000 88.540000 6.218621 1.570796 0 -1.570796</pose>
-    </include>
-    <include>
-      <uri>model://forest_wall</uri>
-      <name>forest_wall_east_22</name>
-      <pose>99.900000 97.860000 5.861117 1.570796 0 -1.570796</pose>
-    </include>
+    <!-- Oak trees -->
+
+    <include>
+      <uri>
+        https://fuel.gazebosim.org/1.0/OpenRobotics/models/Oak%20tree
+      </uri>
+      <name>oak1</name>
+      <pose>0 0 -0.3 0 -0 0</pose>
+    </include>
+
+    <!-- Boundary trees for 200x200m environment -->
+    <!-- <include>
+      <uri>
+        https://fuel.gazebosim.org/1.0/OpenRobotics/models/Oak%20tree
+      </uri>
+      <name>oak1</name>
+      <pose>-99 -100 -0.3 0 -0 0</pose>
+    </include>
+    <include>
+      <uri>
+        https://fuel.gazebosim.org/1.0/OpenRobotics/models/Oak%20tree
+      </uri>
+      <name>oak2</name>
+      <pose>-99 100 -0.3 0 -0 0</pose>
+    </include>
+    <include>
+      <uri>
+        https://fuel.gazebosim.org/1.0/OpenRobotics/models/Oak%20tree
+      </uri>
+      <name>oak3</name>
+      <pose>99 100 -0.3 0 -0 0</pose>
+    </include>
+    <include>
+      <uri>
+        https://fuel.gazebosim.org/1.0/OpenRobotics/models/Oak%20tree
+      </uri>
+      <name>oak4</name>
+      <pose>99 -100 -0.3 0 -0 0</pose>
+    </include> -->
 
     <!-- BEGIN GENERATED FOREST POPULATION -->
     <!-- Generated by scripts/generate_forest_population.py.
