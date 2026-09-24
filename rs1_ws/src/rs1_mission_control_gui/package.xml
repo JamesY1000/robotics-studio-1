@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>rs1_mission_control_gui</name>
+  <version>0.2.0</version>
+  <description>
+    Standalone Qt mission-control dashboard for a carbon-stock survey
+    mission: sidebar nav, top bar with mission controls, AGB map with
+    zoom/pan, mission-progress checklist, selected-trees table, AGB
+    estimate card, and per-robot cards for husky1 and parrot1.
+  </description>
+  <maintainer email="nikhil.kumar@todo.todo">root</maintainer>
+  <license>TODO: License declaration</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>visualization_msgs</depend>
+  <depend>mission_interfaces</depend>
+  <depend>qtbase5-dev</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
