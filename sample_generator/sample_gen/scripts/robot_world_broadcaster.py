@@ -8,18 +8,18 @@ from nav_msgs.msg import Odometry
 from geometry_msgs.msg import TransformStamped
 from tf2_ros import StaticTransformBroadcaster, TransformBroadcaster
 try:
-    from brain3_common.name_defs import ArculeeTopics  # type: ignore
+    from brain3_common.name_defs import RobotTopics  # type: ignore
 except ImportError:
     from sample_gen.services import make_topics_namespace
-    ArculeeTopics = make_topics_namespace()
+    RobotTopics = make_topics_namespace()
 
 
-"""To provide transform from arculee -> world frame"""
+"""To provide transform from robot -> world frame"""
 
-NODE_NAME = "arculee_world_broadcaster_node"
+NODE_NAME = "robot_world_broadcaster_node"
 
 
-class ArculeeWorldBroadcaster(Node):
+class RobotWorldBroadcaster(Node):
     def __init__(self):
         super().__init__(NODE_NAME)
 
@@ -32,7 +32,7 @@ class ArculeeWorldBroadcaster(Node):
         self.tf_broadcaster = TransformBroadcaster(self)
 
         # Initialise subscriber
-        self.tf_subscription = self.create_subscription(Odometry, ArculeeTopics.ODOMETRY.value, self.tf_callback, 10)
+        self.tf_subscription = self.create_subscription(Odometry, RobotTopics.ODOMETRY.value, self.tf_callback, 10)
 
         self.get_logger().info("Initialised")
 
@@ -75,7 +75,7 @@ class ArculeeWorldBroadcaster(Node):
 def main(args=None):
     rclpy.init(args=args)
 
-    node = ArculeeWorldBroadcaster()
+    node = RobotWorldBroadcaster()
     rclpy.spin(node)
 
     node.destroy_node()

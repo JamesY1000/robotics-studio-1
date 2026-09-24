@@ -10,16 +10,13 @@ from dataclasses import dataclass, field
 
 
 from ament_index_python import get_package_share_directory
+from sample_gen.base import BaseNode, BaseParams
 try:
-    from arculus_common import BaseNode, BaseParams  # type: ignore
-except ImportError:
-    from sample_gen.base import BaseNode, BaseParams
-try:
-    from brain3_common import ArculeeTopics, ArculeeServices  # type: ignore
+    from brain3_common import RobotTopics, RobotServices  # type: ignore
 except ImportError:
     from sample_gen.services import make_services_namespace, make_topics_namespace
-    ArculeeServices = make_services_namespace()
-    ArculeeTopics = make_topics_namespace()
+    RobotServices = make_services_namespace()
+    RobotTopics = make_topics_namespace()
 import rclpy
 import rclpy.parameter
 import rclpy.qos
@@ -57,7 +54,7 @@ class SampleCollectorParams(BaseParams):
     min_points_sample: int = 0
     min_points_object: int = 0
     max_occlusion: list[float] = field(default_factory=lambda: [0.0, 0.0, 0.0])
-    frame_id: str = "arculee/base_link/laser_something_sensor "
+    frame_id: str = "robot/base_link/laser_something_sensor "
     lidar_topics: List[str] = field(default_factory=lambda: [""])
     model_distance: float = 0.0
     class_config_yml: str = "class_configs.yml"
@@ -119,13 +116,13 @@ class SampleCollector(BaseNode):
         self.get_logger().info(f"Database path: {self.db_path}")
 
         if self._params.visualize:
-            self.gt_orig_pub = self.create_publisher(MarkerArray, ArculeeTopics.SAMPLE_COLLECTOR_ORIGINAL_GT.value, 1)
-            self.gt_clean_pub = self.create_publisher(MarkerArray, ArculeeTopics.SAMPLE_COLLECTOR_CLEANED_GT.value, 1)
+            self.gt_orig_pub = self.create_publisher(MarkerArray, RobotTopics.SAMPLE_COLLECTOR_ORIGINAL_GT.value, 1)
+            self.gt_clean_pub = self.create_publisher(MarkerArray, RobotTopics.SAMPLE_COLLECTOR_CLEANED_GT.value, 1)
             self.pc_orig_pub = self.create_publisher(
-                PointCloud2, ArculeeTopics.SAMPLE_COLLECTOR_ORIGINAL_POINTS.value, 1
+                PointCloud2, RobotTopics.SAMPLE_COLLECTOR_ORIGINAL_POINTS.value, 1
             )
             self.pc_clean_pub = self.create_publisher(
-                PointCloud2, ArculeeTopics.SAMPLE_COLLECTOR_CLEANED_POINTS.value, 1
+                PointCloud2, RobotTopics.SAMPLE_COLLECTOR_CLEANED_POINTS.value, 1
             )
         else:
             self.gt_orig_pub = None
@@ -135,29 +132,29 @@ class SampleCollector(BaseNode):
 
         try:
             self.collect_sample_srv = self.create_service(
-                CollectSample, ArculeeServices.COLLECT_SAMPLE.value, self._collect_sample_cb
+                CollectSample, RobotServices.COLLECT_SAMPLE.value, self._collect_sample_cb
             )
 
             self.unregisters_gt_subs_srv = self.create_service(
-                Empty, ArculeeServices.UNREGISTER_GT_SUBS.value, self._unregister_gt_subs_cb
+                Empty, RobotServices.UNREGISTER_GT_SUBS.value, self._unregister_gt_subs_cb
             )
 
             self.update_gt_subs_srv = self.create_service(
-                Trigger, ArculeeServices.UPDATE_GT_SUBS.value, self._update_gt_subs_cb
+                Trigger, RobotServices.UPDATE_GT_SUBS.value, self._update_gt_subs_cb
             )
-            self.get_logger().info(f"Created service for {ArculeeServices.UPDATE_GT_SUBS.value}")
+            self.get_logger().info(f"Created service for {RobotServices.UPDATE_GT_SUBS.value}")
 
             self.check_models_loaded_srv = self.create_service(
-                CheckModelsLoaded, ArculeeServices.CHECK_MODELS_LOADED.value, self._check_models_loaded_cb
+                CheckModelsLoaded, RobotServices.CHECK_MODELS_LOADED.value, self._check_models_loaded_cb
             )
             self.get_logger().info("Created service for check_models_loaded")
 
             self.get_current_sample_id_srv = self.create_service(
-                GetCurrentSampleID, ArculeeServices.GET_CURRENT_SAMPLE_ID.value, self._get_current_sample_id_cb
+                GetCurrentSampleID, RobotServices.GET_CURRENT_SAMPLE_ID.value, self._get_current_sample_id_cb
             )
 
             self.get_gt_data_srv = self.create_service(
-                GetDBData, ArculeeServices.GET_GT_DATA.value, self._get_gt_data_cb
+                GetDBData, RobotServices.GET_GT_DATA.value, self._get_gt_data_cb
             )
 
         except Exception as e:

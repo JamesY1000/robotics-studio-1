@@ -12,10 +12,7 @@ import rclpy.qos
 import numpy as np
 import cv2
 
-try:
-    from arculus_common import BaseNode, BaseParams  # type: ignore
-except ImportError:
-    from sample_gen.base import BaseNode, BaseParams
+from sample_gen.base import BaseNode, BaseParams
 
 
 """Projects 3D pointclouds into 2D img format"""

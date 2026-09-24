@@ -48,10 +48,10 @@ def generate_launch_description():
         output="screen",
     )
 
-    arculee_world_broadcaster = Node(
+    robot_world_broadcaster = Node(
         package="sample_gen",
-        name="arculee_world_broadcaster_node",
-        executable="arculee_world_broadcaster.py",
+        name="robot_world_broadcaster_node",
+        executable="robot_world_broadcaster.py",
         output="screen",
     )
 
@@ -65,7 +65,7 @@ def generate_launch_description():
 
     ld = LaunchDescription(ARGUMENTS)
     ld.add_action(model_tf_broadcaster_node)
-    ld.add_action(arculee_world_broadcaster)
+    ld.add_action(robot_world_broadcaster)
     ld.add_action(rviz)
     ld.add_action(data_preprocessor_node)
 

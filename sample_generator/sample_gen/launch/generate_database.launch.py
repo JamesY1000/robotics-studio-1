@@ -21,18 +21,18 @@ ARGUMENTS = [
     ),
     DeclareLaunchArgument(
         "model",
-        default_value="arculee_t",
-        choices=["arculee_m", "arculee_s", "arculee_experimental", "arculee_t"],
-        description="Arculee Model",
+        default_value="robot_t",
+        choices=["robot_m", "robot_s", "robot_experimental", "robot_t"],
+        description="Robot Model",
     ),
-    DeclareLaunchArgument("backpack", default_value="none", description="Name of the arculee backpack"),
+    DeclareLaunchArgument("backpack", default_value="none", description="Name of the robot backpack"),
 ]
 
 
 def generate_launch_description():
-    arculee_sim_pkg_dir = get_package_share_directory("arculee_sim")
+    robot_sim_pkg_dir = get_package_share_directory("robot_sim")
     sample_gen_pkg_dir = get_package_share_directory("sample_gen")
-    simulation_launch_file = PathJoinSubstitution([arculee_sim_pkg_dir, "launch", "sim.launch.py"])
+    simulation_launch_file = PathJoinSubstitution([robot_sim_pkg_dir, "launch", "sim.launch.py"])
     config = PathJoinSubstitution([sample_gen_pkg_dir, "config", "config.yml"])
 
     gazebo = IncludeLaunchDescription(
@@ -72,10 +72,10 @@ def generate_launch_description():
         output="screen",
     )
 
-    arculee_world_broadcaster = Node(
+    robot_world_broadcaster = Node(
         package="sample_gen",
-        name="arculee_world_broadcaster_node",
-        executable="arculee_world_broadcaster.py",
+        name="robot_world_broadcaster_node",
+        executable="robot_world_broadcaster.py",
         on_exit=launch.actions.Shutdown(),
         output="screen",
     )
@@ -85,7 +85,7 @@ def generate_launch_description():
     # TODO (james): Handle elegant shutdown of gazebo on model_importer termination
     ld.add_action(gazebo)
     ld.add_action(model_tf_broadcaster)
-    ld.add_action(arculee_world_broadcaster)
+    ld.add_action(robot_world_broadcaster)
     ld.add_action(sample_collector_node)
     ld.add_action(model_importer)
 

@@ -19,15 +19,12 @@ from ament_index_python import get_package_share_directory
 from geometry_msgs.msg import Pose2D
 from visualization_msgs.msg import MarkerArray, Marker
 
+from sample_gen.base import BaseNode, BaseParams
 try:
-    from arculus_common import BaseNode, BaseParams  # type: ignore
-except ImportError:
-    from sample_gen.base import BaseNode, BaseParams
-try:
-    from brain3_common import ArculeeServices  # type: ignore
+    from brain3_common import RobotServices  # type: ignore
 except ImportError:
     from sample_gen.services import make_services_namespace
-    ArculeeServices = make_services_namespace()
+    RobotServices = make_services_namespace()
 from sample_gen_msgs.srv import CollectSample, CheckModelsLoaded, GetCurrentSampleID
 from sample_gen_msgs.msg import LoadedModelInfo
 
@@ -129,17 +126,17 @@ class SampleGenerator(BaseNode):
             self.spawn_area_pub = None
 
         self.collect_sample_client: Client = create_ros_service_client(
-            ArculeeServices.COLLECT_SAMPLE, CollectSample, self
+            RobotServices.COLLECT_SAMPLE, CollectSample, self
         )
         self.unregister_gt_subs_client: Client = create_ros_service_client(
-            ArculeeServices.UNREGISTER_GT_SUBS, Empty, self
+            RobotServices.UNREGISTER_GT_SUBS, Empty, self
         )
-        self.update_gt_subs_client: Client = create_ros_service_client(ArculeeServices.UPDATE_GT_SUBS, Trigger, self)
+        self.update_gt_subs_client: Client = create_ros_service_client(RobotServices.UPDATE_GT_SUBS, Trigger, self)
         self.check_models_loaded_client: Client = create_ros_service_client(
-            ArculeeServices.CHECK_MODELS_LOADED, CheckModelsLoaded, self
+            RobotServices.CHECK_MODELS_LOADED, CheckModelsLoaded, self
         )
         self.get_current_sample_id_client = create_ros_service_client(
-            ArculeeServices.GET_CURRENT_SAMPLE_ID, GetCurrentSampleID, self
+            RobotServices.GET_CURRENT_SAMPLE_ID, GetCurrentSampleID, self
         )
         self.get_logger().info("Initialized")
 

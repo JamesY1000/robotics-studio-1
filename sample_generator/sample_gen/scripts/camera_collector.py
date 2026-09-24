@@ -13,8 +13,7 @@ lidar-based ``sample_collector.py`` (CollectSample / UpdateGtSubs /
 CheckModelsLoaded / GetCurrentSampleId / GetGtData), so the existing generator
 and ``model_importer.py`` work unchanged.
 
-Self-contained: only depends on rclpy + tf2_ros + cv2 + numpy (no
-``arculus_common`` / ``brain3_common``).
+Self-contained: only depends on rclpy + tf2_ros + cv2 + numpy.
 """
 
 from functools import partial

@@ -2,7 +2,7 @@
 """Service/topic names shared by the sample generator nodes.
 
 The original code obtained these strings from the external ``brain3_common``
-package (``ArculeeServices`` / ``ArculeeTopics``), which is not installed in
+package (``RobotServices`` / ``RobotTopics``), which is not installed in
 every environment. They are inlined here so the package is self-contained.
 
 NOTE: If you later re-add ``brain3_common``, make sure these values match the
@@ -23,8 +23,8 @@ TOPIC_SAMPLE_COLLECTOR_CLEANED_GT = "/sample_collector/cleaned_gt"
 TOPIC_SAMPLE_COLLECTOR_ORIGINAL_POINTS = "/sample_collector/original_points"
 TOPIC_SAMPLE_COLLECTOR_CLEANED_POINTS = "/sample_collector/cleaned_points"
 
-# Odometry topic (arculee world broadcaster)
-TOPIC_ODOMETRY = "/arculee/odom"
+# Odometry topic (robot world broadcaster)
+TOPIC_ODOMETRY = "/robot/odom"
 
 # Camera YOLO collector visualization topics
 TOPIC_CAMERA_ORIGINAL = "/camera_collector/original"
@@ -34,8 +34,8 @@ TOPIC_CAMERA_LABELLED = "/camera_collector/labelled"
 class ServiceValue(str):
     """A ``str`` subclass that also exposes ``.value``.
 
-    Some call sites use ``ArculeeServices.<NAME>.value`` while others pass
-    ``ArculeeServices.<NAME>`` directly to ``create_client`` / ``create_service``
+    Some call sites use ``RobotServices.<NAME>.value`` while others pass
+    ``RobotServices.<NAME>`` directly to ``create_client`` / ``create_service``
     (which expect a plain ``str``). Subclassing ``str`` makes both forms work
     without ``brain3_common``.
     """
@@ -49,8 +49,8 @@ class ServiceValue(str):
 
 
 def make_services_namespace():
-    """Build a ``brain3_common.ArculeeServices``-like namespace from the local
-    constants, so nodes that use ``ArculeeServices.<NAME>.value`` run without
+    """Build a ``brain3_common.RobotServices``-like namespace from the local
+    constants, so nodes that use ``RobotServices.<NAME>.value`` run without
     the external package."""
     import types
 
@@ -65,7 +65,7 @@ def make_services_namespace():
 
 
 def make_topics_namespace():
-    """Build a ``brain3_common.ArculeeTopics``-like namespace from the local
+    """Build a ``brain3_common.RobotTopics``-like namespace from the local
     constants (used for the lidar pipeline's RViz visualization topics)."""
     import types
 

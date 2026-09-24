@@ -18,17 +18,7 @@ provided simulation uses. Everything was therefore ported:
 | spawn/delete/set-pose (`helpers.py`) | `gz service` / `gz.msgs.*` | `ign service` / `ignition.msgs.*` |
 | ROS <-> Gazebo | `ros_gz` | `ros_ign` (already used by rs1_ws) |
 
-### 1.2 Self-contained Python (no external arculus deps)
-The nodes imported `arculus_common` / `brain3_common`, which are **not installed**
-on this machine. Added small shims so the package runs anywhere:
-
-- `sample_gen/sample_gen/base.py` – `BaseNode`/`BaseParams` using plain `rclpy`.
-- `sample_gen/sample_gen/services.py` – service/topic name constants
-  (`collect_sample`, `update_gt_subs`, ...) plus fallback namespaces so existing
-  `ArculeeServices.X.value` call sites keep working. *If you re-add
-  `brain3_common`, make sure these match its enum values.*
-
-### 1.3 Ground-truth plugin placement (important)
+### 1.2 Ground-truth plugin placement (important)
 The `ObjectLabelPlugin` must be attached to the spawned trees for ground truth.
 It is **not** put in the shared `rs1_ws/.../trees/*/model.sdf` (those are also
 used as world decoration in `simple_trees.sdf` — they would otherwise pollute
@@ -40,7 +30,7 @@ the ground truth). Instead the plugin lives in **labeled copies**:
 These reuse the original meshes via `model://trees/...` (resolved with
 `IGN_GAZEBO_RESOURCE_PATH`).
 
-### 1.4 New camera/YOLO nodes
+### 1.3 New camera/YOLO nodes
 - `scripts/camera_collector.py` – subscribes to the Parrot RGB image + all
   `ObjectLabel` topics, projects each 3D tree box into the image and saves
   `images/<id>.jpg` + `labels/<id>.txt` in YOLO format. Exposes the same

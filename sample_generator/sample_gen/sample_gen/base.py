@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
-"""Minimal self-contained replacements for ``arculus_common.BaseNode`` /
-``arculus_common.BaseParams``.
+"""Self-contained ``BaseNode`` / ``BaseParams`` base classes.
 
-The sample generator nodes were originally written against the external
-``arculus_common`` package (which is not installed in every environment, e.g.
-the UTS robotics-studio-1 workspace). This module provides the same API surface
-using only plain ``rclpy`` so the nodes run anywhere.
+The sample generator nodes were originally written against an external common
+package (not installed in every environment, e.g. the UTS robotics-studio-1
+workspace). This module provides the same API surface using only plain
+``rclpy`` so the nodes run anywhere.
 
-Usage (identical to arculus_common)::
+Usage::
 
     from sample_gen.base import BaseNode, BaseParams
 
@@ -35,7 +34,7 @@ class BaseParams:
 
 class BaseNode(Node):
     """rclpy ``Node`` that loads its dataclass parameters from the ROS
-    parameter server (same behaviour as ``arculus_common.BaseNode``)."""
+    parameter server."""
 
     def __init__(self, node_name: str, **kwargs: Any) -> None:
         super().__init__(node_name, **kwargs)

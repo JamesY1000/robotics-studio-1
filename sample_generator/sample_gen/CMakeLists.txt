@@ -16,7 +16,7 @@ install(
              scripts/sample_collector.py
              scripts/sample_generator.py
              scripts/model_tf_broadcaster.py
-             scripts/arculee_world_broadcaster.py
+             scripts/robot_world_broadcaster.py
              scripts/yolo_inference.py
              scripts/yolo_format.py
              scripts/camera_collector.py

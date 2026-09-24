@@ -60,17 +60,17 @@ Visualization Manager:
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
-        arculee_left_wheel:
+        robot_left_wheel:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        arculee_right_wheel:
+        robot_right_wheel:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        arculee_table_link:
+        robot_table_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -159,13 +159,13 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: true
-        arculee/base_link/camera_3d_front_sensor:
+        robot/base_link/camera_3d_front_sensor:
           Value: true
-        arculee/base_link/camera_3d_rear_sensor:
+        robot/base_link/camera_3d_rear_sensor:
           Value: true
-        arculee/base_link/laser_front_sensor:
+        robot/base_link/laser_front_sensor:
           Value: true
-        arculee/base_link/laser_rear_sensor:
+        robot/base_link/laser_rear_sensor:
           Value: true
         back_left_caster:
           Value: true
@@ -225,7 +225,7 @@ Visualization Manager:
               {}
             camera_3d_front_link:
               camera_3d_front_link_calibrated:
-                arculee/base_link/camera_3d_front_sensor:
+                robot/base_link/camera_3d_front_sensor:
                   {}
               camera_3d_front_optical_link:
                 {}
@@ -233,7 +233,7 @@ Visualization Manager:
                 {}
             camera_3d_rear_link:
               camera_3d_rear_link_calibrated:
-                arculee/base_link/camera_3d_rear_sensor:
+                robot/base_link/camera_3d_rear_sensor:
                   {}
               camera_3d_rear_optical_link:
                 {}
@@ -249,11 +249,11 @@ Visualization Manager:
               {}
             laser_front_link:
               laser_front_link_calibrated:
-                arculee/base_link/laser_front_sensor:
+                robot/base_link/laser_front_sensor:
                   {}
             laser_rear_link:
               laser_rear_link_calibrated:
-                arculee/base_link/laser_rear_sensor:
+                robot/base_link/laser_rear_sensor:
                   {}
           bosch_trolley_1:
             {}
@@ -547,7 +547,7 @@ Visualization Manager:
             Durability Policy: Volatile
             History Policy: Keep Last
             Reliability Policy: System Default
-            Value: /arculee/laser/front/pc2
+            Value: /robot/laser/front/pc2
           Use Fixed Frame: true
           Use rainbow: true
           Value: true
@@ -580,7 +580,7 @@ Visualization Manager:
             Durability Policy: Volatile
             History Policy: Keep Last
             Reliability Policy: System Default
-            Value: /arculee/laser/rear/pc2
+            Value: /robot/laser/rear/pc2
           Use Fixed Frame: true
           Use rainbow: true
           Value: true
@@ -613,7 +613,7 @@ Visualization Manager:
             Durability Policy: Volatile
             History Policy: Keep Last
             Reliability Policy: System Default
-            Value: /arculee/laser/merged/pc2
+            Value: /robot/laser/merged/pc2
           Use Fixed Frame: true
           Use rainbow: true
           Value: false
@@ -631,7 +631,7 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /arculee/yolo_v11/image
+        Value: /robot/yolo_v11/image
       Value: true
     - Alpha: 1
       Arrow Length: 0.30000001192092896
@@ -652,7 +652,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /arculee/yolo/detected/pose
+        Value: /robot/yolo/detected/pose
       Value: true
   Enabled: true
   Global Options:

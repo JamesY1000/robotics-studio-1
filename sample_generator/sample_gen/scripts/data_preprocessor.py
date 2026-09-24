@@ -11,15 +11,12 @@ import rclpy
 from visualization_msgs.msg import MarkerArray
 from sensor_msgs.msg import PointCloud2
 
+from sample_gen.base import BaseNode, BaseParams
 try:
-    from arculus_common import BaseNode, BaseParams  # type: ignore
-except ImportError:
-    from sample_gen.base import BaseNode, BaseParams
-try:
-    from brain3_common.name_defs import ArculeeTopics  # type: ignore
+    from brain3_common.name_defs import RobotTopics  # type: ignore
 except ImportError:
     from sample_gen.services import make_topics_namespace
-    ArculeeTopics = make_topics_namespace()
+    RobotTopics = make_topics_namespace()
 from sample_gen.box_np_ops import center_to_corner_box2d
 from sample_gen.geometry import box_collision_test
 from sample_gen.helpers import (
@@ -73,10 +70,10 @@ class DataPreprocessor(BaseNode):
         self.db_target_dir = Path(self.db_root_dir, "merged_samples")
 
         if self._params.visualize:
-            self.gt_orig_pub = self.create_publisher(MarkerArray, ArculeeTopics.SAMPLE_COLLECTOR_ORIGINAL_GT, 1)
-            self.gt_clean_pub = self.create_publisher(MarkerArray, ArculeeTopics.SAMPLE_COLLECTOR_CLEANED_GT, 1)
-            self.pc_orig_pub = self.create_publisher(PointCloud2, ArculeeTopics.SAMPLE_COLLECTOR_ORIGINAL_POINTS, 1)
-            self.pc_clean_pub = self.create_publisher(PointCloud2, ArculeeTopics.SAMPLE_COLLECTOR_CLEANED_POINTS, 1)
+            self.gt_orig_pub = self.create_publisher(MarkerArray, RobotTopics.SAMPLE_COLLECTOR_ORIGINAL_GT, 1)
+            self.gt_clean_pub = self.create_publisher(MarkerArray, RobotTopics.SAMPLE_COLLECTOR_CLEANED_GT, 1)
+            self.pc_orig_pub = self.create_publisher(PointCloud2, RobotTopics.SAMPLE_COLLECTOR_ORIGINAL_POINTS, 1)
+            self.pc_clean_pub = self.create_publisher(PointCloud2, RobotTopics.SAMPLE_COLLECTOR_CLEANED_POINTS, 1)
         else:
             self.gt_orig_pub = None
             self.gt_clean_pub = None

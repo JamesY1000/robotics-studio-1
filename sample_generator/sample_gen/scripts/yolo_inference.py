@@ -23,10 +23,10 @@ import ultralytics
 from ultralytics import YOLO
 
 try:
-    from brain3_common import ArculeeTopics  # type: ignore
+    from brain3_common import RobotTopics  # type: ignore
 except ImportError:
     from sample_gen.services import make_topics_namespace
-    ArculeeTopics = make_topics_namespace()
+    RobotTopics = make_topics_namespace()
 
 """Converts laserscans to image, runs inference, publishes (and broadcasts) detected poses"""
 
@@ -44,14 +44,14 @@ class YoloInferenceNode(Node):
 
         # Create merged_pc2 subscriber
         self.laser_sub = self.create_subscription(
-            PointCloud2, ArculeeTopics.LASER_MERGED_PC2.value, self.lasercallback, rclpy.qos.qos_profile_sensor_data
+            PointCloud2, RobotTopics.LASER_MERGED_PC2.value, self.lasercallback, rclpy.qos.qos_profile_sensor_data
         )
 
         # Create image publisher
-        self.img_pub = self.create_publisher(Image, ArculeeTopics.YOLO_V8_IMAGE.value, 10)
+        self.img_pub = self.create_publisher(Image, RobotTopics.YOLO_V8_IMAGE.value, 10)
 
         # Create pose publisher
-        self.pose_pub = self.create_publisher(PoseArray, ArculeeTopics.YOLO_DETECTED_POSE.value, 10)
+        self.pose_pub = self.create_publisher(PoseArray, RobotTopics.YOLO_DETECTED_POSE.value, 10)
 
         # Create tf broadcaster
         self.tf_broadcaster = TransformBroadcaster(self)

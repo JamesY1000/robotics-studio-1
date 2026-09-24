@@ -35,8 +35,8 @@ sample_collector_node:
     max_occlusion: [0.75, 0.75, 1.0] # make sure z is set to 1 as we are using scans converted to pc2
     frame_id: "world"
     lidar_topics: [
-      "/arculee/laser/front/pc2", # Place in this order - front is first, rear is second
-      "/arculee/laser/rear/pc2"
+      "/robot/laser/front/pc2", # Place in this order - front is first, rear is second
+      "/robot/laser/rear/pc2"
       ]
     # model_distance: 5.0
     class_config_yml: class_configs.yml
@@ -50,20 +50,14 @@ camera_collector_node:
     database_dir: "/home/tim/git/robotics-studio-1/sample_generator/sample_gen/database"
     visualize: true
     image_topic: "/parrot1/camera/image"
-<<<<<<< HEAD
     depth_image_topic: "/parrot1/camera/depth/image" # used to skip occluded / not-visible trees
-=======
->>>>>>> 8dfe850 (Migrated James' sample generation plugin to Gazebo6 and to using our tree models.)
     camera_info_topic: "" # optional; if empty, intrinsics are computed from hfov + image size
     hfov: 2.0944 # Parrot rgbd camera horizontal FOV (rad)
     frame_id: "world"
     # Standard ROS optical frame of the parrot RGB camera (+Z forward), where
     # the pinhole projection u=fx*X/Z+cx, v=fy*Y/Z+cy is valid.
     camera_frame: "parrot1_camera_rgb_optical_frame"
-<<<<<<< HEAD
     oak_z_center_offset: 0.0 # oak box vertical shift (m); forest launch overrides to 0.65
-=======
->>>>>>> 8dfe850 (Migrated James' sample generation plugin to Gazebo6 and to using our tree models.)
     class_config_yml: class_configs.yml
     class_config_name: class_config
     class_config_dict_name: classes
