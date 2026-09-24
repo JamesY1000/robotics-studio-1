@@ -86,6 +86,23 @@ docker compose build rs1-devcontainer-user
 
 After initial setup, you usually only need to open the repository in VS Code and reopen in container. If you prefer to run multiple terminal windows, you can use lazydocker and enter the container this way.
 
+## Machine Learning Pipeline
+
+The tree detector spans three components, each with its own README:
+
+- **Sample generation** - [`sample_generator/`](sample_generator/README.md): spawns trees in Gazebo and captures labelled 720x480 images.
+- **Training & export** - [`yolo_training/`](yolo_training/README.md): consolidates the samples, trains the YOLO detector, and exports the deployment artefacts (ONNX / TensorRT / OpenVINO).
+- **Inference** - [`rs1_ws/src/rs1_perception/`](rs1_ws/src/rs1_perception/README.md): the ROS package that runs detection, localises trees and builds the map. It can run the model through PyTorch, ONNX Runtime or TensorRT, selectable with a single `backend` parameter.
+
+ONNX is the recommended inference backend because it needs no PyTorch at runtime
+(~50 MB instead of ~4.4 GB). Quickest path to a running detector:
+
+```bash
+cd rs1_ws/src/rs1_perception && pip install -r requirements/onnx.txt
+python ../../../yolo_training/export_onnx.py --format onnx   # only if best.onnx is absent
+ros2 launch rs1_perception tree_identification.launch.py backend:=onnx
+```
+
 ## Branching and Commit Conventions
 
 Use one branch per issue or feature.

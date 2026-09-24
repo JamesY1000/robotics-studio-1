@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """End-to-end test for the YOLO -> TreeLocation pipeline in the rs1_sim forest.
 
 For each of several viewpoints the script:

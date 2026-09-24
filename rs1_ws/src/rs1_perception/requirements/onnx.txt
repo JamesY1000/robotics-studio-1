@@ -1,0 +1,20 @@
+# ---------------------------------------------------------------------------
+# rs1_perception - ONNX Runtime inference profile  (RECOMMENDED)
+#
+#   pip install -r requirements/onnx.txt
+#
+# This is the torch-free deployment profile.  YoloNode's `onnx` backend imports
+# only onnxruntime (+ numpy/opencv), so the whole inference stack is ~50 MB
+# instead of the ~4.4 GB that PyTorch + torchvision + ultralytics (+ CUDA libs)
+# needs.  Nothing here pulls in torch.
+#
+# Build the model once (on any machine) with:
+#   python yolo_training/export_onnx.py --format onnx
+#
+# Then select it with:
+#   ros2 launch rs1_perception tree_identification.launch.py backend:=onnx
+# ---------------------------------------------------------------------------
+
+onnxruntime>=1.18.0
+numpy>=1.23.0
+opencv-python>=4.7.0

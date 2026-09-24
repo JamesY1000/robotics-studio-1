@@ -9,3 +9,14 @@ pre-commit
 pytest
 
 # Add any other python libraries/packages we might need here
+
+# --- YOLO tree-detection inference (rs1_perception) -------------------------
+# The onnx profile is installed here because it is small (~50 MB) and torch-free,
+# so the recommended `backend:=onnx` path works out of the box.
+# See rs1_ws/src/rs1_perception/requirements/ for the pytorch and tensorrt
+# profiles (both are large; install them only if you need those backends).
+onnxruntime>=1.18.0
+
+# Tooling to produce the .onnx from a .pt (yolo_training/export_onnx.py).
+onnx>=1.16.0
+onnxslim>=0.1.34
