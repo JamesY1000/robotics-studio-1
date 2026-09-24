@@ -25,7 +25,7 @@
                     <pbr>
                         <metal>
                             <albedo_map>
-                        model://forest_plane/materials/textures/forest_overhead.png
+                                model://forest_plane/materials/textures/forest_overhead.png
                             </albedo_map>
                             <metalness>0.0</metalness>
                             <roughness>1.0</roughness>
