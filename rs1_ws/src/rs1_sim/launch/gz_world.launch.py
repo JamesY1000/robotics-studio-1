@@ -30,6 +30,7 @@ def generate_launch_description():
 
     world = LaunchConfiguration("world")
     use_sim_time = LaunchConfiguration("use_sim_time")
+    log_level = LaunchConfiguration("log_level")
 
     world_file = PathJoinSubstitution(
         [
@@ -98,6 +99,7 @@ def generate_launch_description():
         executable="parameter_bridge",
         name="ros_gz_bridge_clock",
         output="screen",
+        arguments=["--ros-args", "--log-level", log_level],
         parameters=[
             {
                 "config_file": clock_bridge_config,
@@ -110,6 +112,8 @@ def generate_launch_description():
         [
             world_argument,
             use_sim_time_argument,
+            DeclareLaunchArgument("log_level", default_value="warn",
+                                  description="Clock bridge logging level."),
             set_ignition_server_config,
             set_gazebo_server_config,
             gazebo,

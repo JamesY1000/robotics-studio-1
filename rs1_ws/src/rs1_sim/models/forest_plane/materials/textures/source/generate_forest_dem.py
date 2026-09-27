@@ -618,36 +618,36 @@ metadata = {
             "albedo_upper_left": {
                 "albedo_pixel": [0, 0],
                 "dem_sample": [0, 0],
-                "local_xy_m_before_centering": [0.0, 200.0],
-                "gazebo_xy_m_after_Forest3D_centering": [-100.0, 100.0],
+                "local_xy_m_before_centering": [0.0, 0.0],
+                "gazebo_xy_m_after_Forest3D_centering": [-100.0, -100.0],
                 "geotiff_sample_center_xy": list(map(float, ul_center)),
             },
             "albedo_upper_right": {
                 "albedo_pixel": [1023, 0],
                 "dem_sample": [256, 0],
-                "local_xy_m_before_centering": [200.0, 200.0],
-                "gazebo_xy_m_after_Forest3D_centering": [100.0, 100.0],
+                "local_xy_m_before_centering": [200.0, 0.0],
+                "gazebo_xy_m_after_Forest3D_centering": [100.0, -100.0],
                 "geotiff_sample_center_xy": list(map(float, ur_center)),
             },
             "albedo_lower_left": {
                 "albedo_pixel": [0, 1023],
                 "dem_sample": [0, 256],
-                "local_xy_m_before_centering": [0.0, 0.0],
-                "gazebo_xy_m_after_Forest3D_centering": [-100.0, -100.0],
+                "local_xy_m_before_centering": [0.0, 200.0],
+                "gazebo_xy_m_after_Forest3D_centering": [-100.0, 100.0],
                 "geotiff_sample_center_xy": list(map(float, ll_center)),
             },
             "albedo_lower_right": {
                 "albedo_pixel": [1023, 1023],
                 "dem_sample": [256, 256],
-                "local_xy_m_before_centering": [200.0, 0.0],
-                "gazebo_xy_m_after_Forest3D_centering": [100.0, -100.0],
+                "local_xy_m_before_centering": [200.0, 200.0],
+                "gazebo_xy_m_after_Forest3D_centering": [100.0, 100.0],
                 "geotiff_sample_center_xy": list(map(float, lr_center)),
             },
         },
         "note":
-            "DEM array row 0 corresponds exactly to albedo top; column 0 "
-            "corresponds exactly to albedo left. GeoTIFF north-up Y decreases "
-            "as raster row increases."
+            "DEM rows match image rows. Forest3D advances world +Y with row number, "
+            "so image top is world Y=-100 and bottom is Y=+100. GeoTIFF northing "
+            "instead decreases with row number. OBJ texture V is flipped; elevation Z is not inverted."
     },
     "hill_parameters": hill_parameters,
     "geotiff_validation": validation,

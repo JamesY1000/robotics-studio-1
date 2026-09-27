@@ -1,0 +1,11 @@
+/parrot1/terrain_following_node:
+  ros__parameters:
+    use_sim_time: true
+
+    target_clearance: 4.0 # metres above the surface, measured from sensor
+    control_rate_hz: 20.0 # control-loop frequency
+    scan_timeout: 0.25 # seconds
+    cmd_vel_timeout: 0.25 # seconds
+
+    kp: 0.5 # proportional gain
+    max_vertical_speed: 0.5 # m/s, applied to both climb and descent

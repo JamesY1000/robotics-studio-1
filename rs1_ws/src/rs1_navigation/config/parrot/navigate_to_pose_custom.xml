@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+
+<!-- Custom behaviour tree -->
+
+<!--
+  Replan periodically while navigating. After a contextual costmap-clear retry
+  fails, halt navigation and retreat before attempting another plan.
+  Two recovery cycles request at most two 1 m retreats per navigation goal.
+  BackUp retains Nav2's collision checking and fails if the retreat is blocked.
+  Terrain following remains active: this tree does not command altitude hold.
+-->
+<root main_tree_to_execute="MainTree">
+  <BehaviorTree ID="MainTree">
+    <RecoveryNode number_of_retries="2" name="NavigateRecovery">
+      <PipelineSequence name="NavigateWithReplanning">
+        <RateController hz="1.0">
+          <RecoveryNode number_of_retries="1" name="ComputePathToPose">
+            <ComputePathToPose goal="{goal}" path="{path}" planner_id="GridBased"/>
+            <ClearEntireCostmap name="ClearGlobalCostmap-Context"
+                               service_name="global_costmap/clear_entirely_global_costmap"/>
+          </RecoveryNode>
+        </RateController>
+        <RecoveryNode number_of_retries="1" name="FollowPath">
+          <FollowPath path="{path}" controller_id="FollowPath"/>
+          <ClearEntireCostmap name="ClearLocalCostmap-Context"
+                             service_name="local_costmap/clear_entirely_local_costmap"/>
+        </RecoveryNode>
+      </PipelineSequence>
+      <ReactiveFallback name="RecoveryFallback">
+        <GoalUpdated/>
+        <Sequence name="BackUpAndReplan">
+          <BackUp backup_dist="1.0" backup_speed="0.15" time_allowance="10.0"/>
+          <Wait wait_duration="1.0"/>
+        </Sequence>
+      </ReactiveFallback>
+    </RecoveryNode>
+  </BehaviorTree>
+</root>

@@ -4,7 +4,11 @@ from launch.actions import (
     GroupAction,
     IncludeLaunchDescription,
 )
-from launch_ros.actions import Node
+from launch_ros.actions import (
+    Node,
+    RosTimer,
+    SetUseSimTime,
+)
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
@@ -40,9 +44,21 @@ def generate_launch_description():
     nav2_enabled = LaunchConfiguration("nav2")
     husky_spawn_delay = LaunchConfiguration("husky_spawn_delay")
     parrot_spawn_delay = LaunchConfiguration("parrot_spawn_delay")
+    log_level = LaunchConfiguration("log_level")
+    stack_log_level = LaunchConfiguration("stack_log_level")
 
     # Launch args
     launch_arguments = [
+        DeclareLaunchArgument(
+            "log_level",
+            default_value="info",
+            description="Exploration and terrain-following logging level.",
+        ),
+        DeclareLaunchArgument(
+            "stack_log_level",
+            default_value="warn",
+            description="Nav2, localisation, RViz, and bridge logging level.",
+        ),
         DeclareLaunchArgument(
             "world",
             default_value="v2_forest",
@@ -105,6 +121,7 @@ def generate_launch_description():
         launch_arguments={
             "world": world,
             "use_sim_time": use_sim_time,
+            "log_level": stack_log_level,
         }.items(),
     )
 
@@ -122,6 +139,7 @@ def generate_launch_description():
         launch_arguments={
             "use_sim_time": use_sim_time,
             "husky_spawn_delay": husky_spawn_delay,
+            "log_level": stack_log_level,
         }.items(),
     )
 
@@ -139,6 +157,7 @@ def generate_launch_description():
         launch_arguments={
             "use_sim_time": use_sim_time,
             "parrot_spawn_delay": parrot_spawn_delay,
+            "log_level": stack_log_level,
         }.items(),
     )
 
@@ -154,6 +173,7 @@ def generate_launch_description():
         arguments=[
             "-d",
             PathJoinSubstitution([package_share, "config", "husky1.rviz"]),
+            "--ros-args", "--log-level", stack_log_level,
         ],
         remappings=[
             ("/tf", "/husky1/tf"),
@@ -172,6 +192,7 @@ def generate_launch_description():
         arguments=[
             "-d",
             PathJoinSubstitution([package_share, "config", "parrot1.rviz"]),
+            "--ros-args", "--log-level", stack_log_level,
         ],
         remappings=[
             ("/tf", "/parrot1/tf"),
@@ -192,6 +213,7 @@ def generate_launch_description():
         launch_arguments={
             "use_sim_time": use_sim_time,
             "slam": slam_enabled,
+            "log_level": stack_log_level,
         }.items(),
     )
 
@@ -208,6 +230,7 @@ def generate_launch_description():
         launch_arguments={
             "use_sim_time": use_sim_time,
             "slam": slam_enabled,
+            "log_level": stack_log_level,
         }.items(),
     )
 
@@ -224,6 +247,7 @@ def generate_launch_description():
         condition=IfCondition(nav2_enabled),
         launch_arguments={
             "use_sim_time": use_sim_time,
+            "log_level": stack_log_level,
         }.items(),
     )
 
@@ -240,6 +264,8 @@ def generate_launch_description():
         condition=IfCondition(nav2_enabled),
         launch_arguments={
             "use_sim_time": use_sim_time,
+            "log_level": log_level,
+            "nav2_log_level": stack_log_level,
         }.items(),
     )
 
@@ -253,10 +279,22 @@ def generate_launch_description():
         scoped=True,
         condition=IfCondition(husky_enabled),
         actions=[
-            husky_launch,
+            GroupAction(scoped=True, actions=[husky_launch]),
             husky_rviz,
-            husky_localisation_launch,
-            husky_navigation_launch,
+            # Introduce a delay as gazebo interprets a massive velocity spike if robot is spawned away from (0,0)
+            # and this is getting accumulated into ekf
+            RosTimer(
+                period=3.0,  # Should work under current simulation load, adjust if necessary
+                actions=[
+                    GroupAction(
+                        scoped=True,
+                        actions=[
+                            GroupAction(scoped=True, actions=[husky_localisation_launch]),
+                            GroupAction(scoped=True, actions=[husky_navigation_launch]),
+                        ],
+                    )
+                ],
+            ),
         ],
     )
 
@@ -264,14 +302,27 @@ def generate_launch_description():
         scoped=True,
         condition=IfCondition(parrot_enabled),
         actions=[
-            parrot_launch,
+            GroupAction(scoped=True, actions=[parrot_launch]),
             parrot_rviz,
-            parrot_localisation_launch,
-            parrot_navigation_launch,
+            # Introduce a delay as gazebo interprets a massive velocity spike if robot is spawned away from (0,0)
+            # and this is getting accumulated into ekf
+            RosTimer(
+                period=3.0,  # Should work under current simulation load, adjust if necessary
+                actions=[
+                    GroupAction(
+                        scoped=True,
+                        actions=[
+                            GroupAction(scoped=True, actions=[parrot_localisation_launch]),
+                            GroupAction(scoped=True, actions=[parrot_navigation_launch]),
+                        ],
+                    )
+                ],
+            ),
         ],
     )
 
     actions = launch_arguments + [
+        SetUseSimTime(True),
         world_group,
         husky_group,
         parrot_group,

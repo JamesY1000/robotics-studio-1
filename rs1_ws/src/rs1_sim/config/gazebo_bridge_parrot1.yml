@@ -1,34 +1,41 @@
 # Position of joints [ie. wheels] (published by ignition::gazebo::systems::JointStatePublisher)
-- ros_topic_name: 'joint_states'
-  gz_topic_name: '/model/parrot1/joint_states'
-  ros_type_name: 'sensor_msgs/msg/JointState'
-  gz_type_name: 'ignition.msgs.Model'
+- ros_topic_name: "joint_states"
+  gz_topic_name: "/model/parrot1/joint_states"
+  ros_type_name: "sensor_msgs/msg/JointState"
+  gz_type_name: "ignition.msgs.Model"
   direction: GZ_TO_ROS
 
 # Odometry (published by ignition::gazebo::systems::OdometryPublisher)
-- ros_topic_name: 'odometry'
-  gz_topic_name: '/model/parrot1/odometry'
-  ros_type_name: 'nav_msgs/msg/Odometry'
-  gz_type_name: 'ignition.msgs.Odometry'
+- ros_topic_name: "odometry"
+  gz_topic_name: "/model/parrot1/odometry"
+  ros_type_name: "nav_msgs/msg/Odometry"
+  gz_type_name: "ignition.msgs.Odometry"
   direction: GZ_TO_ROS
 
 # Intertial Measurement Unit
-- ros_topic_name: 'imu'
-  gz_topic_name: '/model/parrot1/imu'
-  ros_type_name: 'sensor_msgs/msg/Imu'
-  gz_type_name: 'ignition.msgs.IMU'
+- ros_topic_name: "imu"
+  gz_topic_name: "/model/parrot1/imu"
+  ros_type_name: "sensor_msgs/msg/Imu"
+  gz_type_name: "ignition.msgs.IMU"
   direction: GZ_TO_ROS
 
 # Command velocity
-- ros_topic_name: 'cmd_vel'
-  gz_topic_name: '/model/parrot1/cmd_vel'
-  ros_type_name: 'geometry_msgs/msg/Twist'
-  gz_type_name: 'ignition.msgs.Twist'
+- ros_topic_name: "cmd_vel_combined"
+  gz_topic_name: "/model/parrot1/cmd_vel"
+  ros_type_name: "geometry_msgs/msg/Twist"
+  gz_type_name: "ignition.msgs.Twist"
   direction: ROS_TO_GZ
 
 # Lidar: laserscan
 - ros_topic_name: "scan"
   gz_topic_name: "/model/parrot1/scan"
+  ros_type_name: "sensor_msgs/msg/LaserScan"
+  gz_type_name: "gz.msgs.LaserScan"
+  direction: GZ_TO_ROS
+
+# Downward lidar for terrain following
+- ros_topic_name: "downwards_scan"
+  gz_topic_name: "/model/parrot1/downwards_scan"
   ros_type_name: "sensor_msgs/msg/LaserScan"
   gz_type_name: "gz.msgs.LaserScan"
   direction: GZ_TO_ROS

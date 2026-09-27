@@ -19,6 +19,7 @@ ROBOT_NAMESPACE = "parrot1"
 FRAME_PREFIX = "parrot1_"
 GZ_MODEL_NAME = "parrot1"
 
+# Gazebo coords, not slam
 SPAWN_X = "90.0"
 SPAWN_Y = "-48.0"
 SPAWN_Z = "8.0"
@@ -28,6 +29,7 @@ SPAWN_YAW = "0.0"
 def generate_launch_description():
     use_sim_time = LaunchConfiguration("use_sim_time")
     spawn_delay = LaunchConfiguration("parrot_spawn_delay")
+    log_level = LaunchConfiguration("log_level")
 
     description_path = PathJoinSubstitution(
         [
@@ -66,6 +68,7 @@ def generate_launch_description():
         namespace=ROBOT_NAMESPACE,
         name="robot_state_publisher",
         output="screen",
+        arguments=["--ros-args", "--log-level", log_level],
         parameters=[
             {
                 "robot_description": robot_description,
@@ -84,6 +87,7 @@ def generate_launch_description():
         namespace=ROBOT_NAMESPACE,
         name="gazebo_bridge",
         output="screen",
+        arguments=["--ros-args", "--log-level", log_level],
         parameters=[
             {
                 "config_file": bridge_config,
@@ -111,12 +115,15 @@ def generate_launch_description():
             SPAWN_Z,
             "-Y",
             SPAWN_YAW,
+            "--ros-args", "--log-level", log_level,
         ],
     )
 
     return LaunchDescription(
         [
             DeclareLaunchArgument("use_sim_time", default_value="True"),
+            DeclareLaunchArgument("log_level", default_value="warn",
+                                  description="Robot spawning and bridge logging level."),
             DeclareLaunchArgument("parrot_spawn_delay", default_value="6.0"),
             robot_state_publisher,
             gazebo_bridge,

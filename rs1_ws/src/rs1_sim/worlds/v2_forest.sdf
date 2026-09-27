@@ -475,6 +475,51 @@
       <pose>99.9 97.86 5.86112 1.5708 0 -1.5708</pose>
     </include>
     <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_201</name>
+      <pose>-36.5 -86.14 0.5 -0.010836 -0.005128 -1.84004</pose>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_202</name>
+      <pose>-24.57 -54.63 0.5 -0.010836 -0.005128 -1.84004</pose>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_203</name>
+      <pose>-21.24 -42.72 0.5 -0.010836 -0.005128 -1.84004</pose>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_204</name>
+      <pose>-8.58 -10.31 0.5 -0.010836 -0.005128 -1.84004</pose>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_205</name>
+      <pose>1.85 16.12 0.61 -0.010836 -0.005128 -1.84004</pose>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_206</name>
+      <pose>10.72 37.29 0.5 -0.010836 -0.005128 -1.84004</pose>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_207</name>
+      <pose>18.03 61.13 0.5 -0.010836 -0.005128 -1.84004</pose>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_208</name>
+      <pose>30.61 71.13 0.5 -0.010836 -0.005128 -1.84004</pose>
+    </include>
+    <include>
+      <uri>model://trees/oak_tree</uri>
+      <name>generated_tree_209</name>
+      <pose>46.59 88.49 0.69 -0.010836 -0.005128 -1.84004</pose>
+    </include>
+    <include>
       <uri>model://trees/pine_tree</uri>
       <name>generated_tree_001</name>
       <pose>77.4072 -76.3158 2.85089 -0.012968 -0.012925 -1.31211</pose>
@@ -504,11 +549,11 @@
       <name>generated_tree_006</name>
       <pose>21.3582 -89.1559 4.58318 -0.006845 -0.008157 2.14907</pose>
     </include>
-    <include>
+    <!-- <include>
       <uri>model://trees/oak_tree</uri>
       <name>generated_tree_007</name>
       <pose>90.2508 -77.6552 3.01393 0.012946 -0.01107 -2.91888</pose>
-    </include>
+    </include> -->
     <include>
       <uri>model://trees/pine_tree</uri>
       <name>generated_tree_008</name>
@@ -649,11 +694,11 @@
       <name>generated_tree_035</name>
       <pose>83.2719 -72.441 3.00581 -1e-06 0.007811 0.292529</pose>
     </include>
-    <include>
+    <!-- <include>
       <uri>model://trees/oak_tree</uri>
       <name>generated_tree_036</name>
       <pose>18.5086 -82.4817 4.95888 0.00118 0.005853 1.2312</pose>
-    </include>
+    </include> -->
     <include>
       <uri>model://trees/oak_tree</uri>
       <name>generated_tree_038</name>
@@ -719,11 +764,11 @@
       <name>generated_tree_051</name>
       <pose>25.1472 -3.97752 2.83544 0.005197 -0.003108 2.65706</pose>
     </include>
-    <include>
+    <!-- <include>
       <uri>model://trees/oak_tree</uri>
       <name>generated_tree_052</name>
       <pose>17.4743 -55.005 4.37604 -0.008403 -0.013145 -1.72803</pose>
-    </include>
+    </include> -->
     <include>
       <uri>model://trees/pine_tree</uri>
       <name>generated_tree_053</name>
@@ -744,11 +789,11 @@
       <name>generated_tree_057</name>
       <pose>75.6256 -41.0179 4.29598 -0.008963 -0.004904 -1.99231</pose>
     </include>
-    <include>
+    <!-- <include>
       <uri>model://trees/oak_tree</uri>
       <name>generated_tree_058</name>
       <pose>71.6362 -3.96285 5.59247 -0.002519 0.002168 -3.04475</pose>
-    </include>
+    </include> -->
     <include>
       <uri>model://trees/pine_tree</uri>
       <name>generated_tree_059</name>
@@ -844,11 +889,11 @@
       <name>generated_tree_080</name>
       <pose>-93.4255 64.1498 5.04966 -0.001446 -0.000476 1.78766</pose>
     </include>
-    <include>
+    <!-- <include>
       <uri>model://trees/oak_tree</uri>
       <name>generated_tree_081</name>
       <pose>-70.4797 -75.5578 2.66347 -0.011903 -0.012636 2.89262</pose>
-    </include>
+    </include> -->
     <include>
       <uri>model://trees/pine_tree</uri>
       <name>generated_tree_082</name>
@@ -879,11 +924,11 @@
       <name>generated_tree_087</name>
       <pose>76.1483 69.6206 3.03147 -0.008342 0.013658 2.23425</pose>
     </include>
-    <include>
+    <!-- <include>
       <uri>model://trees/oak_tree</uri>
       <name>generated_tree_088</name>
       <pose>18.2611 -8.75449 2.55529 0.007754 -0.009458 -0.166059</pose>
-    </include>
+    </include> -->
     <include>
       <uri>model://trees/pine_tree</uri>
       <name>generated_tree_089</name>
@@ -1060,11 +1105,6 @@
       <pose>71.2918 93.0508 0.8618 0.00047 -0.008841 2.62041</pose>
     </include>
     <include>
-      <uri>model://trees/oak_tree</uri>
-      <name>generated_tree_126</name>
-      <pose>37.2216 48.8976 1.44676 -0.008903 0.001971 -0.375742</pose>
-    </include>
-    <include>
       <uri>model://trees/pine_tree</uri>
       <name>generated_tree_127</name>
       <pose>37.2118 56.4181 0.314711 0.012848 -0.011932 0.275004</pose>
@@ -1089,11 +1129,11 @@
       <name>generated_tree_131</name>
       <pose>58.6428 28.9534 6.53587 -0.001627 -0.005993 0.126537</pose>
     </include>
-    <include>
+    <!-- <include>
       <uri>model://trees/oak_tree</uri>
       <name>generated_tree_132</name>
       <pose>72.6345 -30.7009 4.51837 0.009501 -0.003111 -0.523584</pose>
-    </include>
+    </include> -->
     <include>
       <uri>model://trees/pine_tree</uri>
       <name>generated_tree_133</name>
@@ -1189,11 +1229,11 @@
       <name>generated_tree_151</name>
       <pose>43.5372 -69.1897 4.10745 0.009613 -0.013128 -1.7169</pose>
     </include>
-    <include>
+    <!-- <include>
       <uri>model://trees/oak_tree</uri>
       <name>generated_tree_152</name>
       <pose>19.3942 -32.6539 3.74007 -0.013337 0.004259 -0.360149</pose>
-    </include>
+    </include> -->
     <include>
       <uri>model://trees/pine_tree</uri>
       <name>generated_tree_153</name>
@@ -1234,11 +1274,11 @@
       <name>generated_tree_160</name>
       <pose>51.4874 25.894 5.5992 0.000658 0.014511 -0.375671</pose>
     </include>
-    <include>
+    <!-- <include>
       <uri>model://trees/oak_tree</uri>
       <name>generated_tree_161</name>
       <pose>79.4563 -28.6704 4.77576 0.014887 -0.010868 -1.29377</pose>
-    </include>
+    </include> -->
     <include>
       <uri>model://trees/oak_tree</uri>
       <name>generated_tree_162</name>
@@ -1274,21 +1314,21 @@
       <name>generated_tree_168</name>
       <pose>59.2233 68.5623 1.88032 -0.001456 -0.013658 -1.92524</pose>
     </include>
-    <include>
+    <!-- <include>
       <uri>model://trees/oak_tree</uri>
       <name>generated_tree_169</name>
       <pose>87.7252 32.4235 5.13878 -0.014909 0.002792 2.54485</pose>
-    </include>
+    </include> -->
     <include>
       <uri>model://trees/pine_tree</uri>
       <name>generated_tree_170</name>
       <pose>48.4301 32.7507 3.99386 0.007363 -0.004958 -0.982159</pose>
     </include>
-    <include>
+    <!-- <include>
       <uri>model://trees/oak_tree</uri>
       <name>generated_tree_171</name>
       <pose>14.4764 -78.2088 5.06581 -0.013734 0.010471 3.12754</pose>
-    </include>
+    </include> -->
     <include>
       <uri>model://trees/oak_tree</uri>
       <name>generated_tree_172</name>
@@ -1329,11 +1369,11 @@
       <name>generated_tree_179</name>
       <pose>-69.0961 15.7314 6.47014 0.013538 -0.004135 2.68989</pose>
     </include>
-    <include>
+    <!-- <include>
       <uri>model://trees/oak_tree</uri>
       <name>generated_tree_180</name>
       <pose>78.8872 40.7353 5.68531 0.014769 0.012562 1.32972</pose>
-    </include>
+    </include> -->
     <include>
       <uri>model://trees/pine_tree</uri>
       <name>generated_tree_181</name>
@@ -1354,11 +1394,11 @@
       <name>generated_tree_184</name>
       <pose>89.4298 87.13 3.34253 0.011957 0.009642 -0.530495</pose>
     </include>
-    <include>
+    <!-- <include>
       <uri>model://trees/oak_tree</uri>
       <name>generated_tree_186</name>
       <pose>55.5077 35.43 5.46015 0.01053 -0.003375 -1.13527</pose>
-    </include>
+    </include> -->
     <include>
       <uri>model://trees/oak_tree</uri>
       <name>generated_tree_187</name>
