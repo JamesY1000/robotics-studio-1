@@ -86,6 +86,20 @@
     </plugin>
   </gazebo>
 
+  <!-- Initialization truth only, bridged to /mission/truth, never to /tf.
+       Both URDF roots are base_link; model-to-base planar offset is zero. -->
+  <gazebo>
+    <plugin filename="ignition-gazebo-pose-publisher-system"
+            name="ignition::gazebo::systems::PosePublisher">
+      <publish_model_pose>true</publish_model_pose>
+      <publish_link_pose>false</publish_link_pose>
+      <!-- Fortress requires this flag as well to emit the top-level model pose. -->
+      <publish_nested_model_pose>true</publish_nested_model_pose>
+      <use_pose_vector_msg>true</use_pose_vector_msg>
+      <update_frequency>20</update_frequency>
+    </plugin>
+  </gazebo>
+
   <!-- Publish odometry separately -->
   <gazebo>
     <plugin

@@ -8,6 +8,7 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rcl_interfaces REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(rs1_interfaces REQUIRED)
 find_package(std_srvs REQUIRED)
@@ -37,7 +38,7 @@ add_executable(parrot_mission_executor
   src/parrot_mission_executor_node.cpp
 )
 
-ament_target_dependencies(mission_coordinator rclcpp rclcpp_action std_msgs geometry_msgs visualization_msgs rs1_interfaces std_srvs)
+ament_target_dependencies(mission_coordinator tf2 tf2_ros tf2_geometry_msgs rclcpp rcl_interfaces rclcpp_action std_msgs geometry_msgs visualization_msgs rs1_interfaces std_srvs)
 ament_target_dependencies(husky_mission_executor rclcpp rclcpp_action std_msgs geometry_msgs tf2 tf2_ros tf2_geometry_msgs nav_msgs nav2_msgs rs1_interfaces)
 ament_target_dependencies(parrot_mission_executor rclcpp rclcpp_action std_msgs geometry_msgs tf2 tf2_ros nav2_msgs rs1_interfaces)
 

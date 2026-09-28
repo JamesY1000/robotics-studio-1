@@ -52,7 +52,6 @@ services:
       NVIDIA_DRIVER_CAPABILITIES: all
       NVIDIA_VISIBLE_DEVICES: all
       TERM: xterm-256color
-      PYTHONDONTWRITEBYTECODE: 1
       PYTHONUNBUFFERED: 1
       CCACHE_DIR: /ccache
     cap_add:

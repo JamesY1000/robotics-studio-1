@@ -11,6 +11,34 @@ Members are:
 
 This repository is a common place to store and maintain our code, documentation, and setup instructions for the project throughout the semester.
 
+## Mission Control
+
+For UI-driven demos, launch the world and dashboard in two sourced devcontainer
+terminals:
+
+```bash
+# Terminal 1: world only
+ros2 launch rs1_sim rs1_sim.launch.py ui:=true
+
+# Terminal 2: click-to-spawn, ROI selection and mission controls
+ros2 launch rs1_dashboard dashboard.launch.py mode:=deploy
+```
+
+Open **http://localhost:8000**, choose robot positions, select **Spawn robots**,
+then choose an ROI and **Start Mission**. The dashboard launches the robot stacks
+and mission nodes; no separate mission launch is needed. Restarting the dashboard
+leaves that deployment running. **Stop robots** explicitly removes the deployment
+while preserving the world. Restart the world terminal with `ui:=true` before
+deploying again: Gazebo Fortress currently cannot reliably recreate this sensor
+stack twice in one world instance.
+
+For manual debugging, `rs1_sim.launch.py` without `ui:=true` still starts the
+complete simulation and robots. Launch mission nodes separately when needed and
+optionally attach the dashboard with `mode:=external`. An optional `managed`
+mode retains the dashboard-owned, all-in-one simulation flow. Rebuild with `cb`
+and source the workspace after updating launch files. See [launch commands](mission_control/LAUNCHING.md) and
+[installation, operation and validation](mission_control/README.md).
+
 ## Project Workflow (Quick Start)
 
 1. Pull the latest changes from main.
@@ -85,6 +113,29 @@ docker compose build rs1-devcontainer-user
 3. Open the repo in VS Code and select Reopen in Container.
 
 After initial setup, you usually only need to open the repository in VS Code and reopen in container. If you prefer to run multiple terminal windows, you can use lazydocker and enter the container this way.
+
+The devcontainer post-create hook installs the project dependencies and builds
+the dashboard frontend. In an existing container, or one opened without that
+hook, run the same setup from the repository root:
+
+```bash
+bash .devcontainer/scripts/setup_dependencies.sh
+```
+
+This handles apt/rosdep dependencies, the Python backend in
+`.venv/mission-control`, Node/pnpm and the frontend's locked dependency install
+and build. A compatible existing Node is reused; otherwise the script installs
+a SHA256-checked official Node runtime privately under `.venv/frontend-tools`.
+No separate pip/pnpm commands or devcontainer rebuild are required for this
+setup. Build the ROS source packages separately with your normal `cb`/`colcon
+build`, then source the matching workspace install before launching. ROS can be
+built before or after installing the dashboard's web dependencies.
+
+Dashboard Python requirements are in `mission_control/backend/requirements.txt`;
+frontend dependencies are in `mission_control/frontend/package.json` and its
+pnpm lockfile. The base image's `.devcontainer/requirements.txt` contains global
+Python development tools. See the Mission Control installation guide linked
+above for the two-terminal demo, manual debugging and frontend development.
 
 ## Branching and Commit Conventions
 

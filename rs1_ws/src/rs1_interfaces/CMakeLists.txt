@@ -14,6 +14,7 @@ find_package(nav_msgs REQUIRED)
 
 # Generate C++/Python interfaces and ROS type support.
 rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/MissionStatus.msg"
   "msg/BoundingBox.msg"
   "msg/TreeLocation.msg"
   "msg/YoloDetections.msg"

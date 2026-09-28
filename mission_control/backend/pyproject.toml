@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=65,<80"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rs1-mission-control"
+version = "0.1.0"
+requires-python = ">=3.10"
+dynamic = ["dependencies"]
+
+[project.optional-dependencies]
+test = ["pytest>=8", "httpx>=0.27"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["mission_control*"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

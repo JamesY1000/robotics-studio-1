@@ -28,7 +28,7 @@ and conversion of those detections into world-frame tree locations.
 | --- | --- | --- |
 | Tree detection | `tree_identification/yolo_node.py` | `/yolo/detect` service, `/yolo/debug_image` topic |
 | Tree localisation | `tree_location/tree_location_processing.py` | `/yolo/process_tree_locations` service |
-| World frame broadcaster | `tree_location/parrot_world_broadcaster.py` | `/tf`, `/tf_static` |
+| Shared TF (simulation-owned) | `rs1_alignment/alignment` | `/tf`, `/tf_static` |
 
 Helper clients: `scripts/test_tree_locations.py` (accuracy test),
 `scripts/visualise_tree_locations.py` (RViz markers / Gazebo poles),
@@ -42,7 +42,12 @@ ros2 launch rs1_perception tree_identification.launch.py
 ros2 launch rs1_perception tree_identification.launch.py backend:=onnx
 ```
 
-The launch file starts all three nodes. Everything else (image size, thresholds,
+The launch file starts the two perception nodes. The simulation's
+`rs1_alignment` component must already provide the shared world→map→odom→base
+tree and robot-description sensor transforms. It starts by default with
+`ros2 launch rs1_sim rs1_sim.launch.py`; do not run an additional alignment node.
+The dashboard is optional and can start separately. The old direct truth-based
+world→base broadcaster has been removed. Everything else (image size, thresholds,
 class names) lives in `config/yolo.yaml`; the launch file only exposes the
 backend selection and the model paths.
 
@@ -91,21 +96,16 @@ texture are meaningless noise. Use the simulation for accuracy.
 
 ### Full pipeline - with the simulation
 
-```bash
-# terminal 1
-ros2 launch rs1_sim rs1_sim.launch.py husky:=false rviz:=false slam:=false nav2:=false
-
-# terminal 2 - the whole perception stack on the onnx backend
-ros2 launch rs1_perception tree_identification.launch.py backend:=onnx
-
-# terminal 3 - teleport around the forest and score the detections
-ros2 run rs1_perception test_tree_locations.py --views 5 --seed 3
-```
-
-`test_tree_locations.py` reports position precision and mean error against the
-world's ground-truth trees, which is the check that actually validates detection
-quality. Swap `backend:=onnx` for `backend:=pytorch` to compare - the results
-should be equivalent.
+Start `ros2 launch rs1_sim rs1_sim.launch.py`, which includes alignment, then
+launch perception in the same ROS domain. Mission and dashboard launches can
+run in their own terminals; see [launch ownership](../../../mission_control/LAUNCHING.md).
+Consumers use the shared global
+TF topics. XY/yaw registration is verified, but Parrot's unfused Z limits accurate
+3D tree placement. The existing teleport-based `test_tree_locations.py` and tour
+helpers are not valid localization-accuracy checks in this mode: teleporting a
+model does not reset the EKF/SLAM estimate. Reset the whole session after a
+teleport or map reset. Full vertical-localization and teleport-aware perception
+validation are deferred.
 
 ## Inference backends
 

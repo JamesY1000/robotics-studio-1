@@ -8,7 +8,15 @@
     "shutdownAction": "stopContainer",
     "postCreateCommand": "bash .devcontainer/scripts/post_create.sh",
     "initializeCommand": "xhost +SI:localuser:${localEnv:USER}",
-    // Handle port forwarding in the future for foxglove/lichtblick and webdev stuff
+    "portsAttributes": {
+        "8000": {"label": "Mission Control (host networking)", "onAutoForward": "ignore"},
+        "5173": {"label": "Mission Control development (host networking)", "onAutoForward": "ignore"},
+        "8080": {"label": "Lichtblick telemetry (host networking)", "onAutoForward": "ignore"},
+        "8765": {"label": "ROS telemetry bridge (host networking)", "onAutoForward": "ignore"}
+    },
+    "features": {
+        "ghcr.io/devcontainers/features/node:1": {"version": "22"}
+    },
     "customizations": {
         "vscode": {
             "settings": {

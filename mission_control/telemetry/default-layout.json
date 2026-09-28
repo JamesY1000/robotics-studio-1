@@ -1,0 +1,153 @@
+{
+  "configById": {
+    "3D!rs1-world": {
+      "lichtblickPanelTitle": "World · Husky cyan / Parrot amber",
+      "followTf": "world",
+      "followMode": "follow-pose",
+      "cameraState": {
+        "distance": 260,
+        "perspective": false,
+        "phi": 0,
+        "thetaOffset": 0,
+        "target": [0, 0, 0],
+        "targetOffset": [0, 0, 0],
+        "targetOrientation": [0, 0, 0, 1],
+        "fovy": 45,
+        "near": 0.1,
+        "far": 5000
+      },
+      "scene": {
+        "transforms": {
+          "showLabel": true,
+          "axisScale": 2
+        }
+      },
+      "transforms": {
+        "frame:world": { "visible": true },
+        "frame:husky1_base_link": { "visible": true },
+        "frame:parrot1_base_link": { "visible": true }
+      },
+      "topics": {
+        "/husky1/map": {
+          "visible": true,
+          "frameLocked": true,
+          "colorMode": "custom",
+          "minColor": "#2dd4bf20",
+          "maxColor": "#2dd4bfff",
+          "unknownColor": "#00000000"
+        },
+        "/parrot1/map": {
+          "visible": true,
+          "frameLocked": true,
+          "colorMode": "custom",
+          "minColor": "#fbbf2420",
+          "maxColor": "#fbbf24ff",
+          "unknownColor": "#00000000"
+        },
+        "/husky1/scan": { "visible": true },
+        "/parrot1/scan": { "visible": true },
+        "/parrot1/downwards_scan": { "visible": true },
+        "/mission/roi_marker": { "visible": true }
+      },
+      "layers": {},
+      "imageMode": {}
+    },
+    "Image!rs1-husky": {
+      "lichtblickPanelTitle": "Husky · RGB camera",
+      "imageMode": {
+        "imageTopic": "/husky1/camera/image",
+        "synchronize": false
+      }
+    },
+    "Image!rs1-parrot": {
+      "lichtblickPanelTitle": "Parrot · RGB camera",
+      "imageMode": {
+        "imageTopic": "/parrot1/camera/image",
+        "synchronize": false
+      }
+    },
+    "Plot!rs1-clearance": {
+      "lichtblickPanelTitle": "Parrot · downward centre ray",
+      "paths": [
+        {
+          "value": "/parrot1/downwards_scan.ranges[1]",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "Centre ray (m)",
+          "color": "#fbbf24"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "top",
+      "showPlotValuesInLegend": true,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "yAxisLabel": "Range (m)",
+      "sidebarDimension": 240,
+      "followingViewWidth": 30
+    },
+    "Plot!rs1-vertical-command": {
+      "lichtblickPanelTitle": "Parrot · commanded vertical velocity",
+      "paths": [
+        {
+          "value": "/parrot1/cmd_vel_combined.linear.z",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "Commanded vz (m/s)",
+          "color": "#a78bfa"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "top",
+      "showPlotValuesInLegend": true,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "yAxisLabel": "Command (m/s)",
+      "sidebarDimension": 240,
+      "followingViewWidth": 30
+    },
+    "RawMessages!rs1-mission": {
+      "lichtblickPanelTitle": "Mission · coordinator status",
+      "topicPath": "/mission/status",
+      "diffEnabled": false,
+      "diffMethod": "custom",
+      "diffTopicPath": "",
+      "showFullMessageForDiff": false,
+      "expansion": "all",
+      "fontSize": 12
+    }
+  },
+  "globalVariables": {},
+  "userNodes": {},
+  "playbackConfig": { "speed": 1 },
+  "layout": {
+    "direction": "column",
+    "splitPercentage": 63,
+    "first": {
+      "direction": "row",
+      "splitPercentage": 66,
+      "first": "3D!rs1-world",
+      "second": {
+        "direction": "column",
+        "splitPercentage": 50,
+        "first": "Image!rs1-husky",
+        "second": "Image!rs1-parrot"
+      }
+    },
+    "second": {
+      "direction": "row",
+      "splitPercentage": 66,
+      "first": {
+        "direction": "row",
+        "splitPercentage": 50,
+        "first": "Plot!rs1-clearance",
+        "second": "Plot!rs1-vertical-command"
+      },
+      "second": "RawMessages!rs1-mission"
+    }
+  }
+}

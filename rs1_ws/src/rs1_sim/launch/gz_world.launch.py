@@ -1,8 +1,10 @@
+import shlex
 from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
     IncludeLaunchDescription,
     SetEnvironmentVariable,
+    OpaqueFunction,
 )
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import (
@@ -79,20 +81,20 @@ def generate_launch_description():
         server_config,
     )
 
-    gazebo = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution(
-                [
-                    FindPackageShare("ros_gz_sim"),
-                    "launch",
-                    "gz_sim.launch.py",
-                ]
-            )
-        ),
-        launch_arguments={
-            "gz_args": [world_file, " -r"],
-        }.items(),
-    )
+    def launch_gazebo(context):
+        override = LaunchConfiguration("world_file").perform(context)
+        selected = override or world_file.perform(context)
+        headless = LaunchConfiguration("headless").perform(context).lower() == "true"
+        return [IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(PathJoinSubstitution(
+                [FindPackageShare("ros_gz_sim"), "launch", "gz_sim.launch.py"])),
+            launch_arguments={
+                "gz_args": f"{shlex.quote(selected)} -r" + (" -s" if headless else ""),
+                # End the world marker/clock bridge when Gazebo exits or fails.
+                "on_exit_shutdown": "true",
+            }.items())]
+
+    gazebo = OpaqueFunction(function=launch_gazebo)
 
     clock_bridge = Node(
         package="ros_gz_bridge",
@@ -111,6 +113,8 @@ def generate_launch_description():
     return LaunchDescription(
         [
             world_argument,
+            DeclareLaunchArgument("world_file", default_value=""),
+            DeclareLaunchArgument("headless", default_value="False"),
             use_sim_time_argument,
             DeclareLaunchArgument("log_level", default_value="warn",
                                   description="Clock bridge logging level."),

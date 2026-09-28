@@ -1,6 +1,8 @@
 /rs1_ws/log/
 /rs1_ws/build/
 /rs1_ws/install/
+/rs1_ws/build-mission-control/
+/rs1_ws/install-mission-control/
 
 .vscode/
 
@@ -13,3 +15,12 @@ sample_gen/database
 
 *__pycache__/
 *.py[cod]
+
+.mission-control/
+.venv/
+*.egg-info/
+mission_control/frontend/node_modules/
+mission_control/frontend/dist/
+mission_control/frontend/*.tsbuildinfo
+mission_control/frontend/test-results/
+mission_control/frontend/playwright-report/

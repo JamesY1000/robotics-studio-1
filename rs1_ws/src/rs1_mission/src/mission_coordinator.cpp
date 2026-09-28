@@ -12,6 +12,7 @@
 #include "mission_coordinator.hpp"
 
 #include <exception>
+#include <chrono>
 #include <functional>
 #include <string>
 #include <cmath>
@@ -25,8 +26,16 @@ MissionCoordinatorNode::MissionCoordinatorNode() : Node("mission_coordinator_nod
     husky_succeded_(false)
 {
 
-    // Define ROI - both robots receive the same pose in parrot frame
-    roi_pose_.header.frame_id = "parrot1_map";
+    // Saved ROI remains in its configured frame; transform before sending goals.
+    roi_pose_.header.frame_id = this->declare_parameter<std::string>("roi_frame", "world");
+    session_id_ = this->declare_parameter<std::string>("session_id", "manual");
+    instance_id_ = std::to_string(std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count());
+    tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_, this, false);
+    status_pub_ = this->create_publisher<rs1_interfaces::msg::MissionStatus>(
+        "/mission/status", rclcpp::QoS(1).reliable().transient_local());
+    status_timer_ = this->create_wall_timer(std::chrono::milliseconds(200), [this]() { publishStatus(); });
     roi_pose_.pose.position.x = this->declare_parameter<double>("roi_x", -40.0);
     roi_pose_.pose.position.y = this->declare_parameter<double>("roi_y", 40.0);
     roi_pose_.pose.position.z = this->declare_parameter<double>("roi_z", 0.0);
@@ -38,6 +47,11 @@ MissionCoordinatorNode::MissionCoordinatorNode() : Node("mission_coordinator_nod
 
     // Show the configured ROI before starting the mission
     publishROIMarker();
+
+    // Parameter services and mission callbacks share the default mutually
+    // exclusive callback group. A target update cannot overlap mission start.
+    roi_parameters_callback_ = this->add_on_set_parameters_callback(
+        std::bind(&MissionCoordinatorNode::validateROIParameters, this, std::placeholders::_1));
 
 
     // Action clients and callbacks for the parrot and husky mission executors
@@ -124,6 +138,87 @@ MissionCoordinatorNode::MissionCoordinatorNode() : Node("mission_coordinator_nod
 
 }
 
+rcl_interfaces::msg::SetParametersResult MissionCoordinatorNode::validateROIParameters(
+    const std::vector<rclcpp::Parameter> &parameters)
+{
+    rcl_interfaces::msg::SetParametersResult result;
+    result.successful = true;
+    auto candidate = configuredROI();
+    bool updates_roi = false;
+    for (const auto &parameter : parameters)
+    {
+        const auto &name = parameter.get_name();
+        if (name != "roi_x" && name != "roi_y" && name != "roi_z" && name != "roi_frame") continue;
+        updates_roi = true;
+        if (mission_state_ != MissionState::IDLE)
+        {
+            result.successful = false;
+            result.reason = "ROI can only be updated while the mission coordinator is IDLE; restart the mission launch after a terminal outcome";
+            return result;
+        }
+        if (name == "roi_frame")
+        {
+            if (parameter.get_type() != rclcpp::ParameterType::PARAMETER_STRING)
+            {
+                result.successful = false;
+                result.reason = "roi_frame must be a string";
+                return result;
+            }
+            candidate.header.frame_id = parameter.as_string();
+        }
+        else
+        {
+            if (parameter.get_type() != rclcpp::ParameterType::PARAMETER_DOUBLE)
+            {
+                result.successful = false;
+                result.reason = name + " must be a double";
+                return result;
+            }
+            if (name == "roi_x") candidate.pose.position.x = parameter.as_double();
+            if (name == "roi_y") candidate.pose.position.y = parameter.as_double();
+            if (name == "roi_z") candidate.pose.position.z = parameter.as_double();
+        }
+    }
+    if (!updates_roi) return result;
+    if (candidate.header.frame_id.empty())
+    {
+        result.successful = false;
+        result.reason = "roi_frame must not be empty";
+    }
+    else if (!std::isfinite(candidate.pose.position.x) ||
+        !std::isfinite(candidate.pose.position.y) ||
+        !std::isfinite(candidate.pose.position.z))
+    {
+        result.successful = false;
+        result.reason = "ROI coordinates must be finite";
+    }
+    // This is a pre-commit validation callback. Read committed values in
+    // refreshROI(), so a rejected atomic parameter batch has no side effects.
+    return result;
+}
+
+geometry_msgs::msg::PoseStamped MissionCoordinatorNode::configuredROI() const
+{
+    geometry_msgs::msg::PoseStamped roi;
+    roi.header.frame_id = this->get_parameter("roi_frame").as_string();
+    roi.pose.position.x = this->get_parameter("roi_x").as_double();
+    roi.pose.position.y = this->get_parameter("roi_y").as_double();
+    roi.pose.position.z = this->get_parameter("roi_z").as_double();
+    roi.pose.orientation.w = 1.0;
+    return roi;
+}
+
+void MissionCoordinatorNode::refreshROI()
+{
+    const auto configured = configuredROI();
+    if (configured.header.frame_id == roi_pose_.header.frame_id &&
+        configured.pose.position.x == roi_pose_.pose.position.x &&
+        configured.pose.position.y == roi_pose_.pose.position.y &&
+        configured.pose.position.z == roi_pose_.pose.position.z) return;
+    roi_pose_ = configured;
+    publishROIMarker();
+}
+
 void MissionCoordinatorNode::startMissionCb(const std::shared_ptr<std_srvs::srv::Trigger::Request>,
     std::shared_ptr<std_srvs::srv::Trigger::Response> response)
 {
@@ -135,6 +230,9 @@ void MissionCoordinatorNode::startMissionCb(const std::shared_ptr<std_srvs::srv:
         response->message = "Mission can only start from IDLE state";
         return;
     }
+    // Synchronize immediately even when Start follows a parameter update before
+    // the next status timer. Both operations execute serially in this node.
+    refreshROI();
     // Validate supplied ROI
     if (roi_pose_.header.frame_id.empty())
     {
@@ -173,6 +271,25 @@ void MissionCoordinatorNode::startMissionCb(const std::shared_ptr<std_srvs::srv:
         return;
     }
 
+    // A frame label is not a coordinate conversion. Both existing executors
+    // accept parrot1_map; Husky transforms the generated path to its own map.
+    try
+    {
+        for (const auto &robot : {"husky1", "parrot1"})
+        {
+            const auto t = tf_buffer_->lookupTransform("world", std::string(robot) + "_base_link", tf2::TimePointZero);
+            const double age = (this->now() - rclcpp::Time(t.header.stamp)).seconds();
+            if (age < -0.1 || age > 2.0) throw std::runtime_error("Robot localization TF is stale");
+        }
+        const auto transform = tf_buffer_->lookupTransform("parrot1_map", roi_pose_.header.frame_id, tf2::TimePointZero);
+        tf2::doTransform(roi_pose_, executor_roi_, transform);
+    }
+    catch (const std::exception &e)
+    {
+        response->message = std::string("Waiting for world alignment/localization: ") + e.what();
+        return;
+    }
+
     // Start with husky so it is ready before parrot generates the path
     response->success = startTraverseToROI();
     response->message = response->success ?
@@ -190,6 +307,11 @@ void MissionCoordinatorNode::cancelMissionCb(const std::shared_ptr<std_srvs::srv
         return;
     }
 
+    if (mission_state_ == MissionState::COMPLETE || mission_state_ == MissionState::CANCELLED)
+    {
+        response->message = "Mission already finished; create a new session";
+        return;
+    }
     // Keep a failed mission marked as failed while retrying its cleanup
     if (mission_state_ != MissionState::FAILED)
     {
@@ -228,6 +350,7 @@ void MissionCoordinatorNode::traverseToROIGoalResponseCb(Robot robot,
     }
 
     current_goal = goal_handle;
+    (robot == Robot::Parrot ? parrot_stage_ : husky_stage_) = "Accepted";
 
     // Cancellation may have arrived before the executor accepted its goal
     if (mission_state_ == MissionState::FAILED || mission_state_ == MissionState::CANCELLING)
@@ -250,7 +373,7 @@ void MissionCoordinatorNode::traverseToROIGoalResponseCb(Robot robot,
         try
         {
             parrot_goal_pending_ = true;
-            traverse_to_roi_client_parrot_->async_send_goal(createTraverseToROIGoal(roi_pose_), parrot_goal_options_);
+            traverse_to_roi_client_parrot_->async_send_goal(createTraverseToROIGoal(executor_roi_), parrot_goal_options_);
         }
         catch (const std::exception &e)
         {
@@ -270,6 +393,7 @@ void MissionCoordinatorNode::traverseToROIFeedbackCb(Robot robot,
     if (!feedback || !goal_handle || !current_goal || mission_state_ != MissionState::TRAVERSINGTOROI ||
         goal_handle->get_goal_id() != current_goal->get_goal_id()) return;
 
+    (robot == Robot::Parrot ? parrot_stage_ : husky_stage_) = feedback->stage;
     if (robot == Robot::Parrot)
     {
         RCLCPP_DEBUG_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "Parrot traversal stage: %s", feedback->stage.c_str());
@@ -289,6 +413,9 @@ void MissionCoordinatorNode::traverseToROIResultCb(Robot robot,
 
     // Only accept a result for the goal this mission owns
     if (!current_goal || result.goal_id != current_goal->get_goal_id()) return;
+    (robot == Robot::Parrot ? parrot_stage_ : husky_stage_) =
+        result.code == rclcpp_action::ResultCode::SUCCEEDED ? "Reached ROI" :
+        result.code == rclcpp_action::ResultCode::CANCELED ? "Cancelled" : "Failed";
     current_goal.reset();
     cancel_requested = false;
 
@@ -366,12 +493,13 @@ bool MissionCoordinatorNode::startTraverseToROI()
     parrot_succeded_ = false;
     husky_succeded_ = false;
     mission_state_ = MissionState::TRAVERSINGTOROI;
+    message_ = "Traversal to ROI; sampling and return-home are not implemented";
 
     // Send husky its goal first; its acceptance callback starts parrot
     try
     {
         husky_goal_pending_ = true;
-        traverse_to_roi_client_husky_->async_send_goal(createTraverseToROIGoal(roi_pose_), husky_goal_options_);
+        traverse_to_roi_client_husky_->async_send_goal(createTraverseToROIGoal(executor_roi_), husky_goal_options_);
     }
     catch (const std::exception &e)
     {
@@ -411,7 +539,8 @@ void MissionCoordinatorNode::evaluateTransitions()
     {
         mission_state_ = MissionState::COMPLETE; // TODO (james): Change this to the next phase, and then call startSampleROI()
         RCLCPP_INFO(this->get_logger(), "Phase 1 complete: both robots reached the ROI");
-        returnToIdle();
+        message_ = "Traversal complete: both robots reached ROI";
+        finalizeMission();
         return;
     }
 
@@ -421,7 +550,12 @@ void MissionCoordinatorNode::evaluateTransitions()
     {
         RCLCPP_INFO(this->get_logger(), "%s; both executors have finished",
             mission_state_ == MissionState::FAILED ? "Mission failed" : "Mission canceled");
-        returnToIdle();
+        if (mission_state_ == MissionState::CANCELLING)
+        {
+            mission_state_ = MissionState::CANCELLED;
+            message_ = "Cancellation completed; both executors finished";
+        }
+        finalizeMission();
     }
 }
 
@@ -473,6 +607,7 @@ void MissionCoordinatorNode::publishROIMarker()
 void MissionCoordinatorNode::failMission(const std::string &message)
 {
     mission_state_ = MissionState::FAILED;
+    message_ = message;
     RCLCPP_ERROR(this->get_logger(), "%s", message.c_str());
 
     // Stop the other robot too, then wait for both final results
@@ -505,9 +640,9 @@ void MissionCoordinatorNode::cancelTraversalToROI(Robot robot)
     }
 }
 
-void MissionCoordinatorNode::returnToIdle()
+void MissionCoordinatorNode::finalizeMission()
 {
-    // Reset goal handles, flags and mission state once both executors have finished
+    // Clear goal ownership once both executors have finished; keep the outcome.
     parrot_goal_handle_.reset();
     husky_goal_handle_.reset();
     parrot_goal_pending_ = false;
@@ -516,9 +651,35 @@ void MissionCoordinatorNode::returnToIdle()
     husky_cancel_requested_ = false;
     parrot_succeded_ = false;
     husky_succeded_ = false;
-    mission_state_ = MissionState::IDLE;
+    // Preserve the terminal outcome. A new process/session is required to restart.
+    publishStatus();
+}
 
-    RCLCPP_INFO(this->get_logger(), "Mission coordinator returned to IDLE");
+void MissionCoordinatorNode::publishStatus()
+{
+    refreshROI();
+    rs1_interfaces::msg::MissionStatus status;
+    status.header.stamp = this->now();
+    status.header.frame_id = "world";
+    status.session_id = session_id_;
+    status.instance_id = instance_id_;
+    status.roi = roi_pose_;
+    status.roi.header.stamp = status.header.stamp;
+    switch (mission_state_)
+    {
+        case MissionState::IDLE: status.state = "ready"; break;
+        case MissionState::TRAVERSINGTOROI: status.state = "executing"; break;
+        case MissionState::CANCELLING: status.state = "cancellation_requested"; break;
+        case MissionState::CANCELLED: status.state = "cancelled"; break;
+        case MissionState::COMPLETE: status.state = "complete"; break;
+        case MissionState::FAILED: status.state = "failed"; break;
+        default: status.state = "unsupported_phase";
+    }
+    status.parrot_stage = parrot_stage_;
+    status.husky_stage = husky_stage_;
+    status.message = message_;
+    status.cleanup_complete = !parrot_goal_pending_ && !husky_goal_pending_ && !parrot_goal_handle_ && !husky_goal_handle_;
+    status_pub_->publish(status);
 }
 
 }  // namespace rs1_mission

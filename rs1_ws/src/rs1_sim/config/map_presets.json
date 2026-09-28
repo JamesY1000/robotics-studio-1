@@ -1,0 +1,12 @@
+{
+  "v2_forest": {
+    "world_id": "v2_forest",
+    "image_id": "forest-overhead",
+    "calibration_id": "forest-edges-v1",
+    "name": "Forest overhead",
+    "image": "models/forest_plane/materials/textures/forest_overhead.png",
+    "collision_mesh": "models/forest_plane/materials/mesh/terrain.stl",
+    "water_mask": "models/forest_plane/materials/textures/source/water_mask.png",
+    "calibration": {"x_min": -100.0, "x_max": 100.0, "y_min": -100.0, "y_max": 100.0}
+  }
+}

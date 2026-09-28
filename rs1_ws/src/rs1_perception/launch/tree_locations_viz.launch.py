@@ -1,8 +1,11 @@
 """One-command visual check of the YOLO tree-detection -> TreeLocation pipeline.
 
+Requires the shared aligned TF tree. Teleport tours invalidate localization;
+use stationary views with tour:=false for an aligned mission session.
+
 Starts:
 
-* the perception stack (``tree_identification.launch.py``: world broadcaster +
+* the perception stack (``tree_identification.launch.py``: shared world alignment required;
   YOLO node + tree-location node),
 * RViz with ``config/tree_locations.rviz`` (fixed frame ``world``, MarkerArray
   on ``/tree_locations/markers``, the YOLO debug image and the parrot lidar),
@@ -11,15 +14,14 @@ Starts:
   (``gazebo:=true``, the default) spawns a matching marker pole in the Gazebo
   world so the result can be checked against the real trees in the sim view.
 
-Requires the simulation to be running already::
+Requires the simulation to be running already (same ROS domain); it includes shared alignment::
 
     ros2 launch rs1_sim rs1_sim.launch.py husky:=false rviz:=false
 
 Then::
 
     ros2 launch rs1_perception tree_locations_viz.launch.py
-    # or fly a tour of the forest:
-    ros2 launch rs1_perception tree_locations_viz.launch.py tour:=true views:=6
+    # Teleport tours are disabled by default; they invalidate localization.
     # show every true tree position as a grey RViz marker too:
     ros2 launch rs1_perception tree_locations_viz.launch.py show_ground_truth:=true
 """
@@ -72,8 +74,8 @@ def generate_launch_description():
     )
 
     arguments = [
-        DeclareLaunchArgument("tour", default_value="true",
-                              description="Fly a tour of tree viewpoints."),
+        DeclareLaunchArgument("tour", default_value="false",
+                              description="Legacy teleport tour; invalidates registered localization."),
         DeclareLaunchArgument("views", default_value="6",
                               description="Number of tour stops."),
         DeclareLaunchArgument("interval", default_value="5.0",
@@ -90,7 +92,7 @@ def generate_launch_description():
                               description="Start RViz with the tree-locations config."),
     ]
 
-    # The perception stack (world broadcaster + yolo_node + tree_location_node).
+    # The perception stack (shared world alignment required; yolo_node + tree_location_node).
     perception = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(perception_launch)
     )

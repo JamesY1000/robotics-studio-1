@@ -1,0 +1,4 @@
+allowBuilds:
+  esbuild: true
+# Keep install/build/dev commands on the same repository-local dependency store.
+storeDir: ../../.venv/frontend-tools/pnpm-store

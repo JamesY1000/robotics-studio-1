@@ -1,331 +1,82 @@
+"""Start a complete simulation, or only its world for dashboard deployment."""
+from uuid import uuid4
+
 from launch import LaunchDescription
-from launch.actions import (
-    DeclareLaunchArgument,
-    GroupAction,
-    IncludeLaunchDescription,
-)
-from launch_ros.actions import (
-    Node,
-    RosTimer,
-    SetUseSimTime,
-)
-from launch.conditions import IfCondition
+from launch.actions import DeclareLaunchArgument, GroupAction, IncludeLaunchDescription
+from launch.conditions import IfCondition, UnlessCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, PythonExpression
+from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
-
-"""
-    Launches the gazebo world, spawns the husky and parrots in. Runs:
-    - gz_world.launch.py
-    - spawn_husky.launch.py
-    - spawn_parrot.launch.py
-    - husky_localisation.launch.py
-    - parrot_localisation.launch.py
-"""
-
-RS1_SIM_PACKAGE = "rs1_sim"
-RS1_LOCALISATION_PACKAGE = "rs1_localisation"
-RS1_NAVIGATION_PACKAGE = "rs1_navigation"
-LAUNCH_DIRECTORY = "launch"
 
 
 def generate_launch_description():
-    package_share = FindPackageShare(RS1_SIM_PACKAGE)
-    localisation_package_share = FindPackageShare(RS1_LOCALISATION_PACKAGE)
-    navigation_package_share = FindPackageShare(RS1_NAVIGATION_PACKAGE)
-
-    # Launch configs
+    package_share = FindPackageShare("rs1_sim")
     world = LaunchConfiguration("world")
-    use_sim_time = LaunchConfiguration("use_sim_time")
-    husky_enabled = LaunchConfiguration("husky")
-    parrot_enabled = LaunchConfiguration("parrot")
-    rviz_enabled = LaunchConfiguration("rviz")
-    slam_enabled = LaunchConfiguration("slam")
-    nav2_enabled = LaunchConfiguration("nav2")
-    husky_spawn_delay = LaunchConfiguration("husky_spawn_delay")
-    parrot_spawn_delay = LaunchConfiguration("parrot_spawn_delay")
-    log_level = LaunchConfiguration("log_level")
-    stack_log_level = LaunchConfiguration("stack_log_level")
+    session_id = LaunchConfiguration("session_id")
+    ui = LaunchConfiguration("ui")
 
-    # Launch args
-    launch_arguments = [
+    def include(file, arguments, condition=None):
+        return IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(
+                PathJoinSubstitution([package_share, "launch", file])
+            ),
+            launch_arguments=arguments.items(),
+            condition=condition,
+        )
+
+    world_launch = include("gz_world.launch.py", {
+        "world": world,
+        "world_file": LaunchConfiguration("world_file"),
+        "headless": LaunchConfiguration("headless"),
+        "use_sim_time": LaunchConfiguration("use_sim_time"),
+        "log_level": LaunchConfiguration("stack_log_level"),
+    })
+    robot_launch = include("robot_bringup.launch.py", {
+        "world": world,
+        "session_id": session_id,
+    }, condition=UnlessCondition(ui))
+    ui_rviz = include("rviz.launch.py", {
+        "use_sim_time": LaunchConfiguration("use_sim_time"),
+        "stack_log_level": LaunchConfiguration("stack_log_level"),
+    }, condition=IfCondition(LaunchConfiguration("rviz")))
+
+    return LaunchDescription([
         DeclareLaunchArgument(
-            "log_level",
-            default_value="info",
-            description="Exploration and terrain-following logging level.",
-        ),
-        DeclareLaunchArgument(
-            "stack_log_level",
-            default_value="warn",
-            description="Nav2, localisation, RViz, and bridge logging level.",
-        ),
-        DeclareLaunchArgument(
-            "world",
-            default_value="v2_forest",
-            choices=["large_demo", "simple_trees", "v1_forest", "v2_forest", "v2_forest_labeled"],
-            description="Gazebo world to load.",
-        ),
-        DeclareLaunchArgument(
-            "use_sim_time",
-            default_value="True",
-            description="Use the Gazebo simulation clock.",
-        ),
-        DeclareLaunchArgument(
-            "husky",
-            default_value="True",
-            description="Spawn the Husky robot.",
-        ),
-        DeclareLaunchArgument(
-            "parrot",
-            default_value="True",
-            description="Spawn the Parrot robot.",
+            "ui", default_value="False",
+            description="Skip robot bringup; deploy later from the dashboard. RViz can be enabled separately.",
         ),
         DeclareLaunchArgument(
             "rviz",
-            default_value="True",
-            description="Open one RViz window for each enabled robot.",
+            default_value=PythonExpression(["'", ui, "'.lower() not in ('true', '1')"]),
+            description="Open robot RViz displays; defaults to true normally, false with ui:=true.",
         ),
         DeclareLaunchArgument(
-            "husky_spawn_delay",
-            default_value="2.0",
-            description="Seconds to wait before spawning the Husky.",
+            "world", default_value="v2_forest",
+            choices=["large_demo", "simple_trees", "v1_forest", "v2_forest", "v2_forest_labeled"],
+            description="Gazebo world to load.",
         ),
-        DeclareLaunchArgument(
-            "parrot_spawn_delay",
-            default_value="2.0",
-            description="Seconds to wait before spawning the Parrot.",
+        DeclareLaunchArgument("world_file", default_value=""),
+        DeclareLaunchArgument("headless", default_value="False"),
+        DeclareLaunchArgument("use_sim_time", default_value="True"),
+        DeclareLaunchArgument("log_level", default_value="info"),
+        DeclareLaunchArgument("stack_log_level", default_value="warn"),
+        DeclareLaunchArgument("session_id", default_value="manual"),
+        GroupAction(scoped=True, actions=[world_launch]),
+        Node(
+            package="rs1_sim", executable="simulation_session.py",
+            name="simulation_session", output="screen",
+            parameters=[{
+                "use_sim_time": False,
+                "mode": "publish",
+                "instance_id": str(uuid4()),
+                "world_name": ParameterValue(world, value_type=str),
+                "world_file": ParameterValue(LaunchConfiguration("world_file"), value_type=str),
+                "ui": ParameterValue(ui, value_type=bool),
+                "session_id": ParameterValue(session_id, value_type=str),
+            }],
         ),
-        DeclareLaunchArgument(
-            "slam",
-            default_value="True",
-            description="Start SLAM toolbox",
-        ),
-        DeclareLaunchArgument(
-            "nav2",
-            default_value="True",
-            description="Start Nav2 for each enabled robot.",
-        ),
-    ]
-
-    # Launch gazebo world
-    world_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution(
-                [
-                    package_share,
-                    LAUNCH_DIRECTORY,
-                    "gz_world.launch.py",
-                ]
-            )
-        ),
-        launch_arguments={
-            "world": world,
-            "use_sim_time": use_sim_time,
-            "log_level": stack_log_level,
-        }.items(),
-    )
-
-    # Spawn husky
-    husky_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution(
-                [
-                    package_share,
-                    LAUNCH_DIRECTORY,
-                    "spawn_husky.launch.py",
-                ]
-            )
-        ),
-        launch_arguments={
-            "use_sim_time": use_sim_time,
-            "husky_spawn_delay": husky_spawn_delay,
-            "log_level": stack_log_level,
-        }.items(),
-    )
-
-    # Spawn parrot
-    parrot_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution(
-                [
-                    package_share,
-                    LAUNCH_DIRECTORY,
-                    "spawn_parrot.launch.py",
-                ]
-            )
-        ),
-        launch_arguments={
-            "use_sim_time": use_sim_time,
-            "parrot_spawn_delay": parrot_spawn_delay,
-            "log_level": stack_log_level,
-        }.items(),
-    )
-
-    # RViz
-    husky_rviz = Node(
-        package="rviz2",
-        executable="rviz2",
-        namespace="husky1",
-        name="rviz2",
-        condition=IfCondition(rviz_enabled),
-        output="screen",
-        parameters=[{"use_sim_time": use_sim_time}],
-        arguments=[
-            "-d",
-            PathJoinSubstitution([package_share, "config", "husky1.rviz"]),
-            "--ros-args", "--log-level", stack_log_level,
-        ],
-        remappings=[
-            ("/tf", "/husky1/tf"),
-            ("/tf_static", "/husky1/tf_static"),
-        ],
-    )
-
-    parrot_rviz = Node(
-        package="rviz2",
-        executable="rviz2",
-        namespace="parrot1",
-        name="rviz2",
-        condition=IfCondition(rviz_enabled),
-        output="screen",
-        parameters=[{"use_sim_time": use_sim_time}],
-        arguments=[
-            "-d",
-            PathJoinSubstitution([package_share, "config", "parrot1.rviz"]),
-            "--ros-args", "--log-level", stack_log_level,
-        ],
-        remappings=[
-            ("/tf", "/parrot1/tf"),
-            ("/tf_static", "/parrot1/tf_static"),
-        ],
-    )
-
-    husky_localisation_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution(
-                [
-                    localisation_package_share,
-                    "launch",
-                    "husky_localisation.launch.py",
-                ]
-            )
-        ),
-        launch_arguments={
-            "use_sim_time": use_sim_time,
-            "slam": slam_enabled,
-            "log_level": stack_log_level,
-        }.items(),
-    )
-
-    parrot_localisation_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution(
-                [
-                    localisation_package_share,
-                    "launch",
-                    "parrot_localisation.launch.py",
-                ]
-            )
-        ),
-        launch_arguments={
-            "use_sim_time": use_sim_time,
-            "slam": slam_enabled,
-            "log_level": stack_log_level,
-        }.items(),
-    )
-
-    husky_navigation_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution(
-                [
-                    navigation_package_share,
-                    "launch",
-                    "husky_navigation.launch.py",
-                ]
-            )
-        ),
-        condition=IfCondition(nav2_enabled),
-        launch_arguments={
-            "use_sim_time": use_sim_time,
-            "log_level": stack_log_level,
-        }.items(),
-    )
-
-    parrot_navigation_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution(
-                [
-                    navigation_package_share,
-                    "launch",
-                    "parrot_navigation.launch.py",
-                ]
-            )
-        ),
-        condition=IfCondition(nav2_enabled),
-        launch_arguments={
-            "use_sim_time": use_sim_time,
-            "log_level": log_level,
-            "nav2_log_level": stack_log_level,
-        }.items(),
-    )
-
-    # Define groups
-    world_group = GroupAction(
-        scoped=True,
-        actions=[world_launch],
-    )
-
-    husky_group = GroupAction(
-        scoped=True,
-        condition=IfCondition(husky_enabled),
-        actions=[
-            GroupAction(scoped=True, actions=[husky_launch]),
-            husky_rviz,
-            # Introduce a delay as gazebo interprets a massive velocity spike if robot is spawned away from (0,0)
-            # and this is getting accumulated into ekf
-            RosTimer(
-                period=3.0,  # Should work under current simulation load, adjust if necessary
-                actions=[
-                    GroupAction(
-                        scoped=True,
-                        actions=[
-                            GroupAction(scoped=True, actions=[husky_localisation_launch]),
-                            GroupAction(scoped=True, actions=[husky_navigation_launch]),
-                        ],
-                    )
-                ],
-            ),
-        ],
-    )
-
-    parrot_group = GroupAction(
-        scoped=True,
-        condition=IfCondition(parrot_enabled),
-        actions=[
-            GroupAction(scoped=True, actions=[parrot_launch]),
-            parrot_rviz,
-            # Introduce a delay as gazebo interprets a massive velocity spike if robot is spawned away from (0,0)
-            # and this is getting accumulated into ekf
-            RosTimer(
-                period=3.0,  # Should work under current simulation load, adjust if necessary
-                actions=[
-                    GroupAction(
-                        scoped=True,
-                        actions=[
-                            GroupAction(scoped=True, actions=[parrot_localisation_launch]),
-                            GroupAction(scoped=True, actions=[parrot_navigation_launch]),
-                        ],
-                    )
-                ],
-            ),
-        ],
-    )
-
-    actions = launch_arguments + [
-        SetUseSimTime(True),
-        world_group,
-        husky_group,
-        parrot_group,
-    ]
-
-    return LaunchDescription(actions)
+        GroupAction(scoped=True, actions=[robot_launch]),
+        GroupAction(scoped=True, condition=IfCondition(ui), actions=[ui_rviz]),
+    ])

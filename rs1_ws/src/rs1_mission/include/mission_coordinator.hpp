@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -11,6 +12,10 @@
 #include "visualization_msgs/msg/marker_array.hpp"
 
 #include "std_srvs/srv/trigger.hpp"
+#include "rs1_interfaces/msg/mission_status.hpp"
+#include "tf2_ros/buffer.h"
+#include "tf2_ros/transform_listener.h"
+#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 
 #include "rclcpp_action/rclcpp_action.hpp"
 #include "rs1_interfaces/action/traverse_to_roi.hpp"
@@ -35,6 +40,7 @@ private:
         TRAVERSINGTOHOME, // Phase 3
         CANCELLING,
         COMPLETE,
+        CANCELLED,
         FAILED
     };
 
@@ -80,10 +86,23 @@ private:
     void evaluateTransitions();
 
     // Helpers
+    rcl_interfaces::msg::SetParametersResult validateROIParameters(
+        const std::vector<rclcpp::Parameter> &parameters);
+    geometry_msgs::msg::PoseStamped configuredROI() const;
+    void refreshROI();
     void publishROIMarker();
+    void publishStatus();
+    std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
+    std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+    rclcpp::Publisher<rs1_interfaces::msg::MissionStatus>::SharedPtr status_pub_;
+    rclcpp::TimerBase::SharedPtr status_timer_;
+    rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr roi_parameters_callback_;
+    std::string session_id_, parrot_stage_{"Waiting"}, husky_stage_{"Waiting"}, message_;
+    std::string instance_id_;
+    geometry_msgs::msg::PoseStamped executor_roi_;
     void failMission(const std::string &message);
     void cancelTraversalToROI(Robot robot);
-    void returnToIdle();
+    void finalizeMission();
 
     // Actions
     rclcpp_action::Client<rs1_interfaces::action::TraverseToROI>::SharedPtr traverse_to_roi_client_parrot_;
