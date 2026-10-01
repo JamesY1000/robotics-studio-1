@@ -4,16 +4,35 @@
 can load one of the included world SDFs, spawn the Husky and Parrot robots, bridge
 their Gazebo interfaces to ROS 2, publish their robot descriptions and TF, and
 open a separate RViz window for each enabled robot, and include each robot's
-localisation, SLAM, and Nav2 launch files.
+localisation, SLAM, and Nav2 launch files. It also owns the shared world/map
+alignment and global TF aggregation node by default.
 
 ## Package responsibilities
 
 | Launch file | Responsibility |
 | --- | --- |
-| `rs1_sim.launch.py` | Main entry point. Starts the world, selects which robots to spawn, and optionally starts RViz, SLAM, and Nav2. |
+| `rs1_sim.launch.py` | Main entry point. Starts the complete simulation by default; `ui:=true` starts the world, clock bridge and world-session marker, with optional RViz. |
 | `gz_world.launch.py` | Starts Gazebo with a selected world and bridges the Gazebo `/clock` topic to ROS 2. |
+| `robot_bringup.launch.py` | Spawns the robots and starts their supporting ROS nodes in an existing world. Shared by normal simulation and dashboard deployment. |
+| `rviz.launch.py` | Opens the existing Husky/Parrot RViz displays independently of robot spawning. |
 | `spawn_husky.launch.py` | Publishes the Husky description and TF, starts its Gazebo bridge, and creates the `husky1` model. |
 | `spawn_parrot.launch.py` | Publishes the Parrot description and TF, starts its Gazebo bridge, and creates the `parrot1` model. |
+
+The [Mission Control dashboard](../../../mission_control/README.md) can run in
+its own terminal and attach to this simulation and a separately launched
+`rs1_mission`. It gates traversal on verified world alignment and navigation
+readiness. See [the three-terminal workflow](../../../mission_control/LAUNCHING.md).
+The optional managed dashboard mode additionally computes terrain-aware spawn
+heights and moves the single ground station in a generated world. The standalone
+defaults below preserve the previous fixed spawn poses; use explicit Z values
+or dashboard deployment for terrain-aware placement.
+
+For click-to-spawn demos, launch the world with `ui:=true`, then launch
+`rs1_dashboard dashboard.launch.py mode:=deploy` in another terminal. The
+dashboard deploys robot bringup and the mission nodes into that existing world.
+World selection stays with the simulation launch; the dashboard image must
+match that world. Deployment currently supports the baseline `v2_forest` world,
+without `world_file` overrides. The existing ground station stays in place.
 
 Robot descriptions and meshes are provided by `rs1_description`. The Gazebo
 worlds, simulation models, bridge configurations, and RViz configurations are
@@ -42,11 +61,49 @@ For Bash, source `install/setup.bash` instead.
 ## Quick start
 
 Start the default `v2_forest` world, both robots, both SLAM and Nav2 instances,
-and both RViz windows:
+both RViz windows, and shared world/map alignment:
 
 ```bash
 ros2 launch rs1_sim rs1_sim.launch.py
 ```
+
+In separate terminals, the mission and dashboard can then be started with
+`ros2 launch rs1_mission rs1_mission.launch.py` and
+`ros2 launch rs1_dashboard dashboard.launch.py`. The dashboard does not own this
+simulation. Do not start another alignment node alongside the default launch.
+
+For the dashboard deployment workflow instead:
+
+```bash
+# Terminal 1: no robot models, robot nodes, alignment, or mission nodes yet.
+ros2 launch rs1_sim rs1_sim.launch.py ui:=true
+
+# Terminal 2: select a start position, deploy robots, select ROI, start mission.
+ros2 launch rs1_dashboard dashboard.launch.py mode:=deploy
+```
+
+To open the Husky and Parrot RViz displays while waiting for dashboard deployment,
+add `rviz:=true` to terminal 1:
+
+```bash
+ros2 launch rs1_sim rs1_sim.launch.py ui:=true rviz:=true
+```
+
+Their robot, TF, map and sensor displays populate as the deployed nodes start
+publishing. Missing-frame/topic warnings before deployment are expected. RViz
+belongs to the simulation terminal and stays open across dashboard restarts;
+deployment does not open duplicate windows. `ui:=true` alone keeps RViz off.
+
+Do not separately launch `rs1_mission` in this workflow: deployment launches it
+once and leaves it waiting for Start Mission. The dashboard can be restarted
+without stopping the deployed ROS launch. Closing Gazebo or its simulation
+launch ends the world-session heartbeat; the deployment guard then shuts down
+its robot and mission nodes within approximately ten seconds.
+
+After **Stop robots**, restart the world terminal before deploying again. The
+installed Fortress camera sensors can crash Gazebo when recreated in the same
+world, so the dashboard blocks that operation. The dashboard can stay open
+while you restart the world.
 
 Launch arguments use the ROS 2 syntax `argument_name:=value`. To see the
 arguments exposed by the installed launch file:
@@ -61,23 +118,28 @@ These are the public arguments for `rs1_sim.launch.py`.
 
 | Argument | Type / allowed values | Default | Purpose |
 | --- | --- | --- | --- |
+| `ui` | Boolean | `False` | Start Gazebo, its clock bridge and the world-session marker; the dashboard deploys robots later. RViz can be enabled separately. Robot-selection arguments only select displays in this mode. |
 | `world` | `large_demo`, `simple_trees`, `v1_forest`, or `v2_forest` | `v2_forest` | Gazebo world to load. The `.sdf` extension is added automatically. |
+| `world_file` | SDF path | empty | Optional generated world file; overrides the selected world asset. |
+| `headless` | Boolean | `False` | Run Gazebo server without GUI (sensor rendering still required). |
+| `alignment` | Boolean | `True` | Start one shared world/map registration and global TF aggregator. Disable only if another custom launch owns it. |
+| `session_id` | String | `manual` | Session label; match the mission launch when overriding. |
 | `use_sim_time` | Boolean | `True` | Makes ROS nodes use the Gazebo `/clock` simulation time. |
 | `husky` | Boolean | `True` | Spawns the Husky and starts its supporting nodes. |
 | `parrot` | Boolean | `True` | Spawns the Parrot and starts its supporting nodes. |
-| `rviz` | Boolean | `True` | Opens one RViz window for each enabled robot. |
+| `rviz` | Boolean | `True` normally; `False` with `ui:=true` | Opens one RViz window for each enabled robot, including before deployment in UI mode. |
 | `slam` | Boolean | `True` | Starts SLAM Toolbox for each enabled robot. |
 | `nav2` | Boolean | `True` | Starts Nav2 for each enabled robot. Nav2 currently requires `slam:=true`. |
-| `husky_x` | Number (metres) | `0.0` | Husky starting x coordinate. |
-| `husky_y` | Number (metres) | `0.0` | Husky starting y coordinate. |
-| `husky_z` | Number (metres) | `0.4` | Husky starting z coordinate. |
+| `husky_x` | Number (metres) | `90.0` | Husky starting x coordinate. |
+| `husky_y` | Number (metres) | `-48.0` | Husky starting y coordinate. |
+| `husky_z` | Number (metres) | `6.0` | Husky starting z coordinate. |
 | `husky_yaw` | Number (radians) | `0.0` | Husky starting yaw angle. |
-| `husky_spawn_delay` | Number (seconds) | `2.0` | Wall-clock delay before creating the Husky in Gazebo. |
-| `parrot_x` | Number (metres) | `2.0` | Parrot starting x coordinate. |
-| `parrot_y` | Number (metres) | `0.0` | Parrot starting y coordinate. |
-| `parrot_z` | Number (metres) | `0.8` | Parrot starting z coordinate. |
+| `husky_spawn_delay` | Number (seconds) | `2.0` | Simulation-time delay before creating the Husky (wall time with `use_sim_time:=false`). |
+| `parrot_x` | Number (metres) | `90.0` | Parrot starting x coordinate. |
+| `parrot_y` | Number (metres) | `-48.0` | Parrot starting y coordinate. |
+| `parrot_z` | Number (metres) | `8.0` | Parrot starting z coordinate. |
 | `parrot_yaw` | Number (radians) | `0.0` | Parrot starting yaw angle. |
-| `parrot_spawn_delay` | Number (seconds) | `2.0` | Wall-clock delay before creating the Parrot in Gazebo. |
+| `parrot_spawn_delay` | Number (seconds) | `2.0` | Simulation-time delay before creating the Parrot (wall time with `use_sim_time:=false`). |
 
 > The public robot-selection arguments are named `husky` and `parrot`, not
 > `husky_enabled` and `parrot_enabled`. The latter names are only variables
@@ -121,7 +183,7 @@ ros2 launch rs1_sim rs1_sim.launch.py husky:=false rviz:=false
 Run only the Gazebo world:
 
 ```bash
-ros2 launch rs1_sim rs1_sim.launch.py husky:=false parrot:=false rviz:=false
+ros2 launch rs1_sim rs1_sim.launch.py ui:=true
 ```
 
 Select a different world:
@@ -138,17 +200,30 @@ ros2 launch rs1_sim rs1_sim.launch.py \
   parrot_x:=3.0 parrot_y:=-1.0 parrot_z:=1.5 parrot_yaw:=-1.57
 ```
 
-Change the spawn delays if Gazebo needs more startup time:
+Adjust or stagger the spawn delays:
 
 ```bash
 ros2 launch rs1_sim rs1_sim.launch.py \
   husky_spawn_delay:=4.0 parrot_spawn_delay:=6.0
 ```
 
-The delay is a startup buffer, not a readiness check. A delay of `0.0` is
-allowed, but spawning can fail if Gazebo has not finished starting.
+With the default `use_sim_time:=true`, creation waits on the bridged Gazebo
+`/clock`. Loading the world does not consume the spawn delay, so a slow cold
+start cannot trigger the create service request before the world starts
+running. A paused world must be unpaused before its spawn timer can advance;
+the main launch starts Gazebo running automatically. With
+`use_sim_time:=false`, standalone spawners use a wall-clock delay instead, so
+Gazebo must already be ready when that delay expires.
 
 Setting `rviz:=false` disables RViz only; the Gazebo application still starts.
+
+The `/simulation/session` topic publishes a reliable, transient-local JSON
+`std_msgs/String` heartbeat at 2 Hz after the first simulation clock message.
+It identifies the current world lifetime, world name, UI mode and Gazebo
+partition. Heartbeats use wall time, so pausing simulation time does not stop
+deployed robot nodes. Closing Gazebo ends its parent launch and heartbeat.
+Each new world launch receives a new UUID; a deployment cannot be reused after
+the world restarts.
 
 ## Standalone launch files
 
@@ -219,8 +294,19 @@ global `/clock` topic.
 
 Each RViz instance is namespaced and loads its robot-specific configuration:
 
-- Husky: `config/husky1.rviz`, fixed frame `husky1_base_link`
-- Parrot: `config/parrot1.rviz`, fixed frame `parrot1_base_link`
+- Husky: `config/husky1.rviz`, fixed frame `husky1_map`
+- Parrot: `config/parrot1.rviz`, fixed frame `parrot1_map`
+
+Both displays listen to global `/tf` and `/tf_static`. The alignment node
+aggregates each robot's local TF and adds `world` to map transforms here, allowing
+the `/mission/roi_marker` marker in frame `world` to appear in either display.
+Localisation and Nav2 keep using the robot-specific TF topics. With `ui:=true`,
+the world frame becomes available after deployment and map registration.
+
+To reopen the displays against an already-running aligned stack, close the old
+RViz windows and run `ros2 launch rs1_sim rviz.launch.py`. This starts only the
+displays. If using `alignment:=false`, the custom stack must supply the global
+TF tree, as it does for the mission nodes.
 
 ## World notes
 
@@ -237,9 +323,12 @@ Each RViz instance is namespaced and loads its robot-specific configuration:
 
 ## Operational notes
 
-- In the main launch, both model-creation actions run concurrently after their
-  default `2.0` second delays. If Gazebo starts slowly, increase or stagger
-  `husky_spawn_delay` and `parrot_spawn_delay`.
+- In the main launch, both model-creation actions wait for simulation time,
+  with default `2.0` second delays. If no robots appear, check that `/clock`
+  advances and Gazebo is unpaused. The `ros_gz_sim create` process can exit
+  cleanly even after a create-service timeout; its exit status alone does not
+  confirm that the model exists. Creation disallows automatic model renaming,
+  so repeated requests cannot silently spawn `husky1_0` or `parrot1_0`.
 - RViz starts immediately rather than waiting for model creation. Missing TF or
   sensor data during the first few seconds can therefore be transient. Use
   `rviz:=false` when conserving CPU/GPU resources or debugging Gazebo alone.

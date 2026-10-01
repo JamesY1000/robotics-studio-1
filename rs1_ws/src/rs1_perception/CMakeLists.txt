@@ -21,7 +21,6 @@ install(
   PROGRAMS
     tree_identification/yolo_node.py
     tree_location/tree_location_processing.py
-    tree_location/parrot_world_broadcaster.py
     scripts/test_tree_locations.py
     scripts/test_yolo_backend.py
     scripts/visualise_tree_locations.py

@@ -1,12 +1,12 @@
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, TimerAction
+from launch.actions import DeclareLaunchArgument, OpaqueFunction, TimerAction
 from launch.substitutions import (
     Command,
     FindExecutable,
     LaunchConfiguration,
     PathJoinSubstitution,
 )
-from launch_ros.actions import Node
+from launch_ros.actions import Node, RosTimer, SetUseSimTime
 from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 
@@ -26,10 +26,14 @@ SPAWN_Z = "8.0"
 SPAWN_YAW = "0.0"
 
 
-def generate_launch_description():
-    use_sim_time = LaunchConfiguration("use_sim_time")
-    spawn_delay = LaunchConfiguration("parrot_spawn_delay")
-    log_level = LaunchConfiguration("log_level")
+def start_robot(context):
+    # The delayed create action executes after its including scope is popped.
+    def value(name):
+        return LaunchConfiguration(name).perform(context)
+
+    use_sim_time = value("use_sim_time").lower() in ("true", "1")
+    spawn_delay = value("parrot_spawn_delay")
+    log_level = value("log_level")
 
     description_path = PathJoinSubstitution(
         [
@@ -103,33 +107,52 @@ def generate_launch_description():
         output="screen",
         parameters=[{"use_sim_time": use_sim_time}],
         arguments=[
+            "-world",
+            value("world"),
             "-topic",
             f"/{ROBOT_NAMESPACE}/robot_description",
             "-name",
             GZ_MODEL_NAME,
+            "-allow_renaming=false",
             "-x",
-            SPAWN_X,
+            value("parrot_x"),
             "-y",
-            SPAWN_Y,
+            value("parrot_y"),
             "-z",
-            SPAWN_Z,
+            value("parrot_z"),
             "-Y",
-            SPAWN_YAW,
+            value("parrot_yaw"),
             "--ros-args", "--log-level", log_level,
         ],
     )
 
+    return [
+        # Wait for a running world before starting create's short service timeout.
+        *([SetUseSimTime(True)] if use_sim_time else []),
+        robot_state_publisher,
+        gazebo_bridge,
+        (RosTimer if use_sim_time else TimerAction)(
+            period=float(spawn_delay),
+            actions=[spawn_parrot],
+        ),
+    ]
+
+
+def generate_launch_description():
     return LaunchDescription(
         [
+            DeclareLaunchArgument("world", default_value="v2_forest"),
             DeclareLaunchArgument("use_sim_time", default_value="True"),
             DeclareLaunchArgument("log_level", default_value="warn",
                                   description="Robot spawning and bridge logging level."),
-            DeclareLaunchArgument("parrot_spawn_delay", default_value="6.0"),
-            robot_state_publisher,
-            gazebo_bridge,
-            TimerAction(
-                period=spawn_delay,
-                actions=[spawn_parrot],
+            DeclareLaunchArgument(
+                "parrot_spawn_delay", default_value="6.0",
+                description="Delay in simulation seconds (wall seconds if use_sim_time is false).",
             ),
+            DeclareLaunchArgument("parrot_x", default_value=SPAWN_X),
+            DeclareLaunchArgument("parrot_y", default_value=SPAWN_Y),
+            DeclareLaunchArgument("parrot_z", default_value=SPAWN_Z),
+            DeclareLaunchArgument("parrot_yaw", default_value=SPAWN_YAW),
+            OpaqueFunction(function=start_robot),
         ]
     )

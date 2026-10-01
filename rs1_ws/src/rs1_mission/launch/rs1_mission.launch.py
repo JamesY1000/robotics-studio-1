@@ -14,6 +14,8 @@ def generate_launch_description():
     log_level = LaunchConfiguration("log_level")
 
     launch_arguments = [
+        DeclareLaunchArgument("roi_frame", default_value="world"),
+        DeclareLaunchArgument("session_id", default_value="manual"),
         DeclareLaunchArgument(
             "use_sim_time",
             default_value="True",
@@ -22,17 +24,17 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "roi_x",
             default_value="-40.0",
-            description="ROI x coordinate in parrot1_map (metres).",
+            description="ROI x coordinate in roi_frame (metres).",
         ),
         DeclareLaunchArgument(
             "roi_y",
             default_value="40.0",
-            description="ROI y coordinate in parrot1_map (metres).",
+            description="ROI y coordinate in roi_frame (metres).",
         ),
         DeclareLaunchArgument(
             "roi_z",
             default_value="0.0",
-            description="ROI z coordinate in parrot1_map (metres).",
+            description="ROI z coordinate in roi_frame (metres).",
         ),
         DeclareLaunchArgument(
             "log_level",
@@ -49,6 +51,8 @@ def generate_launch_description():
         parameters=[
             {
                 "use_sim_time": use_sim_time,
+                "roi_frame": LaunchConfiguration("roi_frame"),
+                "session_id": LaunchConfiguration("session_id"),
                 "roi_x": ParameterValue(LaunchConfiguration("roi_x"), value_type=float),
                 "roi_y": ParameterValue(LaunchConfiguration("roi_y"), value_type=float),
                 "roi_z": ParameterValue(LaunchConfiguration("roi_z"), value_type=float),
@@ -65,10 +69,6 @@ def generate_launch_description():
         output="screen",
         parameters=[{"use_sim_time": use_sim_time}],
         arguments=["--ros-args", "--log-level", log_level],
-        remappings=[
-            ("/tf", "tf"),
-            ("/tf_static", "tf_static"),
-        ],
     )
 
     husky_mission_executor = Node(
@@ -79,10 +79,6 @@ def generate_launch_description():
         output="screen",
         parameters=[{"use_sim_time": use_sim_time}],
         arguments=["--ros-args", "--log-level", log_level],
-        remappings=[
-            ("/tf", "tf"),
-            ("/tf_static", "tf_static"),
-        ],
     )
 
     return LaunchDescription(

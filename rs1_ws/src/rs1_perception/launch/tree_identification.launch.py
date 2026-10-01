@@ -56,15 +56,6 @@ def generate_launch_description():
         ),
     ]
 
-    # Publishes world -> parrot1_base_link (+ the parrot static chain on /tf_static)
-    # so the tree-location node can transform camera points into the global frame.
-    world_broadcaster = Node(
-        package="rs1_perception",
-        executable="parrot_world_broadcaster.py",
-        name="parrot_world_broadcaster",
-        output="screen",
-    )
-
     # YOLO tree detection, exposed through the /yolo/detect service.
     yolo_node = Node(
         package="rs1_perception",
@@ -89,13 +80,12 @@ def generate_launch_description():
         executable="tree_location_processing.py",
         name="tree_location_node",
         output="screen",
-        parameters=[tree_location_config],
+        parameters=[tree_location_config, {"use_sim_time": True}],
     )
 
     return LaunchDescription(
         declared_args
         + [
-            world_broadcaster,
             yolo_node,
             tree_location_node,
         ]

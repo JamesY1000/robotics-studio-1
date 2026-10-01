@@ -24,12 +24,6 @@
     </spherical_coordinates>
 
     <include>
-      <uri>model://ground_station</uri>
-      <name>ground_station</name>
-      <pose>90 -45 4 0 -0 0</pose>
-    </include>
-
-    <include>
       <uri>model://forest_plane</uri>
       <name>forest_plane</name>
       <pose>0 0 0 0 -0 0</pose>

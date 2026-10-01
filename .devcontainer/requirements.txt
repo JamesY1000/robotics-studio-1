@@ -8,4 +8,8 @@ pre-commit
 # Testing
 pytest
 
-# Add any other python libraries/packages we might need here
+# Dashboard runtime requirements live in mission_control/backend/requirements.txt.
+# post_create.sh installs them with the editable backend in .venv/mission-control,
+# keeping its Pydantic/setuptools versions separate from global ROS build tooling.
+
+# Add any other global python libraries/packages we might need here
