@@ -1,4 +1,5 @@
 """ROS transport only. Simulation process ownership lives in SessionManager."""
+
 import asyncio
 import copy
 import json
@@ -18,7 +19,18 @@ class UnavailableAdapter:
         self.reason = reason
 
     def snapshot(self):
-        return {"available": False, "error": self.reason, "robots": {}, "checks": {}}
+        return {
+            "available": False,
+            "error": self.reason,
+            "robots": {},
+            "checks": {},
+            "safety": {
+                "available": False,
+                "service_ready": False,
+                "husky1_stopped": None,
+                "parrot1_stopped": None,
+            },
+        }
 
     def close(self):
         pass
@@ -37,40 +49,81 @@ class RosAdapter:
         from tf2_ros import Buffer, TransformListener
         from std_msgs.msg import String
         from std_srvs.srv import Trigger
+        from rs1_interfaces.msg import SafetyState
+        from rs1_interfaces.srv import SafetyStop
         from lifecycle_msgs.srv import GetState
         from rs1_interfaces.msg import MissionStatus
         from rs1_interfaces.action import TraverseToROI, ExploreToPose
-        from nav2_msgs.action import NavigateToPose, NavigateThroughPoses, ComputePathToPose
+        from nav2_msgs.action import (
+            NavigateToPose,
+            NavigateThroughPoses,
+            ComputePathToPose,
+        )
 
         self.context = Context()
         rclpy.init(context=self.context)
-        self.node = Node("mission_control_backend", context=self.context,
-                         parameter_overrides=[Parameter("use_sim_time", value=True)])
+        self.node = Node(
+            "mission_control_backend",
+            context=self.context,
+            parameter_overrides=[Parameter("use_sim_time", value=True)],
+        )
         self.buffer = Buffer(node=self.node)
         self.listener = TransformListener(self.buffer, self.node)
         self.lock = threading.Lock()
-        self.data = {"available": True, "robots": {}, "alignment": {}, "mission": {}, "checks": {}}
+        self.data = {
+            "available": True,
+            "robots": {},
+            "alignment": {},
+            "mission": {},
+            "checks": {},
+            "safety": {
+                "available": False,
+                "husky1_stopped": None,
+                "parrot1_stopped": None,
+            },
+        }
         self.worlds = {}
         self.last_clock = 0
         self.clock_changed_at = 0
         self.trigger_type = Trigger
         self.start_client = self.node.create_client(Trigger, "/mission/start")
         self.cancel_client = self.node.create_client(Trigger, "/mission/cancel")
-        self.parameters = self.node.create_client(SetParametersAtomically,
-            "/mission_coordinator_node/set_parameters_atomically")
-        self.actions = {name: ActionClient(self.node, kind, name) for name, kind in [
-            ("/husky1/traverse_to_roi", TraverseToROI), ("/parrot1/traverse_to_roi", TraverseToROI),
-            ("/husky1/navigate_through_poses", NavigateThroughPoses),
-            ("/parrot1/navigate_to_pose", NavigateToPose), ("/parrot1/compute_path_to_pose", ComputePathToPose),
-            ("/parrot1/explore_to_pose", ExploreToPose)]}
-        self.lifecycle = {f"/{r}/{n}": self.node.create_client(GetState, f"/{r}/{n}/get_state")
-                          for r in ("husky1", "parrot1") for n in ("controller_server", "planner_server", "bt_navigator")}
+        self.safety_client = self.node.create_client(SafetyStop, "/safety/stop")
+        self.parameters = self.node.create_client(
+            SetParametersAtomically,
+            "/mission_coordinator_node/set_parameters_atomically",
+        )
+        self.actions = {
+            name: ActionClient(self.node, kind, name)
+            for name, kind in [
+                ("/husky1/traverse_to_roi", TraverseToROI),
+                ("/parrot1/traverse_to_roi", TraverseToROI),
+                ("/husky1/navigate_through_poses", NavigateThroughPoses),
+                ("/parrot1/navigate_to_pose", NavigateToPose),
+                ("/parrot1/compute_path_to_pose", ComputePathToPose),
+                ("/parrot1/explore_to_pose", ExploreToPose),
+            ]
+        }
+        self.lifecycle = {
+            f"/{r}/{n}": self.node.create_client(GetState, f"/{r}/{n}/get_state")
+            for r in ("husky1", "parrot1")
+            for n in ("controller_server", "planner_server", "bt_navigator")
+        }
         self.lifecycle_values = {}
         self.lifecycle_pending = {}
         latched = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
-        self.node.create_subscription(String, "/mission/alignment", self.on_alignment, latched)
-        self.node.create_subscription(String, "/simulation/session", self.on_world, latched)
-        self.node.create_subscription(MissionStatus, "/mission/status", self.on_mission, latched)
+        self.node.create_subscription(
+            String, "/mission/alignment", self.on_alignment, latched
+        )
+        self.node.create_subscription(
+            String, "/simulation/session", self.on_world, latched
+        )
+        self.node.create_subscription(
+            MissionStatus, "/mission/status", self.on_mission, latched
+        )
+        self.node.create_subscription(
+            SafetyState, "/safety/state", self.on_safety_state, latched
+        )
         self.node.create_timer(0.2, self.poll)
         self.node.create_timer(1.0, self.poll_lifecycle, clock=rclpy.clock.Clock())
         self.executor = SingleThreadedExecutor(context=self.context)
@@ -81,7 +134,9 @@ class RosAdapter:
     def on_world(self, msg):
         try:
             value = json.loads(msg.data)
-            if not isinstance(value, dict) or not isinstance(value.get("instance_id"), str):
+            if not isinstance(value, dict) or not isinstance(
+                value.get("instance_id"), str
+            ):
                 return
         except ValueError:
             return
@@ -99,33 +154,63 @@ class RosAdapter:
 
     def on_mission(self, msg):
         with self.lock:
-            self.data["mission"] = {key: getattr(msg, key) for key in (
-                "session_id", "instance_id", "state", "parrot_stage", "husky_stage", "message", "cleanup_complete")}
-            self.data["mission"]["roi"] = {"frame_id": msg.roi.header.frame_id,
-                "x": msg.roi.pose.position.x, "y": msg.roi.pose.position.y, "z": msg.roi.pose.position.z}
+            self.data["mission"] = {
+                key: getattr(msg, key)
+                for key in (
+                    "session_id",
+                    "instance_id",
+                    "state",
+                    "parrot_stage",
+                    "husky_stage",
+                    "message",
+                    "cleanup_complete",
+                )
+            }
+            self.data["mission"]["roi"] = {
+                "frame_id": msg.roi.header.frame_id,
+                "x": msg.roi.pose.position.x,
+                "y": msg.roi.pose.position.y,
+                "z": msg.roi.pose.position.z,
+            }
             self.data["mission_at"] = time.monotonic()
+
+    def on_safety_state(self, msg):
+        with self.lock:
+            self.data["safety"] = {
+                "available": True,
+                "husky1_stopped": msg.husky_stopped,
+                "parrot1_stopped": msg.parrot_stopped,
+            }
 
     def poll_lifecycle(self):
         from lifecycle_msgs.srv import GetState
+
         for name, client in self.lifecycle.items():
             pending = self.lifecycle_pending.get(name)
             if pending:
                 future, sent = pending
                 if future.done():
                     try:
-                        self.lifecycle_values[name] = (future.result().current_state.id == 3, time.monotonic())
+                        self.lifecycle_values[name] = (
+                            future.result().current_state.id == 3,
+                            time.monotonic(),
+                        )
                     except Exception:
                         self.lifecycle_values[name] = (False, time.monotonic())
                     del self.lifecycle_pending[name]
-                elif time.monotonic()-sent > 3:
+                elif time.monotonic() - sent > 3:
                     future.cancel()
                     del self.lifecycle_pending[name]
             elif client.service_is_ready():
-                self.lifecycle_pending[name] = (client.call_async(GetState.Request()), time.monotonic())
+                self.lifecycle_pending[name] = (
+                    client.call_async(GetState.Request()),
+                    time.monotonic(),
+                )
 
     def poll(self):
         from rclpy.time import Time
         from tf2_ros import TransformException
+
         now = self.node.get_clock().now().nanoseconds
         wall = time.monotonic()
         if now != self.last_clock:
@@ -134,32 +219,60 @@ class RosAdapter:
         robots = {}
         for robot in ("husky1", "parrot1"):
             try:
-                t = self.buffer.lookup_transform("world", robot+"_base_link", Time())
+                t = self.buffer.lookup_transform("world", robot + "_base_link", Time())
                 stamp = Time.from_msg(t.header.stamp).nanoseconds
                 q, p = t.transform.rotation, t.transform.translation
-                heading = math.atan2(2*(q.w*q.z+q.x*q.y), 1-2*(q.y*q.y+q.z*q.z))
-                robots[robot] = {"x": p.x, "y": p.y, "yaw": heading,
-                                 "stamp": stamp/1e9, "fresh": -0.1 <= (now-stamp)/1e9 < 2}
+                heading = math.atan2(
+                    2 * (q.w * q.z + q.x * q.y), 1 - 2 * (q.y * q.y + q.z * q.z)
+                )
+                robots[robot] = {
+                    "x": p.x,
+                    "y": p.y,
+                    "yaw": heading,
+                    "stamp": stamp / 1e9,
+                    "fresh": -0.1 <= (now - stamp) / 1e9 < 2,
+                }
             except TransformException:
                 robots[robot] = {"fresh": False}
-        checks = {"mission_services": self.start_client.service_is_ready() and self.cancel_client.service_is_ready()}
-        checks.update({name: client.server_is_ready() for name, client in self.actions.items()})
-        checks.update({name: self.lifecycle_values.get(name, (False, 0))[0] and
-                       wall-self.lifecycle_values.get(name, (False, 0))[1] < 4 for name in self.lifecycle})
+        checks = {
+            "mission_services": self.start_client.service_is_ready()
+            and self.cancel_client.service_is_ready()
+        }
+        checks.update(
+            {name: client.server_is_ready() for name, client in self.actions.items()}
+        )
+        checks.update(
+            {
+                name: self.lifecycle_values.get(name, (False, 0))[0]
+                and wall - self.lifecycle_values.get(name, (False, 0))[1] < 4
+                for name in self.lifecycle
+            }
+        )
         with self.lock:
-            self.data.update(robots=robots, checks=checks, sim_time=now/1e9)
+            self.data.update(robots=robots, checks=checks, sim_time=now / 1e9)
 
     def snapshot(self):
         with self.lock:
             value = copy.deepcopy(self.data)
-            current = [entry for entry, at in self.worlds.values() if time.monotonic()-at < 3]
-            value["world"] = {**copy.deepcopy(current[-1]), "fresh": True, "conflict": len(current) > 1} if current else {"fresh": False}
+            current = [
+                entry for entry, at in self.worlds.values() if time.monotonic() - at < 3
+            ]
+            value["world"] = (
+                {
+                    **copy.deepcopy(current[-1]),
+                    "fresh": True,
+                    "conflict": len(current) > 1,
+                }
+                if current
+                else {"fresh": False}
+            )
+        value["safety"]["service_ready"] = self.safety_client.service_is_ready()
         wall = time.monotonic()
-        value["checks"]["clock"] = wall-self.clock_changed_at < 2
+        value["checks"]["clock"] = wall - self.clock_changed_at < 2
         for robot in value["robots"].values():
             robot["fresh"] = robot["fresh"] and value["checks"]["clock"]
-        value["checks"]["mission_status"] = wall-value.get("mission_at", 0) < 3
-        value["checks"]["alignment_status"] = wall-value.get("alignment_at", 0) < 3
+        value["checks"]["mission_status"] = wall - value.get("mission_at", 0) < 3
+        value["checks"]["alignment_status"] = wall - value.get("alignment_at", 0) < 3
         return value
 
     async def call(self, kind):
@@ -167,11 +280,13 @@ class RosAdapter:
         if not client.service_is_ready():
             raise RuntimeError(f"/mission/{kind} is unavailable")
         future = client.call_async(self.trigger_type.Request())
-        deadline = time.monotonic()+10
+        deadline = time.monotonic() + 10
         while not future.done():
             if time.monotonic() > deadline:
                 future.cancel()
-                raise RequestUncertain(f"/mission/{kind} timed out; inspect the coordinator before retrying")
+                raise RequestUncertain(
+                    f"/mission/{kind} timed out; inspect the coordinator before retrying"
+                )
             await asyncio.sleep(0.05)
         try:
             result = future.result()
@@ -184,32 +299,73 @@ class RosAdapter:
     async def configure_roi(self, roi):
         from rclpy.parameter import Parameter
         from rcl_interfaces.srv import SetParametersAtomically
+
         if not self.parameters.service_is_ready():
             raise RuntimeError("Mission coordinator parameter services are unavailable")
         values = [
             Parameter("roi_frame", value="world"),
-            *[Parameter(f"roi_{axis}", value=float(roi[axis])) for axis in ("x", "y", "z")],
+            *[
+                Parameter(f"roi_{axis}", value=float(roi[axis]))
+                for axis in ("x", "y", "z")
+            ],
         ]
-        future = self.parameters.call_async(SetParametersAtomically.Request(
-            parameters=[value.to_parameter_msg() for value in values]))
+        future = self.parameters.call_async(
+            SetParametersAtomically.Request(
+                parameters=[value.to_parameter_msg() for value in values]
+            )
+        )
         deadline = time.monotonic() + 10
         while not future.done():
             if time.monotonic() > deadline:
                 future.cancel()
-                raise RuntimeError("ROI update timed out. Check the coordinator before retrying.")
+                raise RuntimeError(
+                    "ROI update timed out. Check the coordinator before retrying."
+                )
             await asyncio.sleep(0.05)
         result = future.result().result
         if not result.successful:
             raise RuntimeError(result.reason)
 
+    async def set_safety_stop(self, robot, stopped):
+        if not self.safety_client.service_is_ready():
+            raise RuntimeError(
+                "/safety/stop is unavailable; no E-stop interlock is connected"
+            )
+        from rs1_interfaces.srv import SafetyStop
+
+        request = SafetyStop.Request()
+        request.robot = robot
+        request.stopped = stopped
+        future = self.safety_client.call_async(request)
+        deadline = time.monotonic() + 5
+        while not future.done():
+            if time.monotonic() > deadline:
+                future.cancel()
+                raise RequestUncertain(
+                    "/safety/stop timed out; inspect /safety/state before retrying"
+                )
+            await asyncio.sleep(0.05)
+        try:
+            result = future.result()
+        except Exception as exc:
+            raise RequestUncertain(f"/safety/stop response failed: {exc}") from exc
+        if not result.success:
+            raise RuntimeError(result.message)
+        return result.message
+
     def telemetry_available(self):
-        return any(f"{namespace.rstrip('/')}/{name}" == TELEMETRY_NODE
-                   for name, namespace in self.node.get_node_names_and_namespaces())
+        return any(
+            f"{namespace.rstrip('/')}/{name}" == TELEMETRY_NODE
+            for name, namespace in self.node.get_node_names_and_namespaces()
+        )
 
     def foreign_nodes(self):
-        return [f"{namespace.rstrip('/')}/{name}"
-                for name, namespace in self.node.get_node_names_and_namespaces()
-                if name not in ("mission_control_backend", "_ros2cli_daemon") and not name.startswith("_ros2cli")]
+        return [
+            f"{namespace.rstrip('/')}/{name}"
+            for name, namespace in self.node.get_node_names_and_namespaces()
+            if name not in ("mission_control_backend", "_ros2cli_daemon")
+            and not name.startswith("_ros2cli")
+        ]
 
     def close(self):
         self.executor.shutdown(timeout_sec=3)
@@ -222,4 +378,6 @@ def create_adapter():
     try:
         return RosAdapter()
     except ImportError as exc:
-        return UnavailableAdapter(f"ROS adapter unavailable: {exc}. Source ROS Humble and rs1_ws/install/setup.bash, then restart the backend.")
+        return UnavailableAdapter(
+            f"ROS adapter unavailable: {exc}. Source ROS Humble and rs1_ws/install/setup.bash, then restart the backend."
+        )

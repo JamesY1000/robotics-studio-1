@@ -1,0 +1,5 @@
+string robot
+bool stopped
+---
+bool success
+string message

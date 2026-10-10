@@ -15,6 +15,7 @@ find_package(nav_msgs REQUIRED)
 # Generate C++/Python interfaces and ROS type support.
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/MissionStatus.msg"
+  "msg/SafetyState.msg"
   "msg/BoundingBox.msg"
   "msg/TreeLocation.msg"
   "msg/YoloDetections.msg"
@@ -24,6 +25,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/ProcessTreeLocations.srv"
   "srv/SetGroundPath.srv"
   "srv/GetCurrentPose.srv"
+  "srv/SafetyStop.srv"
   DEPENDENCIES std_msgs geometry_msgs nav_msgs
 )
 

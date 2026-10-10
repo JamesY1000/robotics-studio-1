@@ -198,8 +198,8 @@ function RobotCard({
           {fresh
             ? "Live estimate"
             : state?.plan ||
-                state?.mode === "external" ||
-                state?.deployment?.plan
+              state?.mode === "external" ||
+              state?.deployment?.plan
               ? "No fresh TF"
               : "Not launched"}
         </span>
@@ -249,6 +249,8 @@ export default function App() {
     XY & { z: number }
   > | null>(null);
   const [busy, setBusy] = useState(false);
+  const [safetyBusy, setSafetyBusy] = useState<string | null>(null);
+  const [safetyError, setSafetyError] = useState("");
   const [id, setId] = useState(() => crypto.randomUUID());
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [calibration, setCalibration] = useState({
@@ -375,22 +377,22 @@ export default function App() {
   const station =
     start && !deploy
       ? {
-          x: start.x + selected.station_offset.x,
-          y: start.y + selected.station_offset.y,
-        }
+        x: start.x + selected.station_offset.x,
+        y: start.y + selected.station_offset.y,
+      }
       : null;
   const plan: Plan | null =
     !attached && start && roi && preset
       ? {
-          session_id: id,
-          world_id: preset.world_id,
-          image_id: preset.id,
-          calibration_id: preset.calibration_id,
-          start,
-          roi,
-          station_offset: selected.station_offset,
-          parrot_clearance: selected.parrot_clearance,
-        }
+        session_id: id,
+        world_id: preset.world_id,
+        image_id: preset.id,
+        calibration_id: preset.calibration_id,
+        start,
+        roi,
+        station_offset: selected.station_offset,
+        parrot_clearance: selected.parrot_clearance,
+      }
       : null;
   const spawnPlan = deploy
     ? spawnRequest(id, preset, start, selected.parrot_clearance)
@@ -464,6 +466,18 @@ export default function App() {
       setBusy(false);
     }
   };
+  const setSafetyStop = async (robot: "husky1" | "parrot1", stopped: boolean) => {
+    setSafetyBusy(robot);
+    setSafetyError("");
+    try {
+      const next = await api<State>("safety/stop", { robot, stopped });
+      setState(next);
+    } catch (e) {
+      setSafetyError((e as Error).message);
+    } finally {
+      setSafetyBusy(null);
+    }
+  };
   const upload = async () => {
     if (!uploadFile) return;
     setBusy(true);
@@ -496,9 +510,12 @@ export default function App() {
     ) &&
     (!deploy || deployment?.phase === "deployed");
   const placements = deployment?.placements || state?.placements || preview;
-  const canStart = attached
+  const safetyActive =
+    state?.ros.safety?.husky1_stopped === true ||
+    state?.ros.safety?.parrot1_stopped === true;
+  const canStart = !safetyActive && (attached
     ? canStartAttached(state, roi)
-    : !locked && !!preview && !!state?.ros.available;
+    : !locked && !!preview && !!state?.ros.available);
   const canSpawn =
     deploy && !!deployment?.can_spawn && !spawnLocked && !!preview;
   const canStop = deploy && !!deployment?.plan && !active;
@@ -655,6 +672,55 @@ export default function App() {
             not replace it.
           </div>
         )}
+        <section className="safety-panel" aria-label="Emergency stop controls">
+          <div className="safety-heading">
+            <div>
+              <h2>Emergency stop</h2>
+              <p>Latch a stop for either robot independently.</p>
+            </div>
+            <span className="safety-caveat">Software interlock · not a certified hardware E-stop</span>
+          </div>
+          <div className="safety-controls">
+            {(["husky1", "parrot1"] as const).map((robot) => {
+              const safety = state?.ros.safety;
+              const stopped = safety?.[robot === "husky1" ? "husky1_stopped" : "parrot1_stopped"];
+              const label = robot === "husky1" ? "Husky" : "Parrot";
+              const usable = connected && !!safety?.available && !!safety.service_ready && stopped !== null && stopped !== undefined;
+              return (
+                <div className={`safety-robot ${stopped ? "is-stopped" : ""}`} key={robot}>
+                  <div>
+                    <strong>{label}</strong>
+                    <span className={`safety-state ${stopped ? "latched" : ""}`}>
+                      {stopped === null || stopped === undefined
+                        ? "State unavailable"
+                        : stopped
+                          ? "STOPPED · LATCHED"
+                          : "STOP CLEAR"}
+                    </span>
+                  </div>
+                  <button
+                    className={stopped ? "safety-reset" : "safety-stop"}
+                    disabled={!usable || safetyBusy !== null}
+                    onClick={() => void setSafetyStop(robot, !stopped)}
+                  >
+                    {safetyBusy === robot
+                      ? "Sending…"
+                      : stopped
+                        ? `Reset ${label} E-stop`
+                        : `E-STOP ${label}`}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+          {safetyError ? (
+            <p className="safety-error" role="alert">{safetyError}</p>
+          ) : !state?.ros.safety?.service_ready ? (
+            <p className="safety-help">Waiting for the ROS /safety/stop interlock service and /safety/state.</p>
+          ) : (
+            <p className="safety-help">Resetting a stop may allow active navigation commands to resume.</p>
+          )}
+        </section>
         <div hidden={tab !== "mission"}>
           <div className="mission-grid">
             <section className="card map-card">
@@ -848,29 +914,31 @@ export default function App() {
                 >
                   {deploy
                     ? previewError ||
-                      (deployment?.phase === "unspawned"
-                        ? !deployment.can_spawn
-                          ? deployment.message
-                          : preview
-                            ? "✓ Robot placements validated. Spawn robots to continue."
-                            : "Choose the shared robot start to validate terrain clearance."
-                        : deployment?.phase === "deployed"
-                          ? phase !== "idle"
-                            ? state?.message
-                            : !roi
-                              ? "Select a point ROI on the map or enter coordinates. No mission starts automatically."
-                              : "Start sends the selected world X / Y to the coordinator. Terrain supplies Z."
-                          : deployment?.message ||
-                            "Connecting to the running world…")
-                    : external
-                      ? locked
-                        ? "ROI editing is available when the mission coordinator is idle."
-                        : externalRoiDirty.current
-                          ? "Start sends your edited world X / Y to the coordinator. Terrain supplies Z."
-                          : "Start uses the coordinator’s configured ROI, including its frame and Z. Edit X / Y to select a world ROI with terrain height."
-                      : locked
-                        ? "Plan saved for this session."
-                        : previewError ||
+                    (deployment?.phase === "unspawned"
+                      ? !deployment.can_spawn
+                        ? deployment.message
+                        : preview
+                          ? "✓ Robot placements validated. Spawn robots to continue."
+                          : "Choose the shared robot start to validate terrain clearance."
+                      : deployment?.phase === "deployed"
+                        ? phase !== "idle"
+                          ? state?.message
+                          : !roi
+                            ? "Select a point ROI on the map or enter coordinates. No mission starts automatically."
+                            : "Start sends the selected world X / Y to the coordinator. Terrain supplies Z."
+                        : deployment?.message ||
+                        "Connecting to the running world…")
+                    : safetyActive
+                      ? "Mission goals are blocked while an E-stop is latched. Make the robot safe and reset the stop first."
+                      : external
+                        ? locked
+                          ? "ROI editing is available when the mission coordinator is idle."
+                          : externalRoiDirty.current
+                            ? "Start sends your edited world X / Y to the coordinator. Terrain supplies Z."
+                            : "Start uses the coordinator’s configured ROI, including its frame and Z. Edit X / Y to select a world ROI with terrain height."
+                        : locked
+                          ? "Plan saved for this session."
+                          : previewError ||
                           (preview
                             ? "✓ Placements validated against terrain."
                             : "Place both a start and an ROI to validate.")}

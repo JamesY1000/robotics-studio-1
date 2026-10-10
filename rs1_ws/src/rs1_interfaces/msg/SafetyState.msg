@@ -1,0 +1,3 @@
+std_msgs/Header header
+bool husky_stopped
+bool parrot_stopped

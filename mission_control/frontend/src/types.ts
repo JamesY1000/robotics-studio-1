@@ -52,6 +52,12 @@ export type State = {
     sim_time?: number;
     robots: Record<string, Partial<Pose>>;
     checks: Record<string, boolean>;
+    safety?: {
+      available: boolean;
+      service_ready?: boolean;
+      husky1_stopped: boolean | null;
+      parrot1_stopped: boolean | null;
+    };
     mission?: {
       session_id?: string;
       instance_id?: string;

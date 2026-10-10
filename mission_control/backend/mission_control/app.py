@@ -12,7 +12,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from PIL import Image, UnidentifiedImageError
 
-from .models import ExternalStart, Plan, SpawnPlan, UploadCalibration
+from .models import ExternalStart, Plan, SafetyStopRequest, SpawnPlan, UploadCalibration
 from .external import ExternalSessionManager
 from .deploy import DeploySessionManager
 from .ros_adapter import create_adapter
@@ -34,21 +34,33 @@ async def lifespan(app):
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError as exc:
         lock.close()
-        raise RuntimeError("A mission-control backend already owns this ROS domain") from exc
+        raise RuntimeError(
+            "A mission-control backend already owns this ROS domain"
+        ) from exc
     mode = os.getenv("MISSION_MODE", "managed")
-    managers = {"managed": SessionManager, "external": ExternalSessionManager, "deploy": DeploySessionManager}
+    managers = {
+        "managed": SessionManager,
+        "external": ExternalSessionManager,
+        "deploy": DeploySessionManager,
+    }
     if mode not in managers:
         raise ValueError("MISSION_MODE must be managed, external or deploy")
     manager_type = managers[mode]
-    manager = manager_type(Terrain(ROOT / "rs1_ws/src/rs1_sim"), DATA, create_adapter,
-                             timeout=float(os.getenv("MISSION_PREPARE_TIMEOUT", "180")))
+    manager = manager_type(
+        Terrain(ROOT / "rs1_ws/src/rs1_sim"),
+        DATA,
+        create_adapter,
+        timeout=float(os.getenv("MISSION_PREPARE_TIMEOUT", "180")),
+    )
     app.state.manager = manager
+
     async def sample():
         while True:
             if isinstance(manager, DeploySessionManager):
                 await manager.observe_deployment()
             manager.sample_trails()
             await asyncio.sleep(0.5)
+
     sampler = asyncio.create_task(sample())
     try:
         yield
@@ -65,13 +77,17 @@ app = FastAPI(title="RS1 Mission Control", lifespan=lifespan)
 @app.exception_handler(ValueError)
 async def validation_error(_, exc):
     from fastapi.responses import JSONResponse
-    return JSONResponse(status_code=409 if isinstance(exc, Conflict) else 422,
-                        content={"detail": str(exc)})
+
+    return JSONResponse(
+        status_code=409 if isinstance(exc, Conflict) else 422,
+        content={"detail": str(exc)},
+    )
 
 
 @app.exception_handler(RuntimeError)
 async def ros_error(_, exc):
     from fastapi.responses import JSONResponse
+
     return JSONResponse(status_code=503, content={"detail": str(exc)})
 
 
@@ -83,23 +99,32 @@ async def state():
 @app.get("/api/telemetry")
 def telemetry():
     adapter = app.state.manager.adapter
-    return {**connection_settings(),
-            "bridge_available": getattr(adapter, "telemetry_available", lambda: False)()}
+    return {
+        **connection_settings(),
+        "bridge_available": getattr(adapter, "telemetry_available", lambda: False)(),
+    }
 
 
 @app.get("/api/telemetry/layout")
 def telemetry_layout():
     # This public, static project layout is fetched by the viewer on another port.
     # Keep CORS limited to this route rather than exposing mission-control APIs.
-    return FileResponse(ROOT / "mission_control/telemetry/default-layout.json",
-                        media_type="application/json",
-                        headers={"Access-Control-Allow-Origin": "*"})
+    return FileResponse(
+        ROOT / "mission_control/telemetry/default-layout.json",
+        media_type="application/json",
+        headers={"Access-Control-Allow-Origin": "*"},
+    )
 
 
 @app.get("/api/presets")
 def presets():
-    return [{**{k: v for k, v in item.items() if k != "path"}, "url": f"/api/images/{item['id']}"}
-            for item in app.state.manager.images()]
+    return [
+        {
+            **{k: v for k, v in item.items() if k != "path"},
+            "url": f"/api/images/{item['id']}",
+        }
+        for item in app.state.manager.images()
+    ]
 
 
 @app.get("/api/images/{image_id}")
@@ -128,11 +153,19 @@ async def upload(file: UploadFile = File(...), registration: str = Form(...)):
     directory.mkdir(parents=True, exist_ok=True)
     path = directory / f"{identifier}.png"
     image.save(path)
-    item = {"id": identifier, "calibration_id": identifier, "world_id": metadata.world_id,
-            "calibration": metadata.calibration.model_dump(), "name": (file.filename or "Uploaded image")[:100],
-            "path": str(path)}
+    item = {
+        "id": identifier,
+        "calibration_id": identifier,
+        "world_id": metadata.world_id,
+        "calibration": metadata.calibration.model_dump(),
+        "name": (file.filename or "Uploaded image")[:100],
+        "path": str(path),
+    }
     (directory / f"{identifier}.json").write_text(json.dumps(item))
-    return {**{k: v for k, v in item.items() if k != "path"}, "url": f"/api/images/{identifier}"}
+    return {
+        **{k: v for k, v in item.items() if k != "path"},
+        "url": f"/api/images/{identifier}",
+    }
 
 
 @app.post("/api/plan/preview")
@@ -145,7 +178,9 @@ async def start(plan: Plan | ExternalStart):
     manager = app.state.manager
     expected = ExternalStart if isinstance(manager, ExternalSessionManager) else Plan
     if not isinstance(plan, expected):
-        raise ValueError("External/deploy modes accept only an ROI; managed mode requires a complete launch plan")
+        raise ValueError(
+            "External/deploy modes accept only an ROI; managed mode requires a complete launch plan"
+        )
     return await manager.start(plan)
 
 
@@ -174,6 +209,16 @@ async def deployment_stop():
 @app.post("/api/mission/cancel")
 async def cancel():
     return await app.state.manager.cancel()
+
+
+@app.post("/api/safety/stop")
+async def safety_stop(request: SafetyStopRequest):
+    adapter = app.state.manager.adapter
+    operation = getattr(adapter, "set_safety_stop", None)
+    if operation is None:
+        raise RuntimeError("The ROS adapter does not provide an E-stop interlock")
+    await operation(request.robot, request.stopped)
+    return app.state.manager.snapshot()
 
 
 @app.post("/api/session/reset")

@@ -163,6 +163,16 @@ dependencies.
    a new start or mission, restart terminal 1 with
    `ros2 launch rs1_sim rs1_sim.launch.py ui:=true`. The dashboard can stay open.
 
+The dashboard also exposes independent, latched E-stop controls for Husky and
+Parrot. They call the ROS `/safety/stop` service; the interlock publishes the
+latched flags on `/safety/state` and repeatedly publishes zero velocity to the
+robots' existing command topics while a stop is active. This does not gate or
+block other velocity publishers; competing nonzero commands may interfere with
+the stop. Resetting an E-stop may allow active navigation commands to resume,
+so cancel or otherwise make the robot safe before resetting. This is a
+simulation software convenience, not a certified hardware safety system; use a
+physical safety-rated E-stop for real robots.
+
 **Current Fortress limitation:** recreating the robots' sensor stack twice in
 one Gazebo world instance can crash Ogre2. After **Stop robots**, another
 deployment is blocked until that world is restarted. This does not affect
