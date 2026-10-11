@@ -170,8 +170,7 @@ robots' existing command topics while a stop is active. This does not gate or
 block other velocity publishers; competing nonzero commands may interfere with
 the stop. Resetting an E-stop may allow active navigation commands to resume,
 so cancel or otherwise make the robot safe before resetting. This is a
-simulation software convenience, not a certified hardware safety system; use a
-physical safety-rated E-stop for real robots.
+simulation software convenience, not a certified hardware safety system.
 
 **Current Fortress limitation:** recreating the robots' sensor stack twice in
 one Gazebo world instance can crash Ogre2. After **Stop robots**, another
