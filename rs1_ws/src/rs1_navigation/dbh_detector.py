@@ -143,6 +143,9 @@ class DBHDetector(Node):
 
         return filtered
 
+    def filter_dbh_height(self, points, target_height=1.3, tolerance=0.15):
+        return [p for p in points if abs(p[2] - target_height) < tolerance]
+
     def scan_to_points(self, scan_msg):
 
         points = []
