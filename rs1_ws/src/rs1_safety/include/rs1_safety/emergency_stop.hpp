@@ -20,6 +20,8 @@ private:
   rclcpp::Publisher<rs1_interfaces::msg::SafetyState>::SharedPtr state_pub_;
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr husky_pub_;
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr parrot_pub_;
+  rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr husky_sub_;
+  rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr parrot_sub_;
   rclcpp::Service<rs1_interfaces::srv::SafetyStop>::SharedPtr stop_service_;
   rclcpp::TimerBase::SharedPtr zero_timer_;
 };

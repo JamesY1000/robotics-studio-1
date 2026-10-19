@@ -1,4 +1,4 @@
-#include "rs1_dashboard/emergency_stop.hpp"
+#include "rs1_safety/emergency_stop.hpp"
 
 int main(int argc, char ** argv)
 {

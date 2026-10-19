@@ -110,6 +110,15 @@ def generate_launch_description():
         ],
     )
 
+    # The robot bridges read only the gated *_safe velocity topics.
+    emergency_stop = Node(
+        package="rs1_safety",
+        executable="emergency_stop",
+        name="emergency_stop",
+        output="screen",
+        arguments=["--ros-args", "--log-level", log_level],
+    )
+
     return LaunchDescription(
         [
             world_argument,
@@ -117,10 +126,11 @@ def generate_launch_description():
             DeclareLaunchArgument("headless", default_value="False"),
             use_sim_time_argument,
             DeclareLaunchArgument("log_level", default_value="warn",
-                                  description="Clock bridge logging level."),
+                                  description="Clock bridge and E-stop gate logging level."),
             set_ignition_server_config,
             set_gazebo_server_config,
             gazebo,
             clock_bridge,
+            emergency_stop,
         ]
     )

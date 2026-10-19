@@ -252,7 +252,7 @@ def test_spawn_allows_configured_rviz_windows_before_robots(
     asyncio.run(scenario())
 
 
-def test_spawn_allows_dashboard_emergency_stop_node(terrain, spawn_plan, tmp_path):
+def test_spawn_allows_world_emergency_stop_node(terrain, spawn_plan, tmp_path):
     async def scenario():
         manager, runtime, adapter, _ = make_manager(terrain, tmp_path)
         adapter.foreign = [

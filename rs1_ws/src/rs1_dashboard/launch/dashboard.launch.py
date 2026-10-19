@@ -15,7 +15,6 @@ from launch.actions import (
 )
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
-from launch_ros.actions import Node
 
 
 def repository_root(configured):
@@ -82,14 +81,6 @@ def start_dashboard(context):
         "MISSION_TELEMETRY_BRIDGE_PORT": value("bridge_port"),
     }
     actions = []
-    actions.append(
-        Node(
-            package="rs1_dashboard",
-            executable="emergency_stop",
-            name="emergency_stop",
-            output="screen",
-        )
-    )
     if telemetry_enabled:
         actions.append(
             IncludeLaunchDescription(

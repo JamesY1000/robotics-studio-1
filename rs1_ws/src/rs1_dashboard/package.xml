@@ -6,10 +6,7 @@
   <maintainer email="jamesyuan1000@gmail.com">RS1</maintainer>
   <license>Apache-2.0</license>
   <buildtool_depend>ament_cmake</buildtool_depend>
-  <depend>rclcpp</depend>
-  <depend>geometry_msgs</depend>
-  <depend>std_msgs</depend>
-  <depend>rs1_interfaces</depend>
+  <exec_depend>rs1_interfaces</exec_depend>
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>
   <exec_depend>foxglove_bridge</exec_depend>

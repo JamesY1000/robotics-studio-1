@@ -20,7 +20,8 @@
   direction: GZ_TO_ROS
 
 # Command velocity
-- ros_topic_name: 'cmd_vel'
+# Gated by emergency_stop; controllers publish upstream of it.
+- ros_topic_name: 'cmd_vel_safe'
   gz_topic_name: '/model/husky1/cmd_vel'
   ros_type_name: 'geometry_msgs/msg/Twist'
   gz_type_name: 'ignition.msgs.Twist'
