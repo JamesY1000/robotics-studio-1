@@ -12,7 +12,7 @@ alignment and global TF aggregation node by default.
 | Launch file | Responsibility |
 | --- | --- |
 | `rs1_sim.launch.py` | Main entry point. Starts the complete simulation by default; `ui:=true` starts the world, clock bridge and world-session marker, with optional RViz. |
-| `gz_world.launch.py` | Starts Gazebo with a selected world and bridges the Gazebo `/clock` topic to ROS 2. |
+| `gz_world.launch.py` | Starts Gazebo with a selected world, bridges the Gazebo `/clock` topic to ROS 2, and starts the `rs1_safety` E-stop velocity gate. |
 | `robot_bringup.launch.py` | Spawns the robots and starts their supporting ROS nodes in an existing world. Shared by normal simulation and dashboard deployment. |
 | `rviz.launch.py` | Opens the existing Husky/Parrot RViz displays independently of robot spawning. |
 | `spawn_husky.launch.py` | Publishes the Husky description and TF, starts its Gazebo bridge, and creates the `husky1` model. |
@@ -281,7 +281,7 @@ following relative ROS topic names beneath its robot namespace:
 | `joint_states` | Gazebo to ROS | Simulated joint state data. |
 | `odometry` | Gazebo to ROS | Simulated odometry. |
 | `imu` | Gazebo to ROS | Simulated IMU data. |
-| `cmd_vel` | ROS to Gazebo | Robot velocity command. |
+| `cmd_vel_safe` | ROS to Gazebo | Robot velocity command, published only by the `rs1_safety` E-stop gate. |
 | `scan` | Gazebo to ROS | 2D laser scan. |
 | `scan/points` | Gazebo to ROS | Lidar point cloud. |
 | `camera/image` | Gazebo to ROS | RGB camera image. |
@@ -289,8 +289,10 @@ following relative ROS topic names beneath its robot namespace:
 | `camera/depth/points` | Gazebo to ROS | Depth point cloud. |
 
 For example, publish Husky velocity commands to `/husky1/cmd_vel` and Parrot
-velocity commands to `/parrot1/cmd_vel`. The world launch also exposes the
-global `/clock` topic.
+velocity commands to `/parrot1/cmd_vel`. The E-stop gate forwards
+`/husky1/cmd_vel` and Parrot's terrain-following output
+`/parrot1/cmd_vel_combined` to the bridges' `cmd_vel_safe` topics unless a stop
+is latched. The world launch also exposes the global `/clock` topic.
 
 Each RViz instance is namespaced and loads its robot-specific configuration:
 

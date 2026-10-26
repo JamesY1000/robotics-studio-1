@@ -164,13 +164,18 @@ dependencies.
    `ros2 launch rs1_sim rs1_sim.launch.py ui:=true`. The dashboard can stay open.
 
 The dashboard also exposes independent, latched E-stop controls for Husky and
-Parrot. They call the ROS `/safety/stop` service; the interlock publishes the
-latched flags on `/safety/state` and repeatedly publishes zero velocity to the
-robots' existing command topics while a stop is active. This does not gate or
-block other velocity publishers; competing nonzero commands may interfere with
-the stop. Resetting an E-stop may allow active navigation commands to resume,
-so cancel or otherwise make the robot safe before resetting. This is a
-simulation software convenience, not a certified hardware safety system.
+Parrot, plus an **E-STOP BOTH ROBOTS** button that latches both in one
+`/safety/stop` call (`robot: all`). Each robot is reset with its own button. They call the ROS `/safety/stop` service; the interlock publishes the
+latched flags on `/safety/state`. The `rs1_safety` `emergency_stop` node, started
+by `rs1_sim`'s `gz_world.launch.py` with every world, is a velocity gate:
+it subscribes to `/husky1/cmd_vel` and `/parrot1/cmd_vel_combined` and forwards
+them to `/husky1/cmd_vel_safe` and `/parrot1/cmd_vel_safe`, which are the only
+topics the Gazebo bridges read. While a stop is latched it drops incoming
+commands and publishes zero velocity instead. The robots cannot move unless the
+gate is running, so it runs with the world rather than the dashboard. Resetting an E-stop lets the next navigation
+command through, so cancel or otherwise make the robot safe before resetting.
+This is a simulation software convenience, not a certified hardware safety
+system.
 
 **Current Fortress limitation:** recreating the robots' sensor stack twice in
 one Gazebo world instance can crash Ogre2. After **Stop robots**, another
