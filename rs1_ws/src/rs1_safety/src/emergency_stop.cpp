@@ -31,18 +31,27 @@ EmergencyStop::EmergencyStop()
     "/safety/stop",
     [this](const std::shared_ptr<rs1_interfaces::srv::SafetyStop::Request> request,
     std::shared_ptr<rs1_interfaces::srv::SafetyStop::Response> response) {
-      if (request->robot == "husky1") {
-        husky_stopped_ = request->stopped;
-      } else if (request->robot == "parrot1") {
-        parrot_stopped_ = request->stopped;
-      } else {
+      const bool husky = request->robot == "husky1" || request->robot == "all";
+      const bool parrot = request->robot == "parrot1" || request->robot == "all";
+      if (!husky && !parrot) {
         response->success = false;
-        response->message = "robot must be husky1 or parrot1";
+        response->message = "robot must be husky1, parrot1 or all";
         return;
+      }
+      if (husky) {
+        husky_stopped_ = request->stopped;
+      }
+      if (parrot) {
+        parrot_stopped_ = request->stopped;
       }
       publish_state();
       if (request->stopped) {
-        publish_zero(request->robot == "husky1" ? husky_pub_ : parrot_pub_);
+        if (husky) {
+          publish_zero(husky_pub_);
+        }
+        if (parrot) {
+          publish_zero(parrot_pub_);
+        }
       }
       response->success = true;
       response->message = request->stopped ? request->robot + " stop latched" :

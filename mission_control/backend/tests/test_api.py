@@ -81,7 +81,8 @@ def test_safety_stop_api_controls_each_robot_and_validates_target(
 
         async def set_safety_stop(self, robot, stopped):
             self.calls.append((robot, stopped))
-            self.stops[robot] = stopped
+            for name in self.stops if robot == "all" else [robot]:
+                self.stops[name] = stopped
 
     adapter = InterlockAdapter()
     monkeypatch.setattr(module, "DATA", tmp_path)
@@ -99,6 +100,11 @@ def test_safety_stop_api_controls_each_robot_and_validates_target(
         )
         assert reset.status_code == 200
         assert adapter.calls == [("husky1", True), ("husky1", False)]
+        both = client.post("/api/safety/stop", json={"robot": "all", "stopped": True})
+        assert both.status_code == 200
+        assert both.json()["ros"]["safety"]["husky1_stopped"] is True
+        assert both.json()["ros"]["safety"]["parrot1_stopped"] is True
+        assert adapter.calls[-1] == ("all", True)
         assert (
             client.post(
                 "/api/safety/stop", json={"robot": "both", "stopped": True}

@@ -82,5 +82,5 @@ class SpawnPlan(StrictModel):
 
 
 class SafetyStopRequest(StrictModel):
-    robot: Literal["husky1", "parrot1"]
+    robot: Literal["husky1", "parrot1", "all"]
     stopped: bool

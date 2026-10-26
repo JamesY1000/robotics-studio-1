@@ -1594,6 +1594,14 @@ hr {
   background: #9e2d27;
 }
 
+.safety-stop-all {
+  width: 100%;
+  margin-top: 10px;
+  padding: 11px;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
 .safety-reset {
   color: #8c4e24;
   background: #fff5e8;

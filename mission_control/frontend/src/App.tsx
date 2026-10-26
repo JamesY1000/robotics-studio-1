@@ -466,7 +466,7 @@ export default function App() {
       setBusy(false);
     }
   };
-  const setSafetyStop = async (robot: "husky1" | "parrot1", stopped: boolean) => {
+  const setSafetyStop = async (robot: "husky1" | "parrot1" | "all", stopped: boolean) => {
     setSafetyBusy(robot);
     setSafetyError("");
     try {
@@ -676,7 +676,7 @@ export default function App() {
           <div className="safety-heading">
             <div>
               <h2>Emergency stop</h2>
-              <p>Latch a stop for either robot independently.</p>
+              <p>Latch a stop for either robot independently, or both at once.</p>
             </div>
             <span className="safety-caveat">Software interlock · not a certified hardware E-stop</span>
           </div>
@@ -713,6 +713,25 @@ export default function App() {
               );
             })}
           </div>
+          {(() => {
+            const safety = state?.ros.safety;
+            const known = typeof safety?.husky1_stopped === "boolean" && typeof safety?.parrot1_stopped === "boolean";
+            const allStopped = safety?.husky1_stopped === true && safety?.parrot1_stopped === true;
+            const usable = connected && !!safety?.available && !!safety.service_ready && known;
+            return (
+              <button
+                className="safety-stop safety-stop-all"
+                disabled={!usable || allStopped || safetyBusy !== null}
+                onClick={() => void setSafetyStop("all", true)}
+              >
+                {safetyBusy === "all"
+                  ? "Sending…"
+                  : allStopped
+                    ? "Both robots stopped · latched"
+                    : "E-STOP BOTH ROBOTS"}
+              </button>
+            );
+          })()}
           {safetyError ? (
             <p className="safety-error" role="alert">{safetyError}</p>
           ) : !state?.ros.safety?.service_ready ? (

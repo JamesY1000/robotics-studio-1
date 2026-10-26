@@ -1,4 +1,4 @@
-string robot
+string robot  # husky1, parrot1 or all
 bool stopped
 ---
 bool success
