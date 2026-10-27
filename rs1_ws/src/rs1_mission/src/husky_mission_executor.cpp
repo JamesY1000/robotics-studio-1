@@ -241,12 +241,12 @@ void HuskyMissionExecutorNode::traverseToROI()
     RCLCPP_INFO(this->get_logger(), "Waiting for Parrot's ground path to the requested ROI");
 }
 
-geometry_msgs::msg::PoseStamped HuskyMissionExecutorNode::getCurrentPose(const std::string &frame_id)
+geometry_msgs::msg::PoseStamped HuskyMissionExecutorNode::getCurrentPose(const std::string &frame_id, double max_age)
 {
     const auto transform = tf_buffer_->lookupTransform(frame_id, "husky1_base_link", tf2::TimePointZero);
     const rclcpp::Time stamp(transform.header.stamp, this->get_clock()->get_clock_type());
     const double age = (this->now() - stamp).seconds();
-    if (stamp.nanoseconds() == 0 || age < 0.0 || age > 2.0)
+    if (stamp.nanoseconds() == 0 || age < 0.0 || age > max_age)
     {
         throw std::runtime_error("Husky pose transform is uninitialised, stale or future-dated");
     }
@@ -353,11 +353,13 @@ void HuskyMissionExecutorNode::navigateNextChunk()
     geometry_msgs::msg::PoseStamped robot_pose;
     try
     {
-        robot_pose = getCurrentPose("husky1_map");
+        // Nav2 needs a fresher transform than the general pose query service.
+        // Wait here instead of sending a goal that its controller cannot use.
+        robot_pose = getCurrentPose("husky1_map", navigation_pose_max_age_);
     }
     catch (const std::exception &e)
     {
-        waitForWaypoint(std::string("Waiting for Husky pose: ") + e.what());
+        waitForWaypoint(std::string("Waiting for fresh localisation transform: ") + e.what());
         return;
     }
 
@@ -540,6 +542,20 @@ void HuskyMissionExecutorNode::navigateThroughPosesResultCb(
 
 void HuskyMissionExecutorNode::retryChunk(const std::string &reason)
 {
+    // A transform interruption is a readiness problem, not a failed route.
+    // Let the navigation timer wait for fresh data, with the usual bounded
+    // waypoint timeout, without spending one of the navigation retries.
+    try
+    {
+        getCurrentPose("husky1_map", navigation_pose_max_age_);
+    }
+    catch (const std::exception &e)
+    {
+        waypoint_wait_started_ = std::chrono::steady_clock::now();
+        waitForWaypoint(std::string("Waiting for fresh localisation transform: ") + e.what());
+        return;
+    }
+
     if (++chunk_failures_ > max_chunk_retries_)
     {
         abortTraversalToROI(reason + "; no further route progress after chunk retries");

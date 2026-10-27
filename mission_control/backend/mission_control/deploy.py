@@ -46,12 +46,16 @@ class DeploySessionManager(ExternalSessionManager):
     def foreign_nodes(self):
         nodes = {"/" + name.lstrip("/") for name in super().foreign_nodes()}
         allowed = {"/simulation_session", "/ros_gz_bridge_clock"}
-        for namespace in ("/husky1", "/parrot1"):
+        # Combined RViz runs at the root; separate windows use robot namespaces.
+        # Only exempt a generated TF listener when RViz is present in that same
+        # namespace, so unrelated listeners and robot stacks still block spawn.
+        for namespace in ("", "/husky1", "/parrot1"):
             if f"{namespace}/rviz2" not in nodes:
                 continue
-            # The configured RViz windows create a Nav2 panel action client and
-            # a TF listener. They can observe an empty world before deployment.
-            allowed.update({f"{namespace}/rviz2", f"{namespace}/rviz_navigation_dialog_action_client"})
+            allowed.add(f"{namespace}/rviz2")
+            # Only the separate robot windows have a Nav2 control panel.
+            if namespace:
+                allowed.add(f"{namespace}/rviz_navigation_dialog_action_client")
             allowed.update(name for name in nodes if re.fullmatch(
                 rf"{namespace}/transform_listener_impl_[0-9a-fA-F]+", name))
         return sorted(nodes - allowed)
@@ -253,7 +257,9 @@ class DeploySessionManager(ExternalSessionManager):
                       "world_instance_id": world["instance_id"], "world_name": world["world_name"],
                       "created_at": time.time(), "roi_selected": False, "log_path": str(directory / "ros.log")}
             command = ["ros2", "launch", "rs1_mission", "deploy.launch.py",
-                       f"plan_file:={plan_path}", f"world_instance_id:={world['instance_id']}"]
+                       f"plan_file:={plan_path}", f"world_instance_id:={world['instance_id']}",
+                       f"log_level:={os.getenv('MISSION_LOG_LEVEL', 'info')}",
+                       f"stack_log_level:={os.getenv('MISSION_STACK_LOG_LEVEL', 'warn')}"]
             env = {**os.environ}
             if world.get("ign_partition"):
                 env["IGN_PARTITION"] = world["ign_partition"]

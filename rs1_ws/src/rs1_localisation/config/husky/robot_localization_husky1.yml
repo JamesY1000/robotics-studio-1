@@ -8,6 +8,8 @@
     odom_frame: husky1_odom
     base_link_frame: husky1_base_link
     world_frame: husky1_odom
+    # Gazebo odometry supplies planar forward/sideways velocity. Heading comes
+    # only from the corrected IMU rate below, avoiding two competing yaw rates.
     odom0: odometry
     odom0_config:
     - false
@@ -21,12 +23,14 @@
     - false
     - false
     - false
-    - true
     - false
     - false
     - false
-    imu0: imu
-    imu0_config:
+    - false
+    # The heading-rate node accounts for chassis roll/pitch. Raw IMU data is
+    # still available to LiDAR leveling, but is not fused directly by this EKF.
+    twist0: heading_rate
+    twist0_config:
     - false
     - false
     - false

@@ -1,5 +1,5 @@
 
-<!-- Default behaviour tree from nav2 behaviours -->
+<!-- Default behaviour tree from nav2 behaviours (not used)-->
 
 <!--
   This Behavior Tree replans the global path periodically at 1 Hz and it also has

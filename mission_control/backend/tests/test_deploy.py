@@ -120,6 +120,26 @@ def test_spawn_is_a_separate_operation_and_cannot_be_duplicated(terrain, spawn_p
     asyncio.run(scenario())
 
 
+@pytest.mark.parametrize("levels", [None, ("debug", "info")])
+def test_deployment_forwards_log_levels(terrain, spawn_plan, tmp_path, monkeypatch, levels):
+    for name, value in zip(("MISSION_LOG_LEVEL", "MISSION_STACK_LOG_LEVEL"), levels or (None, None)):
+        if value is None:
+            monkeypatch.delenv(name, raising=False)
+        else:
+            monkeypatch.setenv(name, value)
+
+    async def scenario():
+        manager, runtime, _, _ = make_manager(terrain, tmp_path)
+        await manager.spawn(spawn_plan)
+        command = runtime.launches[0][1]
+        mission, stack = levels or ("info", "warn")
+        assert f"log_level:={mission}" in command
+        assert f"stack_log_level:={stack}" in command
+        await manager.close()
+        assert runtime.running  # Terminal viewing must not own the ROS lifetime.
+    asyncio.run(scenario())
+
+
 @pytest.mark.parametrize("change", [
     {"ui": False}, {"fresh": False}, {"instance_id": ""}, {"world_name": "simple_trees"},
     {"conflict": True},
@@ -160,12 +180,14 @@ def test_spawn_rejects_existing_robots_even_without_local_record(terrain, spawn_
     asyncio.run(scenario())
 
 
-def test_spawn_allows_configured_rviz_windows_before_robots(terrain, spawn_plan, tmp_path):
+@pytest.mark.parametrize("combined", [False, True])
+def test_spawn_allows_configured_rviz_windows_before_robots(terrain, spawn_plan, tmp_path, combined):
     async def scenario():
         manager, runtime, adapter, _ = make_manager(terrain, tmp_path)
-        adapter.foreign = ["/simulation_session", "/ros_gz_bridge_clock"] + [
+        displays = ["/rviz2", "/transform_listener_impl_5eba148b86c0"] if combined else [
             f"/{robot}/{node}" for robot in ("husky1", "parrot1") for node in (
                 "rviz2", "rviz_navigation_dialog_action_client", "transform_listener_impl_5fbe11c26840")]
+        adapter.foreign = ["/simulation_session", "/ros_gz_bridge_clock"] + displays
         assert manager.snapshot()["deployment"]["can_spawn"]
         await manager.spawn(spawn_plan)
         assert len(runtime.launches) == 1
@@ -206,11 +228,12 @@ def test_managed_mode_exempts_only_the_dedicated_telemetry_node(terrain, tmp_pat
     "/husky1/controller_server", "/parrot1/robot_state_publisher", "/mission_coordinator_node",
     "/other/rviz2", "/rviz_navigation_dialog_action_client",
     "/husky1/transform_listener_impl_not_a_generated_id",
+    "/transform_listener_impl_not_a_generated_id", "/controller_server",
 ])
 def test_rviz_exemption_does_not_hide_other_stacks(terrain, spawn_plan, tmp_path, foreign):
     async def scenario():
         manager, runtime, adapter, _ = make_manager(terrain, tmp_path)
-        adapter.foreign = ["/husky1/rviz2", "/parrot1/rviz2", foreign]
+        adapter.foreign = ["/rviz2", "/husky1/rviz2", "/parrot1/rviz2", foreign]
         with pytest.raises(Conflict, match="nodes already exist"):
             await manager.spawn(spawn_plan)
         assert runtime.launches == []
@@ -218,9 +241,10 @@ def test_rviz_exemption_does_not_hide_other_stacks(terrain, spawn_plan, tmp_path
     asyncio.run(scenario())
 
 
-def test_tf_listener_without_rviz_does_not_get_observer_exemption(terrain, tmp_path):
+@pytest.mark.parametrize("namespace", ["", "/husky1", "/parrot1"])
+def test_tf_listener_without_rviz_does_not_get_observer_exemption(terrain, tmp_path, namespace):
     manager, _, adapter, _ = make_manager(terrain, tmp_path)
-    adapter.foreign = ["/husky1/transform_listener_impl_5fbe11c26840"]
+    adapter.foreign = [f"{namespace}/transform_listener_impl_5fbe11c26840"]
     assert manager.foreign_nodes() == adapter.foreign
     assert not manager.snapshot()["deployment"]["can_spawn"]
 

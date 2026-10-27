@@ -123,7 +123,7 @@ controller_server:
     general_goal_checker:
       stateful: true
       plugin: nav2_controller::SimpleGoalChecker
-      xy_goal_tolerance: 1.0
+      xy_goal_tolerance: 0.5
       yaw_goal_tolerance: 1.57
     FollowPath:
       plugin: dwb_core::DWBLocalPlanner
@@ -149,7 +149,7 @@ controller_server:
       linear_granularity: 0.2
       angular_granularity: 0.2
       transform_tolerance: 0.5
-      xy_goal_tolerance: 1.0
+      xy_goal_tolerance: 0.5
       yaw_goal_tolerance: 1.57
       trans_stopped_velocity: 0.25
       short_circuit_trajectory_evaluation: true
@@ -223,11 +223,11 @@ local_costmap:
 
         # Assumes base_link Z is approximately 0 in this costmap's frame.
         origin_z: -0.4
-        z_resolution: 0.1
-        z_voxels: 12
+        z_resolution: 0.2
+        z_voxels: 16
 
         min_obstacle_height: -0.4
-        max_obstacle_height: 0.6
+        max_obstacle_height: 2.0
         mark_threshold: 0
         unknown_threshold: 15
 
@@ -242,7 +242,7 @@ local_costmap:
           clearing: true
           inf_is_valid: true
           min_obstacle_height: -0.4
-          max_obstacle_height: 0.6
+          max_obstacle_height: 2.0
           obstacle_min_range: 0.0
           obstacle_max_range: 10.0
           raytrace_min_range: 0.0
@@ -256,7 +256,7 @@ local_costmap:
           marking: true
           clearing: false
           min_obstacle_height: -0.4
-          max_obstacle_height: 0.6
+          max_obstacle_height: 2.0
           obstacle_min_range: 0.0
           obstacle_max_range: 10.0
 
@@ -321,11 +321,11 @@ global_costmap:
 
         # Assumes base_link Z is approximately 0 in this costmap's frame.
         origin_z: -0.4
-        z_resolution: 0.1
-        z_voxels: 12
+        z_resolution: 0.2
+        z_voxels: 16
 
         min_obstacle_height: -0.4
-        max_obstacle_height: 0.6
+        max_obstacle_height: 2.0
         mark_threshold: 0
         unknown_threshold: 15
 
@@ -340,7 +340,7 @@ global_costmap:
           clearing: true
           inf_is_valid: true
           min_obstacle_height: -0.4
-          max_obstacle_height: 0.6
+          max_obstacle_height: 2.0
           obstacle_min_range: 0.0
           obstacle_max_range: 10.0
           raytrace_min_range: 0.0
@@ -354,7 +354,7 @@ global_costmap:
           marking: true
           clearing: false
           min_obstacle_height: -0.4
-          max_obstacle_height: 0.6
+          max_obstacle_height: 2.0
           obstacle_min_range: 0.0
           obstacle_max_range: 10.0
 
@@ -397,8 +397,10 @@ planner_server:
       - GridBased
     GridBased:
       plugin: nav2_smac_planner/SmacPlanner2D
-      tolerance: 0.5
+      tolerance: 0.2
       allow_unknown: true
+      max_iterations: 5000000
+      max_planning_time: 10.0 # Let it search for 10s before giving up
 smoother_server:
   ros__parameters:
     use_sim_time: true

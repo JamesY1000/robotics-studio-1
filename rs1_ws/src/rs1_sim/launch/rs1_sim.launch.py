@@ -36,8 +36,10 @@ def generate_launch_description():
     robot_launch = include("robot_bringup.launch.py", {
         "world": world,
         "session_id": session_id,
+        "combined": LaunchConfiguration("combined"),
     }, condition=UnlessCondition(ui))
     ui_rviz = include("rviz.launch.py", {
+        "combined": LaunchConfiguration("combined"),
         "use_sim_time": LaunchConfiguration("use_sim_time"),
         "stack_log_level": LaunchConfiguration("stack_log_level"),
     }, condition=IfCondition(LaunchConfiguration("rviz")))
@@ -51,6 +53,10 @@ def generate_launch_description():
             "rviz",
             default_value=PythonExpression(["'", ui, "'.lower() not in ('true', '1')"]),
             description="Open robot RViz displays; defaults to true normally, false with ui:=true.",
+        ),
+        DeclareLaunchArgument(
+            "combined", default_value="False",
+            description="Use one shared RViz window when RViz is enabled.",
         ),
         DeclareLaunchArgument(
             "world", default_value="v2_forest",

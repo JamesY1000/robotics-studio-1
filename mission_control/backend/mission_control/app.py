@@ -12,9 +12,10 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from PIL import Image, UnidentifiedImageError
 
-from .models import ExternalStart, Plan, SpawnPlan, UploadCalibration
+from .models import ExternalStart, Plan, SpawnPlan, UploadCalibration, XY
 from .external import ExternalSessionManager
 from .deploy import DeploySessionManager
+from .deployment_logs import DeploymentLogTail, stream_deployment_logs
 from .ros_adapter import create_adapter
 from .session import Conflict, SessionManager
 from .terrain import Terrain
@@ -50,11 +51,16 @@ async def lifespan(app):
             manager.sample_trails()
             await asyncio.sleep(0.5)
     sampler = asyncio.create_task(sample())
+    tasks = [sampler]
+    if isinstance(manager, DeploySessionManager) and os.getenv("MISSION_SHOW_LOGS", "true").lower() in ("true", "1"):
+        tail = DeploymentLogTail(manager.deployment)
+        tasks.append(asyncio.create_task(stream_deployment_logs(manager, tail)))
     try:
         yield
     finally:
-        sampler.cancel()
-        await asyncio.gather(sampler, return_exceptions=True)
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
         await manager.close()
         lock.close()
 
@@ -138,6 +144,15 @@ async def upload(file: UploadFile = File(...), registration: str = Form(...)):
 @app.post("/api/plan/preview")
 def preview(plan: Plan):
     return app.state.manager.validate(plan)
+
+
+@app.post("/api/roi/preview")
+def roi_preview(point: XY):
+    # Preview the same terrain checks used at mission start without configuring
+    # the coordinator or starting a mission.
+    terrain = app.state.manager.terrain
+    terrain.check_point("ROI", point, 0.5)
+    return {**point.model_dump(), "z": terrain.height(point.x, point.y)}
 
 
 @app.post("/api/mission/start", status_code=202)

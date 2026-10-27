@@ -296,3 +296,112 @@ a multi-second simulation snapshot cycle.
 * **Stale `install/` breaks things silently.** If the pipeline stops working
   after a branch switch, rebuild before debugging:
   `colcon build` (or at least `rs1_interfaces` + `rs1_perception`).
+
+## Husky ground filtering
+
+Husky localisation starts `husky_ground.launch.py` automatically. The pipeline is:
+
+1. `level_husky_cloud.py` pairs the 3D LiDAR cloud with a recent IMU orientation,
+   transforms the sensor mounting offset into the base frame, and removes roll
+   and pitch. Yaw remains the responsibility of the existing planar EKF.
+   Reflections inside the chassis/sensor envelope are excluded.
+2. The unmodified GSeg3D ROS node separates `/husky1/points_level` into
+   `/husky1/ground_points` and `/husky1/obstacle_points`.
+3. `ground_relative_scan_cloud.py` checks obstacle candidates against small planes
+   fitted to nearby segmented ground. Ground samples are averaged within 20 cm
+   XY squares before selecting neighbours, so one dense LiDAR ring cannot dominate
+   the fit. Obstacle candidates are not downsampled. It removes leftover ground
+   fragments and
+   points above Husky's 1 m collision envelope where the ground estimate is reliable.
+   Points without reliable nearby ground remain obstacles conservatively. This
+   produces `/husky1/navigation_points`; a fixed robot-relative height cutoff would
+   miss real obstacles farther uphill.
+4. `pointcloud_to_laserscan` projects that cloud into `/husky1/scan_filtered`
+   for SLAM and the global obstacle layer. Empty directions
+   remain infinite, rather than inventing a clear ray beyond removed ground.
+5. The local costmap uses the standard obstacle layer with `/husky1/scan_filtered`,
+   followed by inflation. The ground-consistency plugin is no longer enabled;
+   the ground and obstacle clouds remain available for filtering and inspection.
+
+The virtual `husky1_base_level` frame uses the planar EKF base origin. It describes
+corrected measurements, not the physical chassis attitude. Its ground seed is
+therefore `-0.13228` m (the wheel clearance below the base), not the original
+LiDAR-to-ground distance. This preserves 2D navigation; it does not provide a
+globally consistent elevation estimate or a full traversability map.
+
+Husky-specific settings live in `config/husky_ground_segmentation.yml` and
+`launch/husky_ground.launch.py`, leaving the three external submodules unchanged.
+Install dependencies with the project's normal rosdep setup, then build and
+source the workspace. The converter dependency is `ros-humble-pointcloud-to-laserscan`;
+the ground-relative scan adapter also needs `python3-scipy`.
+
+To inspect the pipeline independently in a running Husky simulation:
+
+```bash
+ros2 launch rs1_perception husky_ground.launch.py
+```
+
+Run that command only when the localisation launch is not already starting the
+pipeline (`ground_filter:=false` disables that launch inclusion). In RViz, inspect
+the ground and obstacle clouds together before trusting the resulting map.
+Changing the filter does not automatically remove previously mapped terrain from
+SLAM. No automatic SLAM reset or map-clearing behaviour is added by this pipeline.
+
+The geometry checks are registered with `colcon test --packages-select rs1_perception`.
+
+### Current validation limits
+
+The October 2026 simulation comparison used fresh worlds and SLAM maps, the same
+controller settings, and physical position only for evaluating arrival (within
+0.5 m). The final pipeline reached both 14 m riverbank uphill goals that the raw
+scan configuration could not reach. It also completed the tree-detour control,
+although that route took 19.2 simulated seconds versus 16.5 originally.
+
+This is still experimental: two runs using normal Husky bringup and its custom
+NavigateThroughPoses behaviour tree gave one success and one failure. The failure
+reported a starting pose in collision space: SLAM's cell under the robot was free,
+but an occupied cell about 0.64 m away made the global costmap's padded footprint
+region inscribed. Sparse residual terrain returns still survive filtering, so the
+ground-consistency local layer alone cannot guarantee a clean global SLAM map.
+Do not interpret the controlled route successes as a reliable whole-mission rate.
+
+An ablation using the same filtered scan with the standard local obstacle layer
+also passed the first bank route (19.3 s versus 19.1 s with the ground layer).
+That single pair supports the benefit of filtering, but does not establish an
+additional performance benefit from the new costmap plugin. The standard-layer
+comparison used the filtered 2D scan, not a separate full 3D obstacle-cloud input.
+
+The subsequent eight-run comparison used NavigateThroughPoses on two bank routes
+and a tree detour, with the first bank route repeated. The standard obstacle layer
+passed 4/4 runs; ground consistency passed 3/4. The standard layer is now the
+configured default. This small sample does not establish a general success rate.
+Separate prototype tests improved ground-neighbour selection using 20 cm XY
+support cells and tested a 30-degree segmentation slope limit. Both changes are
+now applied to the working pipeline. The slope setting admits the measured
+26-degree bank patch; it is a segmentation threshold, not proof that all accepted
+terrain is traversable. Residual terrain artifacts can still remain.
+
+The production-filter retest completed all six NavigateThroughPoses trials (two
+runs each of the two banks and tree detour), with final physical errors of
+0.29--0.38 m. Bank A took 19.29/19.09 s, bank B 19.27/33.89 s, and the tree route
+22.30/18.54 s. The slow bank run needed the existing local-costmap clear after a
+progress failure. Both tree runs encountered transient lethal-start errors; the
+first also used spin recovery. These are successful arrivals, not six clean runs.
+No SLAM resets or additional clearing behaviour were introduced; each isolated
+trial began with its own normal launch. Existing contaminated-map recovery was
+not tested.
+
+The traced bank-B ground patch contributed 65 navigation points across five
+clouds in the earlier standard-layer run, versus zero in both updated runs.
+Other ground leakage remains. Traced blocking cells on the tree route instead
+matched returns 3.5--4.5 m above terrain: unreliable/missing nearby ground made
+the helper conservatively retain overhead canopy points. The two changes do not
+solve this separate limitation. Replay on identical recorded clouds did not reduce
+the measured count of 20--90 cm obstacle returns, with helper median processing times rising
+by about 2--3.4 ms per cloud. See `.mission-control/ground-filter-retest-20261030/`
+at the repository root for configuration snapshots, logs and JSON comparisons.
+
+These were Husky-only tests. They do not validate Parrot, mission handoff, or the
+combined simulation load. The new sensor processing uses measured IMU orientation,
+not the simulator's ground-truth pose or terrain mesh; those were used only by the
+test observer. The planar EKF and its existing input sources are unchanged.

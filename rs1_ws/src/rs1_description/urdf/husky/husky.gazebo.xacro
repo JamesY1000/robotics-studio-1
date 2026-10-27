@@ -77,14 +77,34 @@
     <material>Gazebo/Grey</material>
   </gazebo>
 
-  <!-- Move base directly without faffing around with diff drive controllers -->
+  <!-- Use diff drive controller -->
+  <gazebo>
+    <plugin filename="ignition-gazebo-diff-drive-system"
+            name="ignition::gazebo::systems::DiffDrive">
+      <left_joint>${prefix}front_left_wheel_joint</left_joint>
+      <left_joint>${prefix}rear_left_wheel_joint</left_joint>
+      <right_joint>${prefix}front_right_wheel_joint</right_joint>
+      <right_joint>${prefix}rear_right_wheel_joint</right_joint>
+
+      <wheel_separation>${wheel_separation}</wheel_separation>
+      <wheel_radius>${wheel_radius}</wheel_radius>
+      <topic>/model/${gz_model_name}/cmd_vel</topic>
+
+      <!-- Keep wheel odometry separate from the existing odometry source. -->
+      <odom_topic>/model/${gz_model_name}/wheel_odometry</odom_topic>
+      <tf_topic>/model/${gz_model_name}/wheel_tf</tf_topic>
+      <odom_publish_frequency>20</odom_publish_frequency>
+    </plugin>
+  </gazebo>
+
+  <!-- Move base directly without faffing around with diff drive controllers
   <gazebo>
     <plugin
       filename="ignition-gazebo-velocity-control-system"
       name="ignition::gazebo::systems::VelocityControl">
       <topic>model/${gz_model_name}/cmd_vel</topic>
     </plugin>
-  </gazebo>
+  </gazebo> -->
 
   <!-- Initialization truth only, bridged to /mission/truth, never to /tf.
        Both URDF roots are base_link; model-to-base planar offset is zero. -->

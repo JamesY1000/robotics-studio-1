@@ -108,6 +108,7 @@ def start_robots(context):
         condition=IfCondition(rviz_enabled),
         launch_arguments={
             "husky": husky_enabled, "parrot": parrot_enabled,
+            "combined": value("combined"),
             "use_sim_time": use_sim_time, "stack_log_level": stack_log_level,
         }.items(),
     )
@@ -296,7 +297,12 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "rviz",
             default_value="True",
-            description="Open one RViz window for each enabled robot.",
+            description="Open RViz displays for the enabled robots.",
+        ),
+        DeclareLaunchArgument(
+            "combined",
+            default_value="False",
+            description="Use one shared RViz window when RViz is enabled.",
         ),
         DeclareLaunchArgument(
             "husky_spawn_delay",

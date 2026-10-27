@@ -137,12 +137,12 @@
             <min_angle>0.0</min_angle>
             <max_angle>6.28319</max_angle>
           </horizontal>
-          <!-- -15 to +15 degrees -->
+          <!-- 3.75 degree spacing, horizontal centre row, +-45 degrees vertical fov -->
           <vertical>
-            <samples>9</samples>
+            <samples>25</samples>
             <resolution>1</resolution>
-            <min_angle>-0.2617993878</min_angle>
-            <max_angle>0.2617993878</max_angle>
+            <min_angle>-0.7853981634</min_angle>
+            <max_angle>0.7853981634</max_angle>
           </vertical>
         </scan>
         <range>
