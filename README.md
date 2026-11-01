@@ -27,10 +27,7 @@ ros2 launch rs1_sim rs1_sim.launch.py ui:=true
 # Terminal 2: click-to-spawn, ROI selection and mission controls
 ros2 launch rs1_dashboard dashboard.launch.py mode:=deploy
 
-# One shared RViz window (lighter mission overview)
-ros2 launch rs1_sim rviz.launch.py combined:=true
-
-# Or keep the original separate robot windows
+# One shared RViz window
 ros2 launch rs1_sim rviz.launch.py
 ```
 
