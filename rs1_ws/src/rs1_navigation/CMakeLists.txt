@@ -8,6 +8,7 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(action_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 
@@ -19,7 +20,7 @@ add_executable(terrain_following
   src/terrain_following_node.cpp
 )
 
-ament_target_dependencies(terrain_following rclcpp geometry_msgs sensor_msgs)
+ament_target_dependencies(terrain_following rclcpp action_msgs geometry_msgs sensor_msgs)
 
 # Install cpp executables
 install(TARGETS
@@ -37,6 +38,11 @@ install(DIRECTORY
 
 
 if(BUILD_TESTING)
+  find_package(ament_cmake_pytest REQUIRED)
+  ament_add_pytest_test(test_terrain_following test/test_terrain_following.py
+    TIMEOUT 90
+    ENV TERRAIN_FOLLOWING_EXECUTABLE=$<TARGET_FILE:terrain_following>
+  )
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights
   # comment the line when a copyright and license is added to all source files

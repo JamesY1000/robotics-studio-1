@@ -26,6 +26,8 @@ def start(context):
     args = {
         "world": plan["world_id"], "session_id": plan["session_id"],
         "rviz": LaunchConfiguration("rviz").perform(context),
+        "log_level": LaunchConfiguration("log_level").perform(context),
+        "stack_log_level": LaunchConfiguration("stack_log_level").perform(context),
         "use_sim_time": "True", "husky": "True", "parrot": "True",
         "slam": "True", "nav2": "True", "alignment": "True",
     }
@@ -58,6 +60,7 @@ def start(context):
         include("rs1_mission", "rs1_mission.launch.py", {
             "roi_x": str(roi["x"]), "roi_y": str(roi["y"]), "roi_z": str(roi["z"]),
             "roi_frame": "world", "session_id": plan["session_id"],
+            "log_level": args["log_level"],
         }),
     ]
 
@@ -67,5 +70,7 @@ def generate_launch_description():
         DeclareLaunchArgument("plan_file"),
         DeclareLaunchArgument("world_instance_id"),
         DeclareLaunchArgument("rviz", default_value="False"),
+        DeclareLaunchArgument("log_level", default_value="info", choices=["debug", "info", "warn", "error", "fatal"]),
+        DeclareLaunchArgument("stack_log_level", default_value="warn", choices=["debug", "info", "warn", "error", "fatal"]),
         OpaqueFunction(function=start),
     ])

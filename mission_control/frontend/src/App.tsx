@@ -244,6 +244,10 @@ export default function App() {
   const [mode, setMode] = useState<Mode>("start");
   const [error, setError] = useState("");
   const [previewError, setPreviewError] = useState("");
+  const [roiPreview, setRoiPreview] = useState<{
+    key: string;
+    error: string;
+  } | null>(null);
   const [preview, setPreview] = useState<Record<
     string,
     XY & { z: number }
@@ -419,6 +423,43 @@ export default function App() {
       clearTimeout(timer);
     };
   }, [planKey, spawnLocked, external, deploy, !!state]);
+
+  // Deploy mode submits a selected world ROI. External mode only submits one
+  // when edited; an untouched coordinator goal keeps its existing frame and Z.
+  const roiNeedsPreview =
+    attached && !!roi && (deploy || externalRoiDirty.current);
+  const roiPreviewKey = roiNeedsPreview
+    ? JSON.stringify([state?.mode, deployment?.plan?.session_id, roi.x, roi.y])
+    : "";
+  useEffect(() => {
+    setRoiPreview(null);
+    if (!roiPreviewKey || roiLocked || !roi) return;
+    let alive = true;
+    // Match the spawn preview delay so clicks and coordinate edits settle first.
+    const timer = setTimeout(() => {
+      api<XY & { z: number }>("roi/preview", { x: roi.x, y: roi.y })
+        .then(() => {
+          if (alive) setRoiPreview({ key: roiPreviewKey, error: "" });
+        })
+        .catch((e) => {
+          if (alive) setRoiPreview({ key: roiPreviewKey, error: e.message });
+        });
+    }, 300);
+    return () => {
+      // A response for an older selection must never validate the new point.
+      alive = false;
+      clearTimeout(timer);
+    };
+  }, [roiPreviewKey, roiLocked]);
+  const roiPreviewMatches = roiPreview?.key === roiPreviewKey;
+  const roiPreviewError = roiPreviewMatches ? roiPreview.error : "";
+  const roiValidationMessage =
+    roiNeedsPreview && !roiLocked
+      ? roiPreviewMatches
+        ? roiPreviewError || "✓ ROI passed placement checks. Ready to start."
+        : "Checking ROI…"
+      : "";
+
   const place = (which: Mode, p: XY) => {
     if (which === "roi" ? roiLocked : spawnLocked) return;
     if (attached && which === "roi") {
@@ -497,7 +538,8 @@ export default function App() {
     (!deploy || deployment?.phase === "deployed");
   const placements = deployment?.placements || state?.placements || preview;
   const canStart = attached
-    ? canStartAttached(state, roi)
+    ? canStartAttached(state, roi) &&
+      (!roiNeedsPreview || (roiPreviewMatches && !roiPreviewError))
     : !locked && !!preview && !!state?.ros.available;
   const canSpawn =
     deploy && !!deployment?.can_spawn && !spawnLocked && !!preview;
@@ -843,11 +885,12 @@ export default function App() {
                   </label>
                 )}
                 <div
-                  className={`validation ${previewError ? "invalid" : ""}`}
+                  className={`validation ${previewError || roiPreviewError ? "invalid" : ""}`}
                   role="status"
                 >
                   {deploy
                     ? previewError ||
+                      roiValidationMessage ||
                       (deployment?.phase === "unspawned"
                         ? !deployment.can_spawn
                           ? deployment.message
@@ -865,9 +908,10 @@ export default function App() {
                     : external
                       ? locked
                         ? "ROI editing is available when the mission coordinator is idle."
-                        : externalRoiDirty.current
-                          ? "Start sends your edited world X / Y to the coordinator. Terrain supplies Z."
-                          : "Start uses the coordinator’s configured ROI, including its frame and Z. Edit X / Y to select a world ROI with terrain height."
+                        : roiValidationMessage ||
+                          (externalRoiDirty.current
+                            ? "Start sends your edited world X / Y to the coordinator. Terrain supplies Z."
+                            : "Start uses the coordinator’s configured ROI, including its frame and Z. Edit X / Y to select a world ROI with terrain height.")
                       : locked
                         ? "Plan saved for this session."
                         : previewError ||

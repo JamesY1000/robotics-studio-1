@@ -1,0 +1,31 @@
+/**:
+  ros__parameters:
+    # Input points have already been levelled around the base_link origin.
+    robot_frame: husky1_base_level
+    use_imu_orientation: false
+    use_sim_time: true
+    # Ground is wheel_radius - wheel_joint_z below the base on level terrain.
+    # This is NOT the original LiDAR mounting height: the adapter moved the origin.
+    lidar_to_ground: -0.13228
+    transform_tolerance: 0.2
+    minX: -40.0
+    maxX: 40.0
+    minY: -40.0
+    maxY: 40.0
+    minZ: -20.0
+    maxZ: 20.0
+    downsample: false
+    downsample_resolution: 0.1
+    # The 17-ring LiDAR needs enough neighbouring returns to fit each patch.
+    # A 1 m grid left small ground fragments classified as obstacles in bank replay.
+    cellSizeX: 1.5
+    cellSizeY: 1.5
+    cellSizeZ: 10.0
+    cellSizeZPhase2: 1.0
+    # The tested riverbank includes a roughly 26-degree ground patch. Allow that
+    # slope through segmentation; this is not a guarantee of safe traversability.
+    slopeThresholdDegrees: 30.0
+    groundInlierThreshold: 0.08
+    centroidSearchRadius: 5.0
+    maxGroundHeightDeviation: 0.3
+    show_benchmark: false

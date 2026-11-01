@@ -82,7 +82,7 @@ private:
     void waitForWaypoint(const std::string &reason);
 
     // Helpers
-    geometry_msgs::msg::PoseStamped getCurrentPose(const std::string &frame_id);
+    geometry_msgs::msg::PoseStamped getCurrentPose(const std::string &frame_id, double max_age = 2.0);
     int costmapValue(const geometry_msgs::msg::PoseStamped &pose) const;
     bool validTargetPose(const geometry_msgs::msg::PoseStamped &pose) const;
     bool validGroundPath(const nav_msgs::msg::Path &path) const;
@@ -132,6 +132,9 @@ private:
 
     double waypoint_spacing_;
     double waypoint_wait_timeout_;
+    // The local costmap's goal transform allows 0.3 seconds, while DWB allows
+    // 0.5 seconds. Leave some margin below the stricter of these two checks.
+    static constexpr double navigation_pose_max_age_ = 0.2;
     double roi_tolerance_;
     int max_chunk_waypoints_;
     int max_chunk_retries_;

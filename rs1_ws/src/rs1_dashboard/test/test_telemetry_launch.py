@@ -148,3 +148,21 @@ def test_dashboard_rejects_its_own_telemetry_port_collisions(repository, monkeyp
         **{conflicting_service: "8000"})
     with pytest.raises(ValueError, match="Dashboard, viewer and bridge need different ports"):
         module.start_dashboard(context)
+
+
+@pytest.mark.parametrize("overrides", [{}, {"show_logs": "false", "log_level": "debug", "stack_log_level": "info"}])
+def test_dashboard_passes_logging_defaults_and_overrides(repository, monkeypatch, overrides):
+    module, context, _ = prepared_launch("dashboard", repository, monkeypatch, **overrides)
+    processes = []
+    original_process = module.ExecuteProcess
+
+    def capture(**kwargs):
+        processes.append(kwargs)
+        return original_process(**kwargs)
+
+    monkeypatch.setattr(module, "ExecuteProcess", capture)
+    module.start_dashboard(context)
+    environment = processes[0]["additional_env"]
+    assert environment["MISSION_SHOW_LOGS"] == overrides.get("show_logs", "true")
+    assert environment["MISSION_LOG_LEVEL"] == overrides.get("log_level", "info")
+    assert environment["MISSION_STACK_LOG_LEVEL"] == overrides.get("stack_log_level", "warn")

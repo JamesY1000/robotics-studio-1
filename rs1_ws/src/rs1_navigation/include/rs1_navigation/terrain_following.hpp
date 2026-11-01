@@ -1,6 +1,9 @@
 #ifndef RS1_NAVIGATION__TERRAIN_FOLLOWING_HPP_
 #define RS1_NAVIGATION__TERRAIN_FOLLOWING_HPP_
 
+#include <vector>
+
+#include "action_msgs/msg/goal_status_array.hpp"
 #include "rclcpp/create_timer.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -16,11 +19,24 @@ public:
 
 private:
 
+  // Keep the node running in both modes. Hover sends zero velocity rather than
+  // stopping publication, so Gazebo does not keep using the last climb command.
+  enum class Mode
+  {
+    HOVER,
+    TERRAIN_FOLLOWING,
+    BACKUP_HOLD_HEIGHT
+  };
+
   // Subscribe to laser scan
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_sub_;
 
   // Subscribe to cmd_vel
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
+
+  // Watch Nav2 itself, so mission, exploration and manually sent goals all work.
+  rclcpp::Subscription<action_msgs::msg::GoalStatusArray>::SharedPtr navigation_status_sub_;
+  rclcpp::Subscription<action_msgs::msg::GoalStatusArray>::SharedPtr backup_status_sub_;
 
   // Publishes combined cmd_vel to /parrot1/cmd_vel_combined, then make gz plugin subscribe to this topic? What else is needed here?
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr combined_vel_pub_;
@@ -28,12 +44,33 @@ private:
   // Ros timer for control rate
   rclcpp::TimerBase::SharedPtr control_timer_;
 
+  // Nav2 retains finished goals in each action's status array. Keep navigation
+  // and backup separate: exploration can back up after navigation has finished.
+  struct ActionState
+  {
+    bool received_goal{false};
+    action_msgs::msg::GoalInfo goal;
+    bool goal_finished{false};
+    bool executing{false};
+    // Only needed for replacements accepted on the same simulation tick.
+    std::vector<action_msgs::msg::GoalInfo> superseded_goals;
+  };
+
   // Callbacks
   void scanCb(const sensor_msgs::msg::LaserScan &msg);
   void cmdVelCb(const geometry_msgs::msg::Twist &msg);
+  void navigationStatusCb(const action_msgs::msg::GoalStatusArray &msg);
+  void backupStatusCb(const action_msgs::msg::GoalStatusArray &msg);
 
   void controlLoop(); // Main control loop
   double computeZVel(double current_height);
+  void setMode(Mode mode);
+  void updateMode();
+  void updateActionState(const action_msgs::msg::GoalStatusArray &msg, ActionState &state);
+
+  Mode mode_{Mode::HOVER};
+  ActionState navigation_state_;
+  ActionState backup_state_;
 
   // We also want some filtering to (maybe delta gradient suddenly too high?) and maybe ignore those as they might be rocks/bushes.
   // This should be called by our combine_cmd_vel method

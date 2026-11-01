@@ -122,11 +122,13 @@ controller_server:
     general_goal_checker:
       stateful: true
       plugin: nav2_controller::SimpleGoalChecker
-      xy_goal_tolerance: 0.5
+      # Stop further inside the mission's 0.5 m radius to allow for pose error.
+      xy_goal_tolerance: 0.3
       yaw_goal_tolerance: 1.57
     FollowPath:
       plugin: dwb_core::DWBLocalPlanner
-      debug_trajectory_details: false
+      # Report why DWB rejects every candidate when navigation gets stuck.
+      debug_trajectory_details: true
       min_vel_x: 0.0
       min_vel_y: 0.0
       max_vel_x: 1.0
@@ -143,12 +145,13 @@ controller_server:
       decel_lim_theta: -3.2
       vx_samples: 7
       vy_samples: 1
-      vtheta_samples: 7
+      vtheta_samples: 31
       sim_time: 2.0
       linear_granularity: 0.05
       angular_granularity: 0.1
       transform_tolerance: 0.5
-      xy_goal_tolerance: 0.5
+      # Keep DWB's final approach consistent with the goal checker above.
+      xy_goal_tolerance: 0.3
       yaw_goal_tolerance: 1.57
       trans_stopped_velocity: 0.25
       short_circuit_trajectory_evaluation: true
@@ -185,8 +188,9 @@ local_costmap:
       width: 10
       height: 10
       resolution: 0.05
-      footprint: "[ [0.5, 0.5], [0.5, -0.5], [-0.5, -0.5], [-0.5, 0.5] ]"
-      footprint_padding: 0.2
+      # footprint: "[ [0.5, 0.5], [0.5, -0.5], [-0.5, -0.5], [-0.5, 0.5] ]"
+      footprint: "[ [0.50, 0.40], [0.50, -0.40], [-0.50, -0.40], [-0.50, 0.40] ]"
+      footprint_padding: 0.1
       plugins:
         - obstacle_layer
         - inflation_layer
@@ -197,26 +201,20 @@ local_costmap:
       obstacle_layer:
         plugin: nav2_costmap_2d::ObstacleLayer
         enabled: true
-        observation_sources: scan points
+        # Ground filtering happens upstream; use the same obstacle scan as SLAM.
+        observation_sources: scan
         scan:
-          topic: /husky1/scan
-          max_obstacle_height: 2.0
+          topic: /husky1/scan_filtered
+          min_obstacle_height: -20.0
+          max_obstacle_height: 20.0
           clearing: true
           marking: true
+          inf_is_valid: false
           data_type: LaserScan
           raytrace_max_range: 20.0
           raytrace_min_range: 0.0
           obstacle_max_range: 10.0
           obstacle_min_range: 0.0
-        points:
-          topic: /husky1/scan/points
-          data_type: PointCloud2
-          min_obstacle_height: 0.1
-          max_obstacle_height: 2.0
-          marking: true
-          clearing: true
-          obstacle_max_range: 3.0
-          raytrace_max_range: 4.0
       static_layer:
         plugin: nav2_costmap_2d::StaticLayer
         map_subscribe_transient_local: true
@@ -240,26 +238,20 @@ global_costmap:
       obstacle_layer:
         plugin: nav2_costmap_2d::ObstacleLayer
         enabled: true
-        observation_sources: scan points
+        # Use SLAM's ground-relative obstacle scan. Do not also mark raw scans.
+        observation_sources: scan
         scan:
-          topic: /husky1/scan
-          max_obstacle_height: 2.0
+          topic: /husky1/scan_filtered
+          min_obstacle_height: -20.0
+          max_obstacle_height: 20.0
           clearing: true
           marking: true
+          inf_is_valid: false
           data_type: LaserScan
           raytrace_max_range: 20.0
           raytrace_min_range: 0.0
           obstacle_max_range: 10.0
           obstacle_min_range: 0.0
-        points:
-          topic: /husky1/scan/points
-          data_type: PointCloud2
-          min_obstacle_height: 0.1
-          max_obstacle_height: 2.0
-          marking: true
-          clearing: true
-          obstacle_max_range: 3.0
-          raytrace_max_range: 4.0
       static_layer:
         plugin: nav2_costmap_2d::StaticLayer
         map_subscribe_transient_local: true
@@ -288,6 +280,8 @@ planner_server:
     GridBased:
       plugin: nav2_smac_planner/SmacPlanner2D
       tolerance: 0.5
+      # Prefer lower-cost paths with more clearance from inflated obstacles.
+      cost_travel_multiplier: 3.0
       allow_unknown: true
 smoother_server:
   ros__parameters:

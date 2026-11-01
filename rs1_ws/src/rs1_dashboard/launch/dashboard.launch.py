@@ -51,6 +51,9 @@ def start_dashboard(context):
         "MISSION_MODE": mode,
         "MISSION_REPO": str(root),
         "MISSION_DATA": str(Path(data_dir).expanduser().resolve()),
+        "MISSION_SHOW_LOGS": value("show_logs"),
+        "MISSION_LOG_LEVEL": value("log_level"),
+        "MISSION_STACK_LOG_LEVEL": value("stack_log_level"),
         # Bare ROS launches use domain 0 and permit network discovery. Prevent
         # direct-Uvicorn convenience defaults from isolating this third terminal.
         "ROS_DOMAIN_ID": os.environ.get("ROS_DOMAIN_ID", "0"),
@@ -86,6 +89,12 @@ def generate_launch_description():
         DeclareLaunchArgument("host", default_value="127.0.0.1",
                               description="HTTP bind address; localhost is recommended."),
         DeclareLaunchArgument("port", default_value="8000", description="HTTP port."),
+        DeclareLaunchArgument("show_logs", default_value="true", choices=["true", "false"],
+                              description="In deploy mode, stream robot and mission logs into this terminal."),
+        DeclareLaunchArgument("log_level", default_value="info", choices=["debug", "info", "warn", "error", "fatal"],
+                              description="Mission, exploration and terrain-following severity for new deployments."),
+        DeclareLaunchArgument("stack_log_level", default_value="warn", choices=["debug", "info", "warn", "error", "fatal"],
+                              description="Supporting ROS stack severity for new deployments, including Nav2 and localisation."),
         DeclareLaunchArgument("telemetry", default_value="true",
                               description="Launch the Lichtblick viewer and read-only bridge; set false when launched separately."),
         DeclareLaunchArgument("telemetry_host", default_value="127.0.0.1",
