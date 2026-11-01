@@ -45,6 +45,8 @@ private:
 
   // Watch Nav2 itself, so mission, exploration and manually sent goals all work.
   rclcpp::Subscription<action_msgs::msg::GoalStatusArray>::SharedPtr navigation_status_sub_;
+  // The boustrophedon sweep is flown by NavigateThroughPoses, not NavigateToPose.
+  rclcpp::Subscription<action_msgs::msg::GoalStatusArray>::SharedPtr through_poses_status_sub_;
   rclcpp::Subscription<action_msgs::msg::GoalStatusArray>::SharedPtr backup_status_sub_;
 
   // Publishes combined cmd_vel to /parrot1/cmd_vel_combined, then make gz plugin subscribe to this topic? What else is needed here?
@@ -70,6 +72,7 @@ private:
   void odomCb(const nav_msgs::msg::Odometry &msg);
   void cmdVelCb(const geometry_msgs::msg::Twist &msg);
   void navigationStatusCb(const action_msgs::msg::GoalStatusArray &msg);
+  void throughPosesStatusCb(const action_msgs::msg::GoalStatusArray &msg);
   void backupStatusCb(const action_msgs::msg::GoalStatusArray &msg);
 
   // Runtime clearance override (e.g. descend below canopy during a sweep).
@@ -85,6 +88,7 @@ private:
 
   Mode mode_{Mode::HOVER};
   ActionState navigation_state_;
+  ActionState through_poses_state_;
   ActionState backup_state_;
 
   // We also want some filtering to (maybe delta gradient suddenly too high?) and maybe ignore those as they might be rocks/bushes.

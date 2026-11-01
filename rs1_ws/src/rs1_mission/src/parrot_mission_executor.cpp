@@ -79,9 +79,20 @@ ParrotMissionExecutorNode::ParrotMissionExecutorNode() : Node("parrot_mission_ex
         throw std::invalid_argument("max_fallback_hops must be non-negative");
     }
 
-    // Direct velocity sweep follower (default below canopy, where the 2D
-    // costmap controller only spins in place).
-    sweep_controller_ = this->declare_parameter<std::string>("sweep_controller", "velocity");
+    // Sweep follower: "nav2" flies the boustrophedon through NavigateThroughPoses,
+    // "velocity" drives the lanes directly with the internal velocity controller.
+    // "velocity" only works with a terrain-following build that follows terrain
+    // without an executing nav2 goal; the hover-mode follower (HOVER drops every
+    // cmd_vel) leaves it stalled, so it is kept as a legacy opt-out only.
+    sweep_controller_ = this->declare_parameter<std::string>("sweep_controller", "nav2");
+    if (sweep_controller_ != "nav2")
+    {
+        RCLCPP_WARN(
+            this->get_logger(),
+            "sweep_controller='%s': the velocity follower is legacy and will not move "
+            "while terrain following is in hover mode. Use 'nav2'.",
+            sweep_controller_.c_str());
+    }
     sweep_control_hz_ = this->declare_parameter<double>("sweep_control_hz", 10.0);
     max_sweep_speed_ = this->declare_parameter<double>("max_sweep_speed", 3.0);
     sweep_speed_gain_ = this->declare_parameter<double>("sweep_speed_gain", 1.2);
@@ -1495,8 +1506,9 @@ void ParrotMissionExecutorNode::beginSweep()
 
     sweep_waypoints_ = poses;
 
-    // Default: fly the lanes directly. The 2D costmap around the canopy is
-    // unreliable, so Nav2's controller only spins in place here.
+    // Nav2 flies the lanes by default now that the parrot obstacle layer keeps
+    // the lidar origin inside the costmap at flight altitude. "velocity" remains
+    // available as an opt-out for tests below the canopy.
     if (sweep_controller_ != "nav2")
     {
         beginVelocitySweep();

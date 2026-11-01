@@ -92,6 +92,15 @@ TerrainFollowingNode::TerrainFollowingNode() : Node("terrain_following_node"),
     std::bind(&TerrainFollowingNode::backupStatusCb, this, std::placeholders::_1)
   );
 
+  // The ROI boustrophedon sweep is a NavigateThroughPoses goal, so follow terrain
+  // for it too - otherwise the sweep runs in HOVER and never descends to the
+  // search clearance the mission executor asks for.
+  through_poses_status_sub_ = this->create_subscription<action_msgs::msg::GoalStatusArray>(
+    "navigate_through_poses/_action/status",
+    rclcpp::QoS(1).reliable().transient_local(),
+    std::bind(&TerrainFollowingNode::throughPosesStatusCb, this, std::placeholders::_1)
+  );
+
   // Allow other nodes (mission executor) to change the held clearance at runtime
   set_clearance_service_ = this->create_service<rs1_interfaces::srv::SetClearance>(
     "set_clearance",
@@ -134,6 +143,12 @@ void TerrainFollowingNode::navigationStatusCb(const action_msgs::msg::GoalStatus
 void TerrainFollowingNode::backupStatusCb(const action_msgs::msg::GoalStatusArray &msg)
 {
   updateActionState(msg, backup_state_);
+  updateMode();
+}
+
+void TerrainFollowingNode::throughPosesStatusCb(const action_msgs::msg::GoalStatusArray &msg)
+{
+  updateActionState(msg, through_poses_state_);
   updateMode();
 }
 
@@ -231,7 +246,7 @@ void TerrainFollowingNode::updateActionState(
 
 void TerrainFollowingNode::updateMode()
 {
-  if (navigation_state_.executing)
+  if (navigation_state_.executing || through_poses_state_.executing)
   {
     setMode(Mode::TERRAIN_FOLLOWING);
   }
@@ -304,6 +319,8 @@ void TerrainFollowingNode::controlLoop()
   // away. A new status message is required before that action can resume.
   if (navigation_state_.executing && navigation_status_sub_->get_publisher_count() == 0)
     navigation_state_.executing = false;
+  if (through_poses_state_.executing && through_poses_status_sub_->get_publisher_count() == 0)
+    through_poses_state_.executing = false;
   if (backup_state_.executing && backup_status_sub_->get_publisher_count() == 0)
     backup_state_.executing = false;
   updateMode();

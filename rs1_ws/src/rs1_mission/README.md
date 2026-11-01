@@ -42,6 +42,18 @@ ros2 launch rs1_mission roi_sampling_viz.launch.py roi_x_min:=0 roi_y_min:=-90 r
 ros2 run rs1_mission test_roi_sampling.py --roi 0 -90 80 10 --timeout 2400
 ```
 
+### What flies the sweep
+
+The lanes are flown by **Nav2** (`NavigateThroughPoses`), not by a bespoke
+velocity controller. Terrain following follows the sweep because it watches the
+`navigate_through_poses` action status as well as `navigate_to_pose`, so the
+search-clearance descent the executor requests via `/parrot1/set_clearance`
+takes effect while the sweep is executing.
+
+`sweep_controller` still accepts `velocity` as a legacy opt-out, but that path
+does not move: terrain following sits in hover mode whenever no Nav2 goal is
+executing, and hover drops every `cmd_vel`.
+
 ### Sweep start: fly in from the nearest corner (default)
 
 No teleport by default. The executor picks the ROI corner nearest the drone and

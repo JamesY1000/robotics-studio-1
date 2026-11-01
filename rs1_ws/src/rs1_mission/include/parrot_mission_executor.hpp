@@ -350,7 +350,7 @@ private:
     int avoid_stuck_ticks_{0};
     int reverse_ticks_{0};
     bool reversing_{false};
-    std::string sweep_controller_{"velocity"};
+    std::string sweep_controller_{"nav2"};
     double sweep_control_hz_{10.0};
     double max_sweep_speed_{1.0};
     double sweep_speed_gain_{0.6};
