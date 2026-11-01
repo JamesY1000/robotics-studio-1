@@ -5,24 +5,144 @@ and conversion of those detections into world-frame tree locations.
 
 ## Pipeline
 
+Two nodes, both **pull-based services** - nothing is published per frame. The
+mission executor drives detection on a timer, so the rate is controlled by the
+consumer, not by the camera.
+
+```mermaid
+flowchart TD
+    subgraph SIM["Ignition Gazebo - v2_forest"]
+        CAM["/parrot1/camera/image<br/>RGB"]
+        DEP["/parrot1/camera/depth/image<br/>32FC1"]
+        SCAN["/parrot1/scan<br/>LaserScan - MIDDLE ring only"]
+        CLD["/parrot1/scan/points<br/>PointCloud2 - all 9 rings"]
+        ODO["/parrot1/odometry<br/>Gazebo ground truth"]
+    end
+
+    subgraph DET["1 DETECTION - yolo_node"]
+        INF["inference<br/>imgsz 640, conf 0.5"]
+    end
+
+    subgraph LOC["2 LOCALISATION - tree_location_node, one YOLO box at a time"]
+        FOL["foliage check<br/>dark fraction in box"]
+        BRG["bearing<br/>from box centre"]
+        RNG["expected range r_box<br/>from box-centre depth pixel"]
+        RING["level ring cluster<br/>seeded on nearest r_box"]
+        CLOUDP["3D cloud column<br/>fallback if ring finds nothing"]
+        BUSHP["bush guard<br/>width + canopy-gap"]
+        CRED["trunk credible<br/>oak width <= 0.8 m"]
+        ANCH["anchor centroid<br/>range + trunk bearing"]
+        DED["per-frame dedup<br/>1.0 m, keep best score"]
+    end
+
+    subgraph AGG["3 AGGREGATION - parrot_mission_executor"]
+        ROIF["ROI box filter"]
+        MERGE["association<br/>nearest within 4.0 m, type-agnostic<br/>score-weighted vote + centroid"]
+        FIN["final dedup 5.5 m<br/>then observations >= 2"]
+    end
+
+    OUT["/parrot1/tree_map<br/>TreeMap, frame parrot1_odom<br/>TRANSIENT_LOCAL"]
+
+    CAM --> INF
+    INF -->|"/yolo/detect"| FOL
+    DEP --> RNG
+    CAM --> FOL
+    ODO --> BRG
+    FOL --> BRG --> RING
+    RNG --> RING
+    SCAN --> RING
+    RING -->|"no echo"| CLOUDP
+    CLD --> CLOUDP
+    RING --> BUSHP
+    CLOUDP --> BUSHP
+    BUSHP --> CRED --> ANCH --> DED
+    DRP["dropped - logged counter"] -.-> FOL
+    DRP -.-> RING
+    DRP -.-> BUSHP
+    DRP -.-> CRED
+    DED -->|"/yolo/process_tree_locations"| ROIF
+    ROIF --> MERGE --> FIN --> OUT
+    OUT --> HUSKY["Husky executor -> CSV database"]
 ```
-  /parrot1/camera/image
-          |
-          v
-   [ yolo_node ]  ------------------>  /yolo/debug_image      (annotated frame)
-          |  /yolo/detect (service)
-          v
-   YoloDetections (class_name, score, left/top/right/bottom)
-          |
-          v
-   [ tree_location_node ]  --------->  /yolo/process_tree_locations (service)
-          |  uses depth + lidar + TF to unproject each box
-          v
-   TreeLocation (tree_type, x, y, z in the world frame)
-          |
-          v
-   [ scripts/map_tree_locations.py ]  ->  /tree_locations/map (MarkerArray)
+
+### Stage 1 - detection (`yolo_node`)
+
+Subscribes the RGB camera and caches `latest_image`; it does **not** detect on
+every frame. `/yolo/detect` (`start_yolo: bool` -> `YoloDetections`) runs the
+backend on whatever the newest frame is and returns
+`class_name, score, left/top/right/bottom` per box, plus an annotated frame on
+`/yolo/debug_image`.
+
+Backend is `pytorch` / `onnx` / `tensorrt` / `auto`. This choice does **not**
+affect accuracy - the ONNX export is numerically identical to PyTorch (max abs
+logit difference 5.8e-4). Class names come from the model: `OAK_TREE`,
+`PINE_TREE`.
+
+### Stage 2 - localisation (`tree_location_node`)
+
+Takes the boxes from `/yolo/process_tree_locations` and runs each one through the
+gate chain below **in this order**, so the logged counters tell you exactly where
+a detection died:
+
+| # | Gate | Reject counter | Uses |
+| --- | --- | --- | --- |
+| 1 | box at least `min_box_pixels` | (silent) | box |
+| 2 | box shows foliage: fraction of pixels with grey < `dark_threshold` (100) at least `min_dark_fraction` (0.25) | `no tree in box` | RGB |
+| 3 | bbox **centre** gives a valid bearing (the canopy centroid sits above an upright trunk) | `no lidar trunk echo` | TF |
+| 4 | a trunk echo exists at that bearing, seeded on the echo nearest `r_box` (the box-centre depth range) | `no lidar trunk echo` | `/parrot1/scan` |
+| 5 | if the ring found nothing, the 3D cloud finds a **vertical column**: z-span at least `cloud_min_column_span_m` (1.0 m) and per-level drift at most `cloud_column_max_spread_m` (0.5 m) | `not a vertical trunk` | `/parrot1/scan/points` |
+| 6 | not a bush: narrowest cross-section at most `trunk_max_width_m` (1.8 m), **and** not much nearer than the surface above it | `bush` | `/parrot1/scan/points` |
+| 7 | trunk is credible: an `OAK_TREE` echo at most `oak_trunk_max_width_m` (0.8 m) - wider means branches only | `branches only` | ring/cloud width |
+
+Survivors are anchored as `base_x, base_y = sensor_origin + r_lidar * (cos, sin)(az_trunk)`,
+i.e. the **lidar** sets the horizontal position, not the depth image - in a dense
+forest the depth image's nearest return is a branch (measured: a branch at
+az -30 deg / 1.9 m while the trunk was at az 0 deg / 5 m). Depth only supplies
+`base_z` from the lowest visible trunk row. Finally, boxes closer than
+`frame_dedup_distance` (1.0 m) within one response collapse to the highest score.
+
+Frames: all positions are in `parrot1_odom`, which equals `world` numerically
+because the EKF fuses the exact Gazebo pose. Sensor poses come from
+`/parrot1/odometry` plus the *static* `base_link -> sensor` TF
+(`use_truth_odometry: true`) - **not** from the EKF/SLAM chain, which corrupts
+after a `set_pose` teleport.
+
+### Stage 3 - aggregation (`parrot_mission_executor`)
+
+The sweep runs a timer at `detection_rate_hz` (1.0) with only one request in
+flight, calling `/yolo/detect` then `/yolo/process_tree_locations`. Each returned
+`TreeLocation` is:
+
+1. **ROI-filtered** - dropped if outside the sweep box + `roi_tree_margin`
+   (0.0). This is what removes trees seen during the inbound transit.
+2. **Associated position-agnostically** to any existing tree within
+   `merge_distance` (4.0 m) *regardless of label*, so per-inference YOLO labels of
+   the same tree aggregate into one score-weighted type vote. The centroid is
+   trunk-anchored, so distinct trees are normally further apart than the gate.
+   Confident detections pull the centroid harder than weak ones.
+
+At the end, `publishTreeMap()` does a final greedy dedup at `final_merge_distance`
+(5.5 m) - most-observed entry first, so wide-canopy oaks seen from both sides
+collapse - then drops anything with `observations < min_observations` (2), because
+a single sighting is usually a bad anchor or a false positive.
+
+Output is `/parrot1/tree_map` (`TreeMap`, frame `parrot1_odom`,
+TRANSIENT_LOCAL); the Husky executor consumes it and writes the CSV database.
+
+### Read the counters, not the node output
+
+Every response logs one line, and the counters are cumulative per response:
+
 ```
+Processed 12 detection(s) -> 3 tree location(s) (0 dropped: no tree in box;
+5 dropped: no lidar trunk echo; 1 dropped: not a vertical trunk;
+2 dropped: bush (too wide / no canopy above); 1 dropped: branches only, no trunk)
+```
+
+A healthy run at search clearance is dominated by `no lidar trunk echo` (boxes
+whose trunk is occluded or out of lidar range). A jump in `bush` means the drone
+is flying low enough to have bushes in view. `--debug` on the node adds a
+per-detection line with the bearing, range and the exact rejection reason.
 
 | Node | Executable | Exposed as |
 | --- | --- | --- |
@@ -32,7 +152,8 @@ and conversion of those detections into world-frame tree locations.
 
 Helper clients: `scripts/test_tree_locations.py` (accuracy test),
 `scripts/visualise_tree_locations.py` (RViz markers / Gazebo poles),
-`scripts/map_tree_locations.py` (interactive map builder).
+`scripts/map_tree_locations.py` (interactive map builder),
+`scripts/measure_tree_geometry.py` (per-tree lidar calibration).
 
 ## Running
 
@@ -237,6 +358,97 @@ absolute path explicitly for clarity.
 * **onnx / tensorrt with an end-to-end export** (`export_onnx.py --e2e`) - NMS and
   a confidence floor are baked into the graph. `iou_threshold` has no effect, and
   `confidence_threshold` cannot go below the `--conf` used at export time.
+
+`config/tree_location.yaml` (trunk confirmation):
+
+| Parameter | Default | Notes |
+| --- | --- | --- |
+| `lidar_topic` | `/parrot1/scan` | Single `LaserScan` = the **middle ring** of the 9-ray lidar, level with the drone. |
+| `lidar_cluster_depth_gap` | `0.3` | A trunk is a short contiguous run of near beams; beams beyond `front + gap` are background. |
+| `lidar_cluster_min_beams` | `2` | Minimum contiguous beams for a valid trunk echo. |
+| `lidar_cluster_max_width_m` | `3.0` | Wider than this is canopy, not a trunk. |
+| `oak_trunk_max_width_m` | `0.8` | An oak echo wider than this is branches/foliage only, so the detection is dropped. Pines are cones and are exempt. |
+| `use_pointcloud` | `true` | Enable the full 3D cloud **fallback** below. |
+| `pointcloud_topic` | `/parrot1/scan/points` | Same sensor, all 9 rings, ±15° vertical fan. |
+| `cloud_max_age_s` | `2.0` | Older than this and the cloud is treated as missing. |
+| `cloud_angle_tolerance` | `0.09` | rad; azimuth sector allowed around the YOLO bearing. |
+| `cloud_depth_gap` | `0.6` | m; points within this of the front surface belong to the trunk. |
+| `cloud_level_bin_m` | `0.5` | m; height bin used by the vertical-column test. |
+| `cloud_column_max_spread_m` | `0.5` | Max std-dev of the per-level lateral centres — a real trunk is a column. |
+| `cloud_min_column_span_m` | `1.0` | m; a trunk spans height, a branch sheet seen edge-on does not. |
+| `trunk_max_width_m` | `1.8` | Bush guard: the narrowest cross-section must be under this. |
+| `bush_sector_rad` | `0.35` | rad (~20°); wide, so a whole 2.5 m bush fits in the measurement sector. |
+| `bush_lateral_gap_m` | `0.3` | m; lateral break separating two different objects. |
+| `canopy_probe_depth_m` | `1.2` | m; how far behind the front the candidate object extends. |
+| `canopy_gap_m` | `0.5` | m; vertical gap above the object before looking for what is above it. |
+| `trunk_canopy_max_gap_m` | `2.5` | m; trunk this much nearer than the surface above it means bush. |
+
+### Why the point cloud exists, and why it is only a fallback
+
+`/parrot1/scan` is a single ring at the drone's own altitude, so it only finds a
+trunk while the drone happens to be flying at trunk height. As soon as the mission
+changes altitude — a duck to 0.8 m passes **under** the trunk, a pop-up to 8-12 m
+goes **over** it — that ring sees nothing and every detection is dropped, exactly
+when the drone most needs to keep mapping.
+
+`/parrot1/scan/points` is the same sensor with all nine rings, so its ±15° vertical
+fan always crosses the trunk whatever the altitude. It is used **only when the ring
+finds nothing**: `_cloud_trunk_at` clusters the points in a narrow azimuth sector
+around the YOLO bearing, then bins them by height and checks that the lateral centre
+of each level stays put (`cloud_column_max_spread_m`) and that the cluster actually
+spans height (`cloud_min_column_span_m`). Making the cloud the *preferred* path was
+tried and is wrong — at cruise altitude it accepts branch sheets the single ring
+correctly rejects, taking location precision from 1.00 to 0.69.
+
+### Why bushes are rejected geometrically, not by the detector
+
+**The model cannot do this job.** `yolo_training/database/model_db.csv` contains
+only two classifications (`OAK_TREE`, `PINE_TREE`), and
+`sample_generator/sample_gen/models/` contains nothing but `trees` - there is no
+bush class and no negative examples anywhere in the training pipeline. A bush is
+therefore pure out-of-distribution input and comes back confidently labelled
+`OAK_TREE`. Retraining is the only way to fix that at the detector; until then
+the filter has to be geometric.
+
+Measured geometry (`rs1_sim/models`, do not re-derive):
+
+| Object | Width | Height |
+| --- | --- | --- |
+| `bush_2` collision cylinder (r 1.25, len 1.5) | **2.5 m** | 1.5 m |
+| `bush_3` collision cylinder (r 1.35, len 2.1) | **2.7 m** | 2.1 m |
+| oak trunk | 0.1-0.8 m | tall |
+| pine cone base | 1.1-1.5 m | tall |
+
+`_cloud_bush_check` runs two tests and drops the detection if either fires:
+
+1. **No narrow column anywhere.** Bin the candidate by height and, at each level,
+   measure the contiguous lateral run straddling the trunk bearing. The
+   *narrowest* cross-section is the test value: a trunk always has a narrow one,
+   a bush has none. Using the narrowest rather than the widest also stops a
+   tree's own canopy (wide, and only slightly nearer than its trunk) from
+   inflating the measurement and rejecting real trees.
+2. **Trunk vs canopy range.** A trunk continues upward into its own canopy, so
+   the nearest surface above it is at a similar range - on an oak the low
+   branches are usually slightly *nearer* than the trunk. A bush is a low blob
+   with only sky or much more distant geometry above it. So *trunk much nearer
+   than the canopy above it* means the "tree" is a foreground blob.
+
+The candidate is gathered in a **much wider sector** (`bush_sector_rad`, ±20°)
+than the trunk search (`cloud_angle_tolerance`, ±5°). This matters: ±5° at 5 m
+is only ±0.45 m of lateral extent, far narrower than a 2.5 m bush, so measuring
+width inside the search sector can never see the bush and the test silently
+never fires. That bug was caught by an offline synthetic test before it ever ran
+in sim.
+
+Validated offline against synthetic geometry (oak, pine, both bushes, an
+occluded bush sliver, and a trunk standing beside a bush) and in sim: location
+precision stayed 1.00 while the guard was rejecting ~50 bush detections.
+
+> **Note:** an earlier bush filter based on tree *height* (`min_tree_height_m`,
+> box-top world z minus the detection's own trunk-base z) was explored but was
+> never committed and is **not** in the tree. Bushes are currently rejected by the
+> two geometric tests above only. If you re-add a height gate, keep it above
+> ~2.6 m - `bush_3` is 2.1 m tall and short trees exist.
 
 ## Measured performance
 

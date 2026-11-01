@@ -100,8 +100,10 @@ the **Telemetry** section is available without an extra terminal. In the dashboa
    Both robots share the selected X/Y; terrain determines their spawn heights.
 2. Select **Spawn robots**. This launches the robot models, bridges,
    localisation, navigation, alignment, coordinator and mission executors.
-3. Wait for readiness, then select an explicit **Point ROI**. Spawning does not
-   start a mission or silently use the coordinator's initial placeholder target.
+3. Wait for readiness, then drag an explicit **ROI box** on the map (or enter
+   both corners). `roi` is the entry corner both robots traverse to; the parrot
+   then sweeps the box. Spawning does not start a mission or silently use the
+   coordinator's initial placeholder target.
 4. Select **Start Mission**. Use **Cancel Mission** to request cancellation.
 5. Once the mission is idle or finished and executor cleanup is complete,
    **Stop robots** stops the deployed robot/mission nodes and removes their

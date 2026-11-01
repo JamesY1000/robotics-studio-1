@@ -98,6 +98,9 @@
       <odom_publish_frequency>20</odom_publish_frequency>
       <odom_frame>${prefix}odom</odom_frame>
       <robot_base_frame>${prefix}base_link</robot_base_frame>
+      <!-- REQUIRED: without 3D the publisher drops pose.position.z (always 0),
+           so the world->base_link TF sits on the ground and nothing can plan. -->
+      <dimensions>3</dimensions>
     </plugin>
   </gazebo>
 

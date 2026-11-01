@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <functional>
+#include <limits>
 #include <stdexcept>
 #include <utility>
 #include <algorithm>
@@ -14,6 +15,10 @@ namespace rs1_navigation
 TerrainFollowingNode::TerrainFollowingNode() : Node("terrain_following_node"),
   received_scan_{false},
   received_cmd_vel_{false},
+  received_odom_{false},
+  latest_z_{0.0},
+  ground_z_est_{std::numeric_limits<double>::quiet_NaN()},
+  last_control_time_{0, 0, RCL_ROS_TIME},
   last_cmd_vel_time_{0, 0, RCL_ROS_TIME}
 {
   // Grab params
@@ -23,6 +28,11 @@ TerrainFollowingNode::TerrainFollowingNode() : Node("terrain_following_node"),
   cmd_vel_timeout_ = declare_parameter<double>("cmd_vel_timeout", 0.25);
   kp_ = declare_parameter<double>("kp", 0.5);
   MAX_VERTICAL_SPEED_ = declare_parameter<double>("max_vertical_speed", 0.5);
+  // Ground-relative control: how fast the ground estimate may RISE (so it
+  // follows a hill but not a tree top) and the closest we may descend to any
+  // surface (ground or branch) below.
+  ground_rise_rate_ = declare_parameter<double>("ground_rise_rate", 0.15);
+  min_clearance_ = declare_parameter<double>("min_clearance", 1.0);
 
 
   // Check valid offset height and control rate
@@ -31,6 +41,12 @@ TerrainFollowingNode::TerrainFollowingNode() : Node("terrain_following_node"),
   }
   if (!std::isfinite(control_rate_hz_) || control_rate_hz_ <= 0.0) {
     throw std::invalid_argument("control_rate_hz must be finite and greater than zero");
+  }
+  if (!std::isfinite(ground_rise_rate_) || ground_rise_rate_ < 0.0) {
+    throw std::invalid_argument("ground_rise_rate must be finite and non-negative");
+  }
+  if (!std::isfinite(min_clearance_) || min_clearance_ <= 0.0) {
+    throw std::invalid_argument("min_clearance must be finite and greater than zero");
   }
 
   // Initialise sub/pubs
@@ -47,6 +63,12 @@ TerrainFollowingNode::TerrainFollowingNode() : Node("terrain_following_node"),
     "cmd_vel", // TODO (james): Store in config file
     cmd_vel_qos,
     std::bind(&TerrainFollowingNode::cmdVelCb, this, std::placeholders::_1)
+  );
+
+  odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
+    "odometry",
+    rclcpp::QoS(10),
+    std::bind(&TerrainFollowingNode::odomCb, this, std::placeholders::_1)
   );
 
   combined_vel_pub_ = this->create_publisher<geometry_msgs::msg::Twist>(
@@ -68,6 +90,14 @@ TerrainFollowingNode::TerrainFollowingNode() : Node("terrain_following_node"),
     "backup/_action/status",
     rclcpp::QoS(1).reliable().transient_local(),
     std::bind(&TerrainFollowingNode::backupStatusCb, this, std::placeholders::_1)
+  );
+
+  // Allow other nodes (mission executor) to change the held clearance at runtime
+  set_clearance_service_ = this->create_service<rs1_interfaces::srv::SetClearance>(
+    "set_clearance",
+    std::bind(
+      &TerrainFollowingNode::setClearanceCb, this,
+      std::placeholders::_1, std::placeholders::_2)
   );
 
   // Create ros timer as main control loop
@@ -232,6 +262,37 @@ void TerrainFollowingNode::setMode(Mode mode)
     RCLCPP_INFO(get_logger(), "Backup executing - holding height during retreat");
 }
 
+void TerrainFollowingNode::odomCb(const nav_msgs::msg::Odometry &msg)
+{
+  received_odom_ = true;
+  latest_z_ = msg.pose.pose.position.z;
+}
+
+void TerrainFollowingNode::setClearanceCb(
+  const std::shared_ptr<rs1_interfaces::srv::SetClearance::Request> request,
+  std::shared_ptr<rs1_interfaces::srv::SetClearance::Response> response)
+{
+  const double requested = static_cast<double>(request->clearance);
+
+  std::lock_guard<std::mutex> lock(clearance_mutex_);
+  const double previous = offset_height_;
+
+  if (!std::isfinite(requested) || requested <= 0.0)
+  {
+    response->success = false;
+    response->message = "clearance must be finite and greater than zero";
+    response->previous_clearance = static_cast<float>(previous);
+    return;
+  }
+
+  offset_height_ = requested;
+  response->success = true;
+  response->message = "target clearance updated";
+  response->previous_clearance = static_cast<float>(previous);
+
+  RCLCPP_INFO(get_logger(), "Target clearance %.2f m -> %.2f m", previous, requested);
+}
+
 void TerrainFollowingNode::controlLoop()
 {
   const auto current_time = now();
@@ -317,15 +378,73 @@ void TerrainFollowingNode::controlLoop()
     return;
   }
 
-  // Compute z velocity, combine it into the cmd_vel and publish
-  combined_vel.linear.z = computeZVel(current_height);
+  // Compute z velocity, combine it into the cmd_vel and publish.
+  if (received_odom_)
+  {
+    // Ground-relative altitude control.  surface_z is the height of whatever is
+    // directly below (ground OR canopy).  Track the running MINIMUM: snap down
+    // instantly when we see something lower (the ground) but let it rise only
+    // slowly (and only while moving horizontally) so a tree/canopy top under the
+    // drone does not drag the estimate upwards.  Flying `offset_height_` above
+    // THIS keeps the drone at trunk height instead of ratcheting up over trees.
+    const double surface_z = latest_z_ - current_height;
+
+    double dt = 0.0;
+    if (last_control_time_.nanoseconds() != 0)
+    {
+      dt = std::clamp((current_time - last_control_time_).seconds(), 0.0, 0.5);
+    }
+    last_control_time_ = current_time;
+
+    if (!std::isfinite(ground_z_est_) || surface_z < ground_z_est_)
+    {
+      ground_z_est_ = surface_z;
+    }
+    else
+    {
+      const bool moving =
+        std::abs(latest_cmd_vel_.linear.x) > 0.05 ||
+        std::abs(latest_cmd_vel_.linear.y) > 0.05;
+      if (moving)
+      {
+        ground_z_est_ = std::min(surface_z, ground_z_est_ + ground_rise_rate_ * dt);
+      }
+    }
+
+    double target_height;
+    {
+      std::lock_guard<std::mutex> lock(clearance_mutex_);
+      target_height = offset_height_;
+    }
+    const double target_z = ground_z_est_ + target_height;
+    double z_vel = std::clamp(kp_ * (target_z - latest_z_), -MAX_VERTICAL_SPEED_, MAX_VERTICAL_SPEED_);
+
+    // Never descend into whatever is directly below (ground or a branch).
+    if (current_height < min_clearance_ && z_vel < 0.0)
+    {
+      z_vel = 0.0;
+    }
+
+    combined_vel.linear.z = z_vel;
+  }
+  else
+  {
+    // No odometry yet: fall back to the legacy clearance-above-nearest-surface
+    // control so altitude is still held.
+    combined_vel.linear.z = computeZVel(current_height);
+  }
   combined_vel_pub_->publish(combined_vel);
 }
 
 double TerrainFollowingNode::computeZVel(double current_height)
 {
   // Compute z velocity - use P controller for now
-  const double error = offset_height_ - current_height;
+  double target_height;
+  {
+    std::lock_guard<std::mutex> lock(clearance_mutex_);
+    target_height = offset_height_;
+  }
+  const double error = target_height - current_height;
   auto z_vel = std::clamp(kp_ * error, -MAX_VERTICAL_SPEED_, MAX_VERTICAL_SPEED_);
 
   return z_vel;

@@ -43,6 +43,26 @@ def generate_launch_description():
             description="ROI z coordinate in roi_frame (metres).",
         ),
         DeclareLaunchArgument(
+            "roi_x_min",
+            default_value="-45.0",
+            description="ROI box minimum x in roi_frame (metres).",
+        ),
+        DeclareLaunchArgument(
+            "roi_x_max",
+            default_value="-35.0",
+            description="ROI box maximum x in roi_frame (metres).",
+        ),
+        DeclareLaunchArgument(
+            "roi_y_min",
+            default_value="35.0",
+            description="ROI box minimum y in roi_frame (metres).",
+        ),
+        DeclareLaunchArgument(
+            "roi_y_max",
+            default_value="45.0",
+            description="ROI box maximum y in roi_frame (metres).",
+        ),
+        DeclareLaunchArgument(
             "log_level",
             default_value="info",
             description="Logging level for all mission nodes.",
@@ -62,6 +82,10 @@ def generate_launch_description():
                 "roi_x": ParameterValue(LaunchConfiguration("roi_x"), value_type=float),
                 "roi_y": ParameterValue(LaunchConfiguration("roi_y"), value_type=float),
                 "roi_z": ParameterValue(LaunchConfiguration("roi_z"), value_type=float),
+                "roi_x_min": ParameterValue(LaunchConfiguration("roi_x_min"), value_type=float),
+                "roi_x_max": ParameterValue(LaunchConfiguration("roi_x_max"), value_type=float),
+                "roi_y_min": ParameterValue(LaunchConfiguration("roi_y_min"), value_type=float),
+                "roi_y_max": ParameterValue(LaunchConfiguration("roi_y_max"), value_type=float),
             }
         ],
         arguments=["--ros-args", "--log-level", log_level],

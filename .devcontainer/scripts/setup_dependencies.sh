@@ -23,7 +23,13 @@ set +u
 source "/opt/ros/${ros_distro}/setup.bash"
 set -u
 
-printf '%s\n' '[1/5] Installing system and ROS dependencies'
+printf '%s\n' '[1/6] Initialising git submodules'
+# explore_lite (rs1_ws/src/extern/m-explore-ros2) and Forest3D are source
+# dependencies. Fetch them before rosdep scans rs1_ws/src so their package.xml
+# files and dependencies are visible to the build.
+git -C "${repo_root}" submodule update --init --recursive
+
+printf '%s\n' '[2/6] Installing system and ROS dependencies'
 if [[ "${EUID}" -eq 0 ]]; then
     elevate=()
 else
@@ -37,10 +43,10 @@ rosdep update --rosdistro "${ros_distro}"
 rosdep install --from-paths "${repo_root}/rs1_ws/src" --ignore-src -r -y \
     --rosdistro "${ros_distro}"
 
-printf '%s\n' '[2/5] Installing the Python dashboard backend'
+printf '%s\n' '[3/6] Installing the Python dashboard backend'
 bash "${repo_root}/.devcontainer/scripts/setup_dashboard_backend.sh"
 
-printf '%s\n' '[3/5] Preparing Node.js and the pinned pnpm package manager'
+printf '%s\n' '[4/6] Preparing Node.js and the pinned pnpm package manager'
 mkdir -p "${tools_dir}"
 node_usable() {
     command -v node >/dev/null 2>&1 && command -v npm >/dev/null 2>&1 &&
@@ -88,13 +94,13 @@ export PATH="${tools_dir}/node_modules/.bin:${PATH}"
 # shellcheck disable=SC2016 # Expand PATH when env.sh is sourced, not now.
 printf 'export PATH=%q:"${PATH}"\n' "${tools_dir}/node_modules/.bin:${node_bin}" > "${tools_dir}/env.sh"
 
-printf '%s\n' '[4/5] Installing frontend dependencies and building the dashboard'
+printf '%s\n' '[5/6] Installing frontend dependencies and building the dashboard'
 cd "${repo_root}/mission_control/frontend"
 # Build tools are devDependencies even though the generated site is production.
 env -u NODE_ENV CI=true pnpm install --frozen-lockfile --prod=false
 env -u NODE_ENV CI=true pnpm build
 
-printf '%s\n' '[5/5] Installing the pinned Lichtblick telemetry viewer'
+printf '%s\n' '[6/6] Installing the pinned Lichtblick telemetry viewer'
 bash "${repo_root}/.devcontainer/scripts/setup_telemetry_viewer.sh"
 
 printf '%s\n' 'Dependencies installed and dashboard assets built.' \

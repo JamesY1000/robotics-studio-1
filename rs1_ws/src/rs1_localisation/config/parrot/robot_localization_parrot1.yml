@@ -9,22 +9,38 @@
     base_link_frame: parrot1_base_link
     world_frame: parrot1_odom
     odom0: odometry
+    # Fuse the odometry POSE (Gazebo ground truth), NOT its twist.  Gazebo's
+    # odometry twist frame does not match robot_localization's body-frame
+    # assumption, so integrating vx,vy,vyaw diverged badly on turn-heavy sweeps
+    # (~100 m / 80 deg error).  The pose is exact, so fusing x,y,z,yaw is
+    # drift-free (and a set_pose teleport is reflected immediately).
+    #
+    # ROLL + PITCH MUST ALSO BE FUSED.  two_d_mode is false (the drone flies at
+    # a real altitude), so roll and pitch are live 3D state variables.  With
+    # them unobserved (false) and the IMU disabled, a set_pose teleport's huge
+    # position/yaw innovation drags roll/pitch through the cross-covariance:
+    # roll drifted to ~105 deg, and once roll crossed 90 deg the Euler-angle
+    # representation flipped yaw to 180 deg (truth was upright).  Fusing the
+    # exact Gazebo orientation keeps roll/pitch pinned to ~0 and yaw correct.
     odom0_config:
-    - false
-    - false
-    - false
-    - false
-    - false
-    - false
-    - true
-    - true
-    - false
-    - false
-    - false
-    - true
-    - false
-    - false
-    - false
+    - true      # x
+    - true      # y
+    - true      # z
+    - true      # roll
+    - true      # pitch
+    - true      # yaw
+    - false     # vx
+    - false     # vy
+    - false     # vz
+    - false     # vroll
+    - false     # vpitch
+    - false     # vyaw
+    - false     # ax
+    - false     # ay
+    - false     # az
+    # IMU fusion disabled: the odometry pose is exact ground truth (incl. yaw).
+    # Mixing an IMU yaw RATE alongside it can bias the fused yaw, so keep the
+    # filter purely pose-driven and drift-free.
     imu0: imu
     imu0_config:
     - false
@@ -38,7 +54,7 @@
     - false
     - false
     - false
-    - true
+    - false
     - false
     - false
     - false

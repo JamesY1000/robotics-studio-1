@@ -23,7 +23,7 @@ class Adapter:
 
     def snapshot(self): return copy.deepcopy(self.data)
     def close(self): self.closed = True
-    async def configure_roi(self, roi): self.calls.append(("roi", roi))
+    async def configure_roi(self, roi, roi_box=None): self.calls.append(("roi", roi))
     async def call(self, kind): self.calls.append(kind)
 
 
@@ -164,7 +164,7 @@ def test_external_restart_during_roi_configuration_prevents_start(terrain, plan,
         m = ExternalSessionManager(terrain, tmp_path, Adapter)
         m.sample_trails()
         adapter = m.adapter
-        async def restart(_):
+        async def restart(_, roi_box=None):
             adapter.data["alignment"]["instance_id"] = "sim-new"
             m.sample_trails()  # Must not destroy the client while a command is in flight.
             assert not adapter.closed and m.adapter is adapter

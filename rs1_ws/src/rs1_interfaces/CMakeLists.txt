@@ -16,14 +16,18 @@ find_package(nav_msgs REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/MissionStatus.msg"
   "msg/BoundingBox.msg"
+  "msg/TreeDBH.msg"
   "msg/TreeLocation.msg"
+  "msg/TreeMap.msg"
   "msg/YoloDetections.msg"
   "action/TraverseToROI.action"
   "action/ExploreToPose.action"
+  "action/SampleROI.action"
   "srv/DetectYolo.srv"
   "srv/ProcessTreeLocations.srv"
   "srv/SetGroundPath.srv"
   "srv/GetCurrentPose.srv"
+  "srv/SetClearance.srv"
   DEPENDENCIES std_msgs geometry_msgs nav_msgs
 )
 

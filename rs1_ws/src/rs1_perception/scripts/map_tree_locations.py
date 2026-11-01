@@ -30,9 +30,8 @@ Typical use::
     # terminal 3 - RViz on the map topic
     rviz2 -d $(ros2 pkg prefix rs1_perception)/share/rs1_perception/config/tree_locations.rviz
 
-    # terminal 4 - fly around
-    ros2 run teleop_twist_keyboard teleop_twist_keyboard \\
-        --ros-args -r cmd_vel:=/parrot1/cmd_vel -p speed:=0.3 -p turn:=0.5
+    # terminal 4 - fly around (keep this on ONE line - it is meant to be
+    ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -r cmd_vel:=/parrot1/cmd_vel -p speed:=0.3 -p turn:=0.5
 
     # terminal 5 - press p to snapshot trees into the map, while still flying
     ros2 run rs1_perception map_tree_locations.py
@@ -47,6 +46,14 @@ as a stop (it zeroes the velocity). So avoid those keys here:
 
 This tool needs an interactive terminal, so run it with ``ros2 run`` rather than
 from a launch file.
+
+If teleop runs but the drone will not move, its ``cmd_vel`` remap did not reach
+the node: teleop then publishes to ``/cmd_vel`` while the bridge only listens on
+``/parrot1/cmd_vel``. Check with ``ros2 topic info -v /parrot1/cmd_vel`` - the
+publisher must be ``/teleop_twist_keyboard``, not the bare ``/cmd_vel`` topic.
+Typical causes: the command was split across lines with a backslash continuation
+that bash did not honour (see the fixed one-line command above), or the
+``--ros-args`` part was dropped when pasting.
 
 RViz shows the map on ``/tree_locations/map`` plus a grey marker at every true tree
 position (read from the world SDF), so a missed tree appears as grey with no
