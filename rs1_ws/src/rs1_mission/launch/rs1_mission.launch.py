@@ -1,7 +1,10 @@
 """Launch the mission coordinator and both robot mission executors."""
 
+from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.conditions import IfCondition
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
@@ -14,6 +17,9 @@ def generate_launch_description():
     log_level = LaunchConfiguration("log_level")
 
     launch_arguments = [
+        DeclareLaunchArgument("joystick", default_value="true"),
+        DeclareLaunchArgument("joystick_device_id", default_value="0"),
+        DeclareLaunchArgument("joystick_device_name", default_value=""),
         DeclareLaunchArgument("roi_frame", default_value="world"),
         DeclareLaunchArgument("session_id", default_value="manual"),
         DeclareLaunchArgument(
@@ -81,7 +87,18 @@ def generate_launch_description():
         arguments=["--ros-args", "--log-level", log_level],
     )
 
+    # Start once per mission stack, including deploy and managed dashboard launches
+    joystick = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            get_package_share_directory("rs1_navigation") + "/launch/joystick.launch.py"),
+        condition=IfCondition(LaunchConfiguration("joystick")),
+        launch_arguments={
+            "device_id": LaunchConfiguration("joystick_device_id"),
+            "device_name": LaunchConfiguration("joystick_device_name"),
+        }.items(),
+    )
+
     return LaunchDescription(
         launch_arguments
-        + [mission_coordinator, parrot_mission_executor, husky_mission_executor]
+        + [mission_coordinator, parrot_mission_executor, husky_mission_executor, joystick]
     )

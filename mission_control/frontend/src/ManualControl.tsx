@@ -1,7 +1,77 @@
 import { useEffect, useRef, useState } from "react";
 import { KeyboardInput, type ManualRobot } from "./keyboard";
 
-export function ManualControl({ robot }: { robot: ManualRobot }) {
+type ManualInput = "keyboard" | "controller";
+
+export function ManualControl({
+  robot,
+  input,
+  controllerConnected,
+  onSelectInput,
+}: {
+  robot: ManualRobot;
+  input?: ManualInput;
+  controllerConnected: boolean;
+  onSelectInput: (input: ManualInput) => void;
+}) {
+  return (
+    <section
+      className="manual-control"
+      aria-label={`Manual control for ${robot}`}
+    >
+      <strong>Manual control: {robot === "husky1" ? "Husky" : "Parrot"}</strong>
+      <div
+        className="manual-control-actions"
+        role="group"
+        aria-label="Manual input device"
+      >
+        <button
+          aria-pressed={input === "keyboard"}
+          disabled={input === "keyboard"}
+          onClick={() => onSelectInput("keyboard")}
+        >
+          Keyboard
+        </button>
+        <button
+          aria-pressed={input === "controller"}
+          disabled={input === "controller"}
+          onClick={() => onSelectInput("controller")}
+        >
+          PS4 controller
+        </button>
+      </div>
+      {input === "keyboard" && <KeyboardControl robot={robot} />}
+      {input === "controller" && (
+        <div role="status">
+          <p>
+            {controllerConnected
+              ? "Controller detected"
+              : "Waiting for controller input"}
+          </p>
+          <p>
+            Connect the PS4 controller to the computer running ROS, using USB or
+            Bluetooth.
+          </p>
+          <p>Release L1, then hold L1 to drive. Release L1 to stop.</p>
+          <p>Left stick up/down: forward/back · Right stick left/right: turn</p>
+          {robot === "parrot1" && (
+            <p>
+              Left stick left/right: sideways · Right stick up/down:
+              ascend/descend
+            </p>
+          )}
+          <p>
+            Keyboard driving is disabled. Controller driving stays available
+            when you leave this page.
+          </p>
+        </div>
+      )}
+      {!input && <p>Waiting for the coordinator's input selection</p>}
+    </section>
+  );
+}
+
+function KeyboardControl({ robot }: { robot: ManualRobot }) {
   const panel = useRef<HTMLDivElement>(null);
   const [connection, setConnection] = useState(0);
   const [ready, setReady] = useState(false);
@@ -115,10 +185,9 @@ export function ManualControl({ robot }: { robot: ManualRobot }) {
     <div
       ref={panel}
       tabIndex={0}
-      className="manual-control"
+      className="keyboard-control"
       aria-label={`Keyboard control for ${robot}`}
     >
-      <strong>Manual control: {robot === "husky1" ? "Husky" : "Parrot"}</strong>
       <p role="status">{message}</p>
       <p>
         <kbd>Space</kbd> Hold to drive · <kbd>W/S</kbd> Forward/back ·{" "}

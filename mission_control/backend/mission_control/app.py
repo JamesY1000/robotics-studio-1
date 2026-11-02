@@ -222,11 +222,13 @@ def check_manual_control(manager, adapter, robot):
     mission = manager.control_status()
     if mission.get("state") != "manual_assistance" or mission.get("control_mode") != robot:
         raise Conflict("This robot is not selected for manual control")
+    if mission.get("manual_input") != "keyboard":
+        raise Conflict("Select Keyboard input before connecting keyboard control")
     return mission["instance_id"], mission.get("control_revision", 0)
 
 
 @app.post("/api/mission/control/{operation}")
-async def mission_control(operation: Literal["manual_husky", "manual_parrot", "resume"]):
+async def mission_control(operation: Literal["manual_husky", "manual_parrot", "resume", "input_keyboard", "input_controller"]):
     await stop_teleop()
     return await app.state.manager.control(operation)
 

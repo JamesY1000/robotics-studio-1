@@ -12,7 +12,15 @@ class ManualAdapter(Adapter):
         super().__init__()
         self.commands = []
         self.stale = False
-        self.data["mission"].update(state="manual_assistance", control_mode="husky1", control_revision=1)
+        self.data["mission"].update(state="manual_assistance", control_mode="husky1", control_revision=1,
+                                   manual_input="keyboard", input_revision=0)
+
+    async def call(self, kind):
+        await super().call(kind)
+        if kind.startswith("input_"):
+            self.data["mission"]["manual_input"] = kind.removeprefix("input_")
+            self.data["mission"]["input_revision"] += 1
+            self.data["mission"]["control_revision"] += 1
 
     def snapshot(self):
         result = super().snapshot()
@@ -82,7 +90,7 @@ def test_keyboard_single_owner_disconnect_and_resume_send_zero(dashboard):
             socket.receive_json()
 
 
-@pytest.mark.parametrize("change", ["mode", "revision", "stale", "invalid", "timeout"])
+@pytest.mark.parametrize("change", ["mode", "revision", "input", "stale", "invalid", "timeout"])
 def test_keyboard_revokes_old_input(dashboard, change):
     client, adapter = dashboard
     with client.websocket_connect("/api/teleop/husky1") as socket:
@@ -93,6 +101,8 @@ def test_keyboard_revokes_old_input(dashboard, change):
         elif change == "revision":
             # A switch away and back must also require a new keyboard connection
             adapter.data["mission"]["control_revision"] += 2
+        elif change == "input":
+            adapter.data["mission"]["manual_input"] = "controller"
         elif change == "stale":
             adapter.stale = True
         if change != "timeout":
@@ -101,6 +111,28 @@ def test_keyboard_revokes_old_input(dashboard, change):
             socket.receive_json()
     assert len(adapter.commands) == 2
     assert adapter.commands[-1] == ("husky1", None)
+
+
+def test_input_switch_disconnects_keyboard_and_requires_explicit_reconnect(dashboard):
+    client, adapter = dashboard
+    with client.websocket_connect("/api/teleop/husky1") as socket:
+        socket.send_json({"enabled": True, "x": 1})
+        socket.receive_json()
+        response = client.post("/api/mission/control/input_controller")
+        assert response.status_code == 200
+        assert response.json()["ros"]["mission"]["manual_input"] == "controller"
+        assert adapter.commands[-1] == ("husky1", None)
+        with pytest.raises(WebSocketDisconnect):
+            socket.receive_json()
+    with pytest.raises(WebSocketDisconnect):
+        with client.websocket_connect("/api/teleop/husky1"):
+            pass
+    assert client.post("/api/mission/control/input_keyboard").status_code == 200
+    with client.websocket_connect("/api/teleop/husky1") as socket:
+        socket.send_json({"enabled": False})
+        assert socket.receive_json() == {"ok": True}
+    adapter.data["mission"]["state"] = "executing"
+    assert client.post("/api/mission/control/input_controller").status_code == 409
 
 
 def test_manual_assistance_remains_active_and_can_be_cancelled(dashboard):

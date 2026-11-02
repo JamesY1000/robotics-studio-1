@@ -30,7 +30,7 @@ add_executable(velocity_selector
 target_compile_features(velocity_selector PRIVATE cxx_std_17)
 
 ament_target_dependencies(terrain_following rclcpp action_msgs geometry_msgs sensor_msgs)
-ament_target_dependencies(velocity_selector rclcpp geometry_msgs rs1_interfaces)
+ament_target_dependencies(velocity_selector rclcpp geometry_msgs sensor_msgs rs1_interfaces)
 
 # Install cpp executables
 install(TARGETS
@@ -50,6 +50,11 @@ install(DIRECTORY
 
 if(BUILD_TESTING)
   find_package(ament_cmake_pytest REQUIRED)
+  ament_add_pytest_test(test_controller_input test/test_controller_input.py
+    TIMEOUT 90
+    ENV VELOCITY_SELECTOR_EXECUTABLE=$<TARGET_FILE:velocity_selector>
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
+  )
   ament_add_pytest_test(test_velocity_selector test/test_velocity_selector.py
     TIMEOUT 60
     ENV VELOCITY_SELECTOR_EXECUTABLE=$<TARGET_FILE:velocity_selector>

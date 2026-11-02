@@ -188,7 +188,7 @@ are saved under the deployment's backend data directory in `sessions/<id>/`,
 including `plan.json` and `ros.log`. The default data directory is
 `.mission-control/deploy`.
 
-## Manual assistance and keyboard control
+## Manual assistance, keyboard and PS4 control
 
 During an active mission, choose **Manual Husky** or **Manual Parrot** at any
 time. An executor failure or rejected goal also selects manual assistance for
@@ -196,7 +196,7 @@ the affected robot automatically. The coordinator keeps the ROI and cancels the
 current attempts; the other robot holds still. Localisation, mapping, Nav2 and
 terrain following stay running.
 
-1. In Mission Control, select **Connect keyboard** in the manual-control panel
+1. In Mission Control, select **Keyboard**, then **Connect keyboard** in the manual-control panel
 2. Hold **Space** and use **W/S** to move forward/back or **A/D** to turn
 3. For Parrot, use **Q/E** to move sideways and **R/F** to move up/down
 4. Release **Space**, press **Escape**, or click **Stop keyboard control** to stop
@@ -208,6 +208,62 @@ drive. Only one dashboard keyboard connection can control a robot at a time.
 The browser sends fresh input at 20 Hz; the selector stops after 0.3 seconds
 without a command or 1.5 seconds without coordinator status. Slow keyboard
 connections disconnect rather than accumulating movement commands.
+
+For a PS4 controller, connect a micro-USB data cable to the **computer running
+ROS**, or pair it there over Bluetooth using Share + PS until the light flashes.
+This ROS-native input does not read a controller attached only to a remote
+browser computer. The devcontainer already mounts `/dev`; its user still needs
+permission to read the controller's input device.
+
+The mission launch automatically starts `joy`'s `game_controller_node` and
+`teleop_twist_joy`. No extra terminal is needed. Choose **PS4 controller** in the
+manual panel, release **L1**, then hold **L1** to drive:
+
+| Control | Husky | Parrot |
+|---|---|---|
+| Left stick up/down | Forward/back | Forward/back |
+| Left stick left/right | Ignored | Sideways |
+| Right stick left/right | Turn | Turn |
+| Right stick up/down | Ignored | Ascend/descend |
+
+Release L1 to stop. The dashboard shows whether fresh controller input is
+arriving. SDL provides the standard button mapping; the configured deadzone is
+10%, with limits of 0.5 m/s horizontally, 0.3 m/s vertically and 0.7 rad/s turning.
+The mapping lives in `rs1_navigation/config/ps4_teleop.yaml`.
+
+**Only one manual input is selected at a time.** Choosing PS4 disconnects the
+dashboard keyboard connection. Choosing Keyboard makes the C++ selectors ignore
+controller commands, including held sticks. Switching robot/input or recovering
+from a controller/converter outage requires releasing and pressing L1 again.
+The selector checks both fresh Joy messages and fresh controller Twist commands.
+Unlike keyboard driving, controller driving continues when the browser closes
+or changes tabs; release L1 to stop, or select Keyboard to disable the controller.
+Neither input can affect an autonomous mission.
+
+For an existing container, install missing joystick dependencies and rebuild the
+ROS workspace and dashboard before restarting their launches:
+
+```bash
+sudo apt-get update
+sudo apt-get install ros-humble-joy ros-humble-teleop-twist-joy
+```
+
+These dependencies are also declared in `rs1_navigation/package.xml`, so the
+normal rosdep/setup script installs them on new setups. To diagnose detection,
+run these in a sourced devcontainer terminal using the mission's ROS domain:
+
+```bash
+ros2 run joy joy_enumerate_devices
+ros2 topic echo /teleop/joy
+```
+
+If several controllers are attached, `rs1_mission.launch.py` accepts
+`joystick_device_id:=0` or `joystick_device_name:=<reported name>`; a nonempty
+name takes precedence. `joystick:=false` disables the bundled driver/converter.
+The standalone `ros2 launch rs1_navigation joystick.launch.py` accepts
+`device_id` and `device_name`; use it only when the bundled instance is disabled.
+The [joy driver documentation](https://github.com/ros-drivers/joystick_drivers/tree/ros2/joy)
+describes SDL mappings and Linux device access.
 
 Resume rechecks localisation transforms and executor availability, then retries
 the **whole traversal to the same ROI from the current robot positions**. Maps
@@ -225,10 +281,13 @@ autonomous mission.
 
 For ROS debugging, the same controls are Trigger services:
 `/mission/manual_husky`, `/mission/manual_parrot`, and `/mission/resume`.
-Manual Twist publishers must use `/husky1/cmd_vel_manual` or
-`/parrot1/cmd_vel_manual`. The selectors are the only intended publishers to
-each robot's `cmd_vel_controlled` bridge input. A future joystick node can use
-these same manual topics. Standalone Nav2 still works before any coordinator
+`/mission/input_keyboard` and `/mission/input_controller` choose the manual
+source while assistance is active. Keyboard Twist publishers use
+`/husky1/cmd_vel_manual` or `/parrot1/cmd_vel_manual`; the controller converter
+uses `/teleop/cmd_vel_controller`, with `/teleop/joy` supplying its enable-button
+state and heartbeat. Keep those inputs separate. The selectors are the only
+intended publishers to each robot's `cmd_vel_controlled` bridge input.
+Standalone Nav2 still works before any coordinator
 status has been received; once a coordinator is observed, its mode and heartbeat
 gate movement.
 

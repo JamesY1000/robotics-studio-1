@@ -31,7 +31,8 @@ def test_assistance_retry_and_cancel(failure, tmp_path, monkeypatch):
     node.create_subscription(MissionStatus, '/mission/status', statuses.append,
                              QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL))
     services = {name: node.create_client(Trigger, '/mission/' + name)
-                for name in ('start', 'resume', 'cancel', 'manual_husky', 'manual_parrot')}
+                for name in ('start', 'resume', 'cancel', 'manual_husky', 'manual_parrot',
+                             'input_keyboard', 'input_controller')}
     servers = []
     for robot in goals:
         async def execute(handle, robot=robot):
@@ -92,6 +93,8 @@ def test_assistance_retry_and_cancel(failure, tmp_path, monkeypatch):
                 '-p', 'use_sim_time:=false', '-p', 'roi_x:=8.0', '-p', 'roi_y:=3.0',
             ], stdout=log, stderr=subprocess.STDOUT)
         until(lambda: all(client.service_is_ready() for client in services.values()) and statuses, 10)
+        assert statuses[-1].manual_input == 'keyboard'
+        assert not call('input_controller').success
         # Initial TF discovery can finish after service discovery
         deadline = time.monotonic() + 5
         while not call('start').success:
@@ -112,6 +115,13 @@ def test_assistance_retry_and_cancel(failure, tmp_path, monkeypatch):
             # A late success while stopping must not complete the mission
             finish(other, 'succeed')
             until(lambda: state('manual_assistance', True))
+
+        assert call('input_controller').success
+        until(lambda: statuses[-1].manual_input == 'controller')
+        revision = statuses[-1].input_revision
+        assert call('input_keyboard').success
+        until(lambda: statuses[-1].manual_input == 'keyboard')
+        assert statuses[-1].input_revision > revision
 
         # Stale localisation rejects Resume but keeps assistance and the saved ROI
         tf_lag = 4.0

@@ -145,6 +145,14 @@ MissionCoordinatorNode::MissionCoordinatorNode() : Node("mission_coordinator_nod
         "/mission/resume", std::bind(&MissionCoordinatorNode::resumeMissionCb,
             this, std::placeholders::_1, std::placeholders::_2));
 
+    // Keep input ownership in ROS so keyboard and controller publishers cannot compete
+    keyboard_input_service_ = create_service<std_srvs::srv::Trigger>(
+        "/mission/input_keyboard", std::bind(&MissionCoordinatorNode::manualInputCb,
+            this, "keyboard", std::placeholders::_1, std::placeholders::_2));
+    controller_input_service_ = create_service<std_srvs::srv::Trigger>(
+        "/mission/input_controller", std::bind(&MissionCoordinatorNode::manualInputCb,
+            this, "controller", std::placeholders::_1, std::placeholders::_2));
+
     RCLCPP_INFO(this->get_logger(), "Mission coordinator initialised to IDLE");
 
 }
@@ -514,6 +522,7 @@ bool MissionCoordinatorNode::startTraverseToROI()
     mission_state_ = MissionState::TRAVERSINGTOROI;
     message_ = "Traversal to ROI; sampling and return-home are not implemented";
     control_mode_ = "auto";
+    ++input_revision_;
     parrot_stage_ = "Waiting";
     husky_stage_ = "Waiting";
     publishStatus();
@@ -630,6 +639,8 @@ void MissionCoordinatorNode::enterManualAssistance(Robot robot, const std::strin
 {
     mission_state_ = MissionState::MANUAL_ASSISTANCE;
     control_mode_ = robot == Robot::Husky ? "husky1" : "parrot1";
+    // A quick retry followed by another failure must not reuse a held controller input
+    ++input_revision_;
     message_ = message + ". Manual assistance selected for " + control_mode_ +
         "; reposition the robot, then select Resume";
     RCLCPP_WARN(this->get_logger(), "%s", message_.c_str());
@@ -669,6 +680,24 @@ void MissionCoordinatorNode::resumeMissionCb(
 
     // Failed readiness checks leave manual mode selected and explain why Resume was rejected
     startMissionCb(request, response);
+}
+
+void MissionCoordinatorNode::manualInputCb(const std::string &input,
+    const std::shared_ptr<std_srvs::srv::Trigger::Request>,
+    std::shared_ptr<std_srvs::srv::Trigger::Response> response)
+{
+    response->success = false;
+    if (mission_state_ != MissionState::MANUAL_ASSISTANCE)
+    {
+        response->message = "Select manual assistance before choosing an input";
+        return;
+    }
+
+    manual_input_ = input;
+    ++input_revision_;
+    publishStatus();
+    response->success = true;
+    response->message = input + " selected; release the enable button before driving";
 }
 
 void MissionCoordinatorNode::cancelTraversalToROI(Robot robot)
@@ -735,6 +764,8 @@ void MissionCoordinatorNode::publishStatus()
     status.husky_stage = husky_stage_;
     status.message = message_;
     status.control_mode = control_mode_;
+    status.manual_input = manual_input_;
+    status.input_revision = input_revision_;
     status.cleanup_complete = !traversalPending();
     status_pub_->publish(status);
 }

@@ -2,6 +2,7 @@
 #define RS1_MISSION__MISSION_COORDINATOR_HPP_
 
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
@@ -64,6 +65,9 @@ private:
         std::shared_ptr<std_srvs::srv::Trigger::Response> response);
     void resumeMissionCb(const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
         std::shared_ptr<std_srvs::srv::Trigger::Response> response);
+    void manualInputCb(const std::string &input,
+        const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
+        std::shared_ptr<std_srvs::srv::Trigger::Response> response);
 
     // Action callbacks
     void traverseToROIGoalResponseCb(Robot robot,
@@ -108,6 +112,8 @@ private:
     std::string instance_id_;
     geometry_msgs::msg::PoseStamped executor_roi_;
     std::string control_mode_{"hold"};
+    std::string manual_input_{"keyboard"};
+    uint64_t input_revision_{0};
     bool traversalPending() const;
     void enterManualAssistance(Robot robot, const std::string &message);
     void cancelTraversalToROI(Robot robot);
@@ -135,6 +141,8 @@ private:
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr manual_husky_service_;
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr manual_parrot_service_;
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr resume_mission_service_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr keyboard_input_service_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr controller_input_service_;
 
     // ROI visualisation
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr roi_marker_pub_;

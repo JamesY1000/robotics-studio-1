@@ -24,7 +24,7 @@ def test_command_ownership(robot, tmp_path):
     manual_pub = node.create_publisher(Twist, 'cmd_vel_manual', 1)
     received = []
     node.create_subscription(Twist, 'cmd_vel_controlled', received.append, 10)
-    status = MissionStatus(instance_id='test', state='executing', control_mode='auto')
+    status = MissionStatus(instance_id='test', state='executing', control_mode='auto', manual_input='keyboard')
     automatic = Twist()
     automatic.linear.x = 0.2
     manual = Twist()

@@ -1314,7 +1314,7 @@ hr {
   border-radius: 8px;
   background: #fffaf0;
 }
-.manual-control:focus {
+.keyboard-control:focus {
   outline: 3px solid #2563eb;
   outline-offset: 2px;
 }
@@ -1325,6 +1325,14 @@ hr {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  margin-top: 10px;
+}
+.manual-control-actions button[aria-pressed="true"] {
+  background: #2e654c;
+  border-color: #2e654c;
+  color: #fff;
+  opacity: 1;
+  cursor: default;
 }
 .manual-control kbd {
   font-family: inherit;

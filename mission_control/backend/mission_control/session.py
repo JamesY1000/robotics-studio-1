@@ -105,11 +105,14 @@ class SessionManager:
         return mission
 
     async def control(self, operation):
-        if operation not in ("manual_husky", "manual_parrot", "resume"):
+        if operation not in ("manual_husky", "manual_parrot", "resume", "input_keyboard", "input_controller"):
             raise ValueError("Unknown mission control operation")
         async with self.lock:
             mission = self.control_status()
-            if operation == "resume":
+            if operation.startswith("input_"):
+                if mission.get("state") != "manual_assistance":
+                    raise Conflict("Select manual assistance before choosing an input")
+            elif operation == "resume":
                 if mission.get("state") != "manual_assistance":
                     raise Conflict("Mission is not in manual assistance")
                 if not mission.get("cleanup_complete"):

@@ -486,6 +486,8 @@ export default function App() {
       | "stop"
       | "manual_husky"
       | "manual_parrot"
+      | "input_keyboard"
+      | "input_controller"
       | "resume",
   ) => {
     setBusy(true);
@@ -494,6 +496,8 @@ export default function App() {
       const controlAction = [
         "manual_husky",
         "manual_parrot",
+        "input_keyboard",
+        "input_controller",
         "resume",
       ].includes(action);
       const next = await api<State>(
@@ -733,8 +737,17 @@ export default function App() {
                   " Previous navigation is still stopping; manual control is available while you wait."}
               </div>
               <ManualControl
-                key={`${state?.ros.mission?.instance_id}:${manualRobot}`}
+                key={`${state?.ros.mission?.instance_id}:${manualRobot}:${state?.ros.mission?.input_revision}`}
                 robot={manualRobot}
+                input={state?.ros.mission?.manual_input}
+                controllerConnected={!!state?.ros.controller?.connected}
+                onSelectInput={(input) =>
+                  act(
+                    input === "keyboard"
+                      ? "input_keyboard"
+                      : "input_controller",
+                  )
+                }
               />
             </>
           )}

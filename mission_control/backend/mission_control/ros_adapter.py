@@ -42,6 +42,7 @@ class RosAdapter:
         from rs1_interfaces.action import TraverseToROI, ExploreToPose
         from nav2_msgs.action import NavigateToPose, NavigateThroughPoses, ComputePathToPose
         from geometry_msgs.msg import Twist
+        from sensor_msgs.msg import Joy
 
         self.context = Context()
         rclpy.init(context=self.context)
@@ -58,7 +59,7 @@ class RosAdapter:
         self.start_client = self.node.create_client(Trigger, "/mission/start")
         self.cancel_client = self.node.create_client(Trigger, "/mission/cancel")
         self.command_clients = {"start": self.start_client, "cancel": self.cancel_client}
-        for operation in ("manual_husky", "manual_parrot", "resume"):
+        for operation in ("manual_husky", "manual_parrot", "resume", "input_keyboard", "input_controller"):
             self.command_clients[operation] = self.node.create_client(Trigger, f"/mission/{operation}")
         self.twist_type = Twist
         self.manual_publishers = {robot: self.node.create_publisher(Twist, f"/{robot}/cmd_vel_manual", 1)
@@ -78,6 +79,7 @@ class RosAdapter:
         self.node.create_subscription(String, "/mission/alignment", self.on_alignment, latched)
         self.node.create_subscription(String, "/simulation/session", self.on_world, latched)
         self.node.create_subscription(MissionStatus, "/mission/status", self.on_mission, latched)
+        self.node.create_subscription(Joy, "/teleop/joy", self.on_joy, rclpy.qos.qos_profile_sensor_data)
         self.node.create_timer(0.2, self.poll)
         self.node.create_timer(1.0, self.poll_lifecycle, clock=rclpy.clock.Clock())
         self.executor = SingleThreadedExecutor(context=self.context)
@@ -108,14 +110,20 @@ class RosAdapter:
         with self.lock:
             previous = self.data["mission"]
             self.data["mission"] = {key: getattr(msg, key) for key in (
-                "session_id", "instance_id", "state", "parrot_stage", "husky_stage", "message", "cleanup_complete", "control_mode")}
+                "session_id", "instance_id", "state", "parrot_stage", "husky_stage", "message", "cleanup_complete",
+                "control_mode", "manual_input", "input_revision")}
             # Invalidate old keyboard connections even if the mode changes back between dashboard polls
             changed = any(previous.get(key) != self.data["mission"][key]
-                          for key in ("instance_id", "state", "control_mode"))
+                          for key in ("instance_id", "state", "control_mode", "manual_input", "input_revision"))
             self.data["mission"]["control_revision"] = previous.get("control_revision", 0) + int(changed)
             self.data["mission"]["roi"] = {"frame_id": msg.roi.header.frame_id,
                 "x": msg.roi.pose.position.x, "y": msg.roi.pose.position.y, "z": msg.roi.pose.position.z}
             self.data["mission_at"] = time.monotonic()
+
+    def on_joy(self, msg):
+        # Presence is only a dashboard hint - the selectors enforce their own input timeout
+        with self.lock:
+            self.data["controller_at"] = time.monotonic() if len(msg.buttons) > 9 and len(msg.axes) >= 4 else 0
 
     def poll_lifecycle(self):
         from lifecycle_msgs.srv import GetState
@@ -167,6 +175,7 @@ class RosAdapter:
             current = [entry for entry, at in self.worlds.values() if time.monotonic()-at < 3]
             value["world"] = {**copy.deepcopy(current[-1]), "fresh": True, "conflict": len(current) > 1} if current else {"fresh": False}
         wall = time.monotonic()
+        value["controller"] = {"connected": wall-value.get("controller_at", 0) < 0.5}
         value["checks"]["clock"] = wall-self.clock_changed_at < 2
         for robot in value["robots"].values():
             robot["fresh"] = robot["fresh"] and value["checks"]["clock"]
