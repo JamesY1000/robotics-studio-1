@@ -151,9 +151,7 @@ per-detection line with the bearing, range and the exact rejection reason.
 | Shared TF (simulation-owned) | `rs1_alignment/alignment` | `/tf`, `/tf_static` |
 
 Helper clients: `scripts/test_tree_locations.py` (accuracy test),
-`scripts/visualise_tree_locations.py` (RViz markers / Gazebo poles),
-`scripts/map_tree_locations.py` (interactive map builder),
-`scripts/measure_tree_geometry.py` (per-tree lidar calibration).
+`scripts/visualise_tree_locations.py` (RViz markers / Gazebo poles).
 
 ## Running
 

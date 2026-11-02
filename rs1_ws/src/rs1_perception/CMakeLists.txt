@@ -26,8 +26,6 @@ install(
     scripts/test_tree_locations.py
     scripts/test_yolo_backend.py
     scripts/visualise_tree_locations.py
-    scripts/map_tree_locations.py
-    scripts/measure_tree_geometry.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
