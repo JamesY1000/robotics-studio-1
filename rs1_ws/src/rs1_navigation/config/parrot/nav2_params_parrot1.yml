@@ -123,10 +123,7 @@ controller_server:
     general_goal_checker:
       stateful: true
       plugin: nav2_controller::SimpleGoalChecker
-      # Must be at least the planner's `tolerance`: the planner may legally end
-      # the plan up to `tolerance` short of the goal, and a goal checker tighter
-      # than that would never declare success.
-      xy_goal_tolerance: 1.0
+      xy_goal_tolerance: 0.5
       yaw_goal_tolerance: 1.57
     FollowPath:
       plugin: dwb_core::DWBLocalPlanner
@@ -217,23 +214,23 @@ local_costmap:
       #     obstacle_max_range: 10.0
       #     obstacle_min_range: 0.0
 
-      # 2D layer, NOT a VoxelLayer.  This is a FLYING robot and parrot1_odom
-      # carries the world z datum, so the lidar ring sits at the drone's ABSOLUTE
-      # altitude (~8 m at spawn, ~2-12 m while sweeping), not at z~0.  The old
-      # VoxelLayer grid was origin_z -0.4 over 12 * 0.1 m -> -0.40..0.75, so every
-      # scan originated outside the grid: Nav2 spammed "Sensor origin ... is out of
-      # map bounds" and could never raytrace.  A 2D layer needs no z grid at all,
-      # which also keeps the global costmap from allocating a world-sized voxel
-      # array.
       obstacle_layer:
-        plugin: nav2_costmap_2d::ObstacleLayer
+        plugin: nav2_costmap_2d::VoxelLayer
         enabled: true
+        publish_voxel_map: false
         footprint_clearing_enabled: true
         combination_method: 1
 
-        # Height band is deliberately wide: the only source is the horizontal
-        # lidar ring, which never returns ground points, so it must not be
-        # filtered out as the drone changes altitude.
+        # Assumes base_link Z is approximately 0 in this costmap's frame.
+        origin_z: -0.4
+        z_resolution: 0.2
+        z_voxels: 16
+
+        min_obstacle_height: -0.4
+        max_obstacle_height: 2.0
+        mark_threshold: 0
+        unknown_threshold: 15
+
         observation_sources: "scan cloud_mark cloud_clear"
 
         # Horizontal scan
@@ -244,26 +241,26 @@ local_costmap:
           marking: true
           clearing: true
           inf_is_valid: true
-          min_obstacle_height: -50.0
-          max_obstacle_height: 50.0
+          min_obstacle_height: -0.4
+          max_obstacle_height: 2.0
           obstacle_min_range: 0.0
           obstacle_max_range: 10.0
           raytrace_min_range: 0.0
           raytrace_max_range: 20.0
 
-        # Mark obstacles at the drone's current flight height
+        # Mark obstacles within the drone's flight-height band
         cloud_mark:
           topic: /parrot1/scan/points
           data_type: PointCloud2
           expected_update_rate: 1.0
           marking: true
           clearing: false
-          min_obstacle_height: -50.0
-          max_obstacle_height: 50.0
+          min_obstacle_height: -0.4
+          max_obstacle_height: 2.0
           obstacle_min_range: 0.0
           obstacle_max_range: 10.0
 
-        # Clearing uses every endpoint so stale marks get raytraced away
+        # Retain distant/higher/lower endpoints for 3D ray clearing
         cloud_clear:
           topic: /parrot1/scan/points
           data_type: PointCloud2
@@ -296,19 +293,42 @@ global_costmap:
         - static_layer
         - obstacle_layer
         - inflation_layer
+      # obstacle_layer:
+      #   # plugin: nav2_costmap_2d::ObstacleLayer
+      #   plugin: nav2_costmap_2d::VoxelLayer # Use voxels for 3D lidar
+      #   enabled: true
+      #   observation_sources: scan
+      #   scan:
+      #     # Costmap nodes have their own nested namespace; use the robot's scan topic.
+      #     topic: /parrot1/scan
+      #     expected_update_rate: 1.0 # Maximum time between scans in seconds (lidar: 3 Hz).
+      #     max_obstacle_height: 2.0
+      #     clearing: true
+      #     marking: true
+      #     data_type: LaserScan
+      #     inf_is_valid: true # Enable for now to allow costmap to use blank scans
+      #     raytrace_max_range: 20.0
+      #     raytrace_min_range: 0.0
+      #     obstacle_max_range: 10.0
+      #     obstacle_min_range: 0.0
 
-      # 2D layer, NOT a VoxelLayer, for the same reason as the local costmap:
-      # parrot1_map carries the world z datum, so a -0.4..0.75 voxel grid never
-      # contains the lidar origin.  A 2D layer also avoids allocating a
-      # world-sized voxel array for the whole map.
       obstacle_layer:
-        plugin: nav2_costmap_2d::ObstacleLayer
+        plugin: nav2_costmap_2d::VoxelLayer
         enabled: true
+        publish_voxel_map: false
         footprint_clearing_enabled: true
         combination_method: 1
 
-        # The only source is the horizontal lidar ring, which never returns
-        # ground points, so a wide band is safe at any flight altitude.
+        # Assumes base_link Z is approximately 0 in this costmap's frame.
+        origin_z: -0.4
+        z_resolution: 0.2
+        z_voxels: 16
+
+        min_obstacle_height: -0.4
+        max_obstacle_height: 2.0
+        mark_threshold: 0
+        unknown_threshold: 15
+
         observation_sources: "scan cloud_mark cloud_clear"
 
         # Horizontal scan
@@ -319,26 +339,26 @@ global_costmap:
           marking: true
           clearing: true
           inf_is_valid: true
-          min_obstacle_height: -50.0
-          max_obstacle_height: 50.0
+          min_obstacle_height: -0.4
+          max_obstacle_height: 2.0
           obstacle_min_range: 0.0
           obstacle_max_range: 10.0
           raytrace_min_range: 0.0
           raytrace_max_range: 20.0
 
-        # Mark obstacles at the drone's current flight height
+        # Mark obstacles within the drone's flight-height band
         cloud_mark:
           topic: /parrot1/scan/points
           data_type: PointCloud2
           expected_update_rate: 1.0
           marking: true
           clearing: false
-          min_obstacle_height: -50.0
-          max_obstacle_height: 50.0
+          min_obstacle_height: -0.4
+          max_obstacle_height: 2.0
           obstacle_min_range: 0.0
           obstacle_max_range: 10.0
 
-        # Clearing uses every endpoint so stale marks get raytraced away
+        # Retain distant/higher/lower endpoints for 3D ray clearing
         cloud_clear:
           topic: /parrot1/scan/points
           data_type: PointCloud2
@@ -377,20 +397,10 @@ planner_server:
       - GridBased
     GridBased:
       plugin: nav2_smac_planner/SmacPlanner2D
-      # The global costmap is grown by the SLAM static layer (the static layer
-      # resizes it to the incoming map, so it ends up at the SLAM resolution),
-      # i.e. several million cells over the large ROI.  An unbounded search
-      # blocks planner_server for MINUTES - and planner_server owns the global
-      # costmap in the same single-threaded process, so its sensor buffers
-      # starve, the plan never returns and the whole sweep hangs (observed: 636 s
-      # stuck at waypoint 9/14 of the 80x100 m ROI).  Keep every single plan
-      # short; the mission's stall watchdog skips a waypoint that cannot be
-      # reached.  tolerance lets the planner accept a nearby free cell when the
-      # exact goal cell is lethal (it otherwise fails at the lane ends).
-      tolerance: 1.0
+      tolerance: 0.2
       allow_unknown: true
-      max_iterations: 100000
-      max_planning_time: 2.0
+      max_iterations: 5000000
+      max_planning_time: 10.0 # Let it search for 10s before giving up
 smoother_server:
   ros__parameters:
     use_sim_time: true
