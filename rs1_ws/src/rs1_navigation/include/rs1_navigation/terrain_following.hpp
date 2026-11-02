@@ -1,19 +1,13 @@
 #ifndef RS1_NAVIGATION__TERRAIN_FOLLOWING_HPP_
 #define RS1_NAVIGATION__TERRAIN_FOLLOWING_HPP_
 
-#include <limits>
-#include <memory>
-#include <mutex>
 #include <vector>
 
 #include "action_msgs/msg/goal_status_array.hpp"
-#include "nav_msgs/msg/odometry.hpp"
 #include "rclcpp/create_timer.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/laser_scan.hpp"
-
-#include "rs1_interfaces/srv/set_clearance.hpp"
 
 namespace rs1_navigation
 {
@@ -37,16 +31,11 @@ private:
   // Subscribe to laser scan
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_sub_;
 
-  // Subscribe to odometry for the absolute altitude (ground-relative control)
-  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
-
   // Subscribe to cmd_vel
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
 
   // Watch Nav2 itself, so mission, exploration and manually sent goals all work.
   rclcpp::Subscription<action_msgs::msg::GoalStatusArray>::SharedPtr navigation_status_sub_;
-  // The boustrophedon sweep is flown by NavigateThroughPoses, not NavigateToPose.
-  rclcpp::Subscription<action_msgs::msg::GoalStatusArray>::SharedPtr through_poses_status_sub_;
   rclcpp::Subscription<action_msgs::msg::GoalStatusArray>::SharedPtr backup_status_sub_;
 
   // Publishes combined cmd_vel to /parrot1/cmd_vel_combined, then make gz plugin subscribe to this topic? What else is needed here?
@@ -69,16 +58,9 @@ private:
 
   // Callbacks
   void scanCb(const sensor_msgs::msg::LaserScan &msg);
-  void odomCb(const nav_msgs::msg::Odometry &msg);
   void cmdVelCb(const geometry_msgs::msg::Twist &msg);
   void navigationStatusCb(const action_msgs::msg::GoalStatusArray &msg);
-  void throughPosesStatusCb(const action_msgs::msg::GoalStatusArray &msg);
   void backupStatusCb(const action_msgs::msg::GoalStatusArray &msg);
-
-  // Runtime clearance override (e.g. descend below canopy during a sweep).
-  void setClearanceCb(
-    const std::shared_ptr<rs1_interfaces::srv::SetClearance::Request> request,
-    std::shared_ptr<rs1_interfaces::srv::SetClearance::Response> response);
 
   void controlLoop(); // Main control loop
   double computeZVel(double current_height);
@@ -88,7 +70,6 @@ private:
 
   Mode mode_{Mode::HOVER};
   ActionState navigation_state_;
-  ActionState through_poses_state_;
   ActionState backup_state_;
 
   // We also want some filtering to (maybe delta gradient suddenly too high?) and maybe ignore those as they might be rocks/bushes.
@@ -100,22 +81,6 @@ private:
   geometry_msgs::msg::Twist latest_cmd_vel_;
   bool received_scan_;
   bool received_cmd_vel_;
-
-  // Ground-relative altitude control.  The downward lidar only sees the NEAREST
-  // surface (ground OR canopy), so holding clearance above it makes the drone
-  // ratchet up over every tree until it is above the canopy.  Instead track a
-  // running-minimum surface height (the ground) and fly `offset_height_` above
-  // THAT, so the drone stops climbing over trees and a duck actually descends.
-  bool received_odom_;
-  double latest_z_;          // absolute altitude of base_link (from odometry)
-  double ground_z_est_;      // running-minimum surface height (ground, not canopy)
-  double ground_rise_rate_;  // m/s the ground estimate may rise (follows hills)
-  double min_clearance_;     // m; never descend closer than this to the surface below
-  rclcpp::Time last_control_time_;
-
-  // Guards offset_height_ between the control loop and the clearance service.
-  std::mutex clearance_mutex_;
-  rclcpp::Service<rs1_interfaces::srv::SetClearance>::SharedPtr set_clearance_service_;
   rclcpp::Time last_cmd_vel_time_;
   double scan_timeout_; // Scans older than this timeout should be considered stale
   double kp_;

@@ -165,10 +165,7 @@ ros2 launch 41068_ignition_bringup 41068_ignition_parrot.launch.py slam:=true na
 
 The drone currently flies at a fixed altitude. You can change its spawn height in `launch/41068_ignition.launch.py` by finding the Parrot `add_robot(...)` block and changing the `z` argument.
 
-The drone camera points straight ahead (horizontal). You can tilt it in
-`urdf_parrot/parrot.urdf.xacro` by finding the `camera_joint` and changing the
-pitch (the second value) in its `rpy` - e.g. `0 0.785398 0` tilts it 45 degrees
-downwards towards the ground.
+The drone camera is set up to tilt downwards towards the ground. You can adjust this in `urdf_parrot/parrot.urdf.xacro` by finding the `camera_joint` and changing its pitch.
 
 Since the drone has a very hard time navigating through the leaves of the trees, collisions are disabled for the drone. This lets it fly through objects. You can enable collisions by uncommenting the `collision` field in `urdf_parrot/parrot.urdf.xacro`, but note that the default navigation stack does not work well in that situation. You would need to further develop the collision avoidance planners for this challenge.
 

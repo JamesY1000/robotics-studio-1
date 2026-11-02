@@ -1,6 +1,6 @@
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
-from launch.conditions import IfCondition, UnlessCondition
+from launch.conditions import IfCondition
 from launch.substitutions import (
     LaunchConfiguration,
     PathJoinSubstitution,
@@ -90,26 +90,6 @@ def generate_launch_description():
         ],
     )
 
-    # With SLAM disabled nothing publishes parrot1_map -> parrot1_odom, so the
-    # map frame would not exist and nothing could be planned.  The EKF fuses the
-    # exact Gazebo pose, so parrot1_odom already coincides with world; pin the
-    # map frame to it with an identity static.  That keeps the chain
-    # world -> parrot1_map -> parrot1_odom -> parrot1_base_link valid and the
-    # sweep's planning frame drift-free (no scan-matching to wander off).
-    map_to_odom_static = Node(
-        package="tf2_ros",
-        executable="static_transform_publisher",
-        namespace=ROBOT_NAMESPACE,
-        name="map_to_odom_static",
-        output="screen",
-        arguments=[
-            "--frame-id", f"{ROBOT_NAMESPACE}_map",
-            "--child-frame-id", f"{ROBOT_NAMESPACE}_odom",
-        ],
-        condition=UnlessCondition(slam_enabled),
-        parameters=[{"use_sim_time": use_sim_time}],
-    )
-
     return LaunchDescription(
         [
             use_sim_time_arg,
@@ -118,6 +98,5 @@ def generate_launch_description():
                                   description="Localisation logging level."),
             ekf,
             slam_toolbox,
-            map_to_odom_static,
         ]
     )

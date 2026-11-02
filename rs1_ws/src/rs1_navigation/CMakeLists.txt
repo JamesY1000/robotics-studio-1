@@ -10,7 +10,6 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(action_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
-find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(rs1_interfaces REQUIRED)
 
@@ -30,7 +29,7 @@ add_executable(velocity_selector
 # Declare version required by std::clamp =
 target_compile_features(velocity_selector PRIVATE cxx_std_17)
 
-ament_target_dependencies(terrain_following rclcpp action_msgs geometry_msgs sensor_msgs nav_msgs rs1_interfaces)
+ament_target_dependencies(terrain_following rclcpp action_msgs geometry_msgs sensor_msgs)
 ament_target_dependencies(velocity_selector rclcpp geometry_msgs sensor_msgs rs1_interfaces)
 
 # Install cpp executables
