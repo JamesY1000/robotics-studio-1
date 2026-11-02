@@ -595,8 +595,8 @@ def main() -> int:
                              "executor's roi_tree_margin, otherwise trees between the two boxes are "
                              "counted as ground truth but always filtered out of the result, which "
                              "silently caps recall.")
-    parser.add_argument("--search-clearance", type=float, default=2.2)
-    parser.add_argument("--transit-clearance", type=float, default=4.0)
+    parser.add_argument("--search-clearance", type=float, default=2.0)
+    parser.add_argument("--transit-clearance", type=float, default=2.0)
     parser.add_argument("--swath-spacing", type=float, default=0.0,
                         help="<= 0 selects automatic spacing.")
     parser.add_argument("--timeout", type=float, default=600.0)

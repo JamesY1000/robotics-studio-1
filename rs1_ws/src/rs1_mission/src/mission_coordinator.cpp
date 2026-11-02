@@ -51,8 +51,8 @@ MissionCoordinatorNode::MissionCoordinatorNode() : Node("mission_coordinator_nod
     roi_max_.x = this->declare_parameter<double>("roi_x_max", -35.0);
     roi_max_.y = this->declare_parameter<double>("roi_y_max", 45.0);
     roi_max_.z = 0.0;
-    search_clearance_ = this->declare_parameter<double>("search_clearance", 2.2);
-    transit_clearance_ = this->declare_parameter<double>("transit_clearance", 4.0);
+    search_clearance_ = this->declare_parameter<double>("search_clearance", 2.0);
+    transit_clearance_ = this->declare_parameter<double>("transit_clearance", 2.0);
     swath_spacing_ = this->declare_parameter<double>("swath_spacing", 0.0);
 
     // Keep the latest ROI marker for RViz instances opened later

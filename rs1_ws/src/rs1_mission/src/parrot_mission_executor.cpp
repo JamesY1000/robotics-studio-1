@@ -79,132 +79,29 @@ ParrotMissionExecutorNode::ParrotMissionExecutorNode() : Node("parrot_mission_ex
         throw std::invalid_argument("max_fallback_hops must be non-negative");
     }
 
-    // Sweep follower: "nav2" flies the boustrophedon through NavigateThroughPoses,
-    // "velocity" drives the lanes directly with the internal velocity controller.
-    // "velocity" only works with a terrain-following build that follows terrain
-    // without an executing nav2 goal; the hover-mode follower (HOVER drops every
-    // cmd_vel) leaves it stalled, so it is kept as a legacy opt-out only.
-    sweep_controller_ = this->declare_parameter<std::string>("sweep_controller", "nav2");
-    if (sweep_controller_ != "nav2")
-    {
-        RCLCPP_WARN(
-            this->get_logger(),
-            "sweep_controller='%s': the velocity follower is legacy and will not move "
-            "while terrain following is in hover mode. Use 'nav2'.",
-            sweep_controller_.c_str());
-    }
-    sweep_control_hz_ = this->declare_parameter<double>("sweep_control_hz", 10.0);
-    max_sweep_speed_ = this->declare_parameter<double>("max_sweep_speed", 3.0);
-    sweep_speed_gain_ = this->declare_parameter<double>("sweep_speed_gain", 1.2);
-    max_yaw_rate_ = this->declare_parameter<double>("max_yaw_rate", 1.8);
-    sweep_yaw_gain_ = this->declare_parameter<double>("sweep_yaw_gain", 2.0);
-    heading_gate_ = this->declare_parameter<double>("heading_gate", 0.7);
-    waypoint_tolerance_ = this->declare_parameter<double>("waypoint_tolerance", 1.2);
-    waypoint_skip_distance_ = this->declare_parameter<double>("waypoint_skip_distance", 2.5);
-    waypoint_skip_time_ = this->declare_parameter<double>("waypoint_skip_time", 4.0);
-    skip_ticks_threshold_ = static_cast<int>(std::ceil(waypoint_skip_time_ * sweep_control_hz_));
-    // Must be short: at 3 m/s a wedge is obvious within a second or two, and the
-    // old 12 s let the drone hover in the branches long enough that it "gave up"
-    // on the lane before ever trying a recovery.
-    no_progress_timeout_ = this->declare_parameter<double>("no_progress_timeout", 6.0);
-    no_progress_ticks_threshold_ = static_cast<int>(
-        std::ceil(std::max(1.0, no_progress_timeout_ * sweep_control_hz_)));
-    max_consecutive_skips_ = this->declare_parameter<int>("max_consecutive_skips", 3);
-    // How many rungs of the duck/pop-up ladder to try before giving the leg up.
-    max_recovery_attempts_ = this->declare_parameter<int>("max_recovery_attempts", 4);
-    hard_wedge_timeout_ = this->declare_parameter<double>("hard_wedge_timeout", 5.0);
-    hard_wedge_ticks_threshold_ = static_cast<int>(
-        std::ceil(std::max(1.0, hard_wedge_timeout_ * sweep_control_hz_)));
-    popup_clearance_ = this->declare_parameter<double>("popup_clearance", 8.0);
-    popup_step_m_ = this->declare_parameter<double>("popup_step", 2.0);
-    popup_max_clearance_ = this->declare_parameter<double>("popup_max_clearance", 12.0);
-    duck_clearance_ = this->declare_parameter<double>("duck_clearance", 0.8);
-    // Short grace windows: the altitude change itself now takes ~1-2 s
-    // (max_vertical_speed 2 m/s), so a duck that has not helped within 5 s is
-    // not going to help, and waiting longer only leaves the drone parked in the
-    // branches (and long enough for the watchdog to dump the lane).
-    duck_grace_time_ = this->declare_parameter<double>("duck_grace_time", 5.0);
-    duck_grace_ticks_threshold_ = static_cast<int>(
-        std::ceil(std::max(1.0, duck_grace_time_ * sweep_control_hz_)));
-    popup_grace_time_ = this->declare_parameter<double>("popup_grace_time", 10.0);
-    popup_grace_ticks_threshold_ = static_cast<int>(
-        std::ceil(std::max(1.0, popup_grace_time_ * sweep_control_hz_)));
-    alt_recover_travel_m_ = this->declare_parameter<double>("alt_recover_travel", 2.5);
-    roi_escape_margin_ = this->declare_parameter<double>("roi_escape_margin", 20.0);
-    roi_escape_timeout_ = this->declare_parameter<double>("roi_escape_timeout", 8.0);
-    roi_escape_ticks_threshold_ = static_cast<int>(
-        std::ceil(std::max(1.0, roi_escape_timeout_ * sweep_control_hz_)));
-    roi_enter_margin_ = this->declare_parameter<double>("roi_enter_margin", 5.0);
-    roi_transit_timeout_ = this->declare_parameter<double>("roi_transit_timeout", 120.0);
-    roi_transit_ticks_threshold_ = static_cast<int>(
-        std::ceil(std::max(1.0, roi_transit_timeout_ * sweep_control_hz_)));
-    forward_cone_ = this->declare_parameter<double>("forward_cone", 0.6);
-    min_gap_width_ = this->declare_parameter<double>("min_gap_width", 0.25);
-    scan_stale_timeout_ = this->declare_parameter<double>("scan_stale_timeout", 2.0);
-    scan_outage_timeout_ = this->declare_parameter<double>("scan_outage_timeout", 30.0);
-    scan_outage_warn_ticks_threshold_ = static_cast<int>(
-        std::ceil(std::max(1.0, 5.0 * sweep_control_hz_)));
-    scan_outage_ticks_threshold_ = static_cast<int>(
-        std::ceil(std::max(1.0, scan_outage_timeout_ * sweep_control_hz_)));
-    lookahead_distance_ = this->declare_parameter<double>("lookahead_distance", 5.0);
-    // Avoidance geometry is scaled for ~3 m/s AND a 3 Hz lidar (the scan is up
-    // to 1 m stale between frames).  The old 1.2 m stop distance gave 0.4 s of
-    // reaction time at 1 m/s - at 3 m/s it is sub-frame, so everything here is
-    // pushed out until there is at least one full scan of margin.
-    obstacle_stop_distance_ = this->declare_parameter<double>("obstacle_stop_distance", 2.5);
-    avoid_distance_ = this->declare_parameter<double>("avoid_distance", 5.0);
-    avoid_offset_m_ = this->declare_parameter<double>("avoid_offset", 3.5);
-    avoid_rate_ = this->declare_parameter<double>("avoid_rate", 1.2);
-    avoid_disengage_margin_ = this->declare_parameter<double>("avoid_disengage_margin", 1.5);
-    // Floor on the clearance-proportional slowdown near an obstacle (1.0 = no
-    // slowdown, 0.5 = half speed at point-blank range).
-    avoid_min_slowdown_ = this->declare_parameter<double>("avoid_min_slowdown", 0.5);
-    side_cone_ = this->declare_parameter<double>("side_cone", 1.2);
-    steering_cone_ = this->declare_parameter<double>("steering_cone", 0.6);
+    // Sweep geometry + inbound-transit parameters.  Nav2 flies the lanes one
+    // NavigateToPose goal per waypoint; the lane-end U-turn is a rounded corner
+    // placed in clear air past the ROI edge.
     turn_lead_m_ = this->declare_parameter<double>("turn_lead_m", 3.0);
     turn_offset_m_ = this->declare_parameter<double>("turn_offset_m", 3.0);
-    if (!std::isfinite(sweep_control_hz_) || sweep_control_hz_ <= 0.0 ||
-        !std::isfinite(max_sweep_speed_) || max_sweep_speed_ <= 0.0 ||
-        !std::isfinite(sweep_speed_gain_) || sweep_speed_gain_ <= 0.0 ||
-        !std::isfinite(max_yaw_rate_) || max_yaw_rate_ <= 0.0 ||
-        !std::isfinite(sweep_yaw_gain_) || sweep_yaw_gain_ <= 0.0 ||
-        !std::isfinite(heading_gate_) || heading_gate_ <= 0.0 || heading_gate_ > 3.14159265358979323846 ||
-        !std::isfinite(waypoint_tolerance_) || waypoint_tolerance_ <= 0.0 ||
-        !std::isfinite(waypoint_skip_distance_) || waypoint_skip_distance_ <= 0.0 ||
-        !std::isfinite(waypoint_skip_time_) || waypoint_skip_time_ < 0.0 ||
-        !std::isfinite(forward_cone_) || forward_cone_ <= 0.0 ||
-        !std::isfinite(obstacle_stop_distance_) || obstacle_stop_distance_ < 0.0 ||
-        !std::isfinite(min_gap_width_) || min_gap_width_ < 0.0 ||
-        !std::isfinite(scan_stale_timeout_) || scan_stale_timeout_ <= 0.0 ||
-        !std::isfinite(scan_outage_timeout_) || scan_outage_timeout_ <= 0.0 ||
-        !std::isfinite(lookahead_distance_) || lookahead_distance_ <= 0.0 ||
-        !std::isfinite(avoid_distance_) || avoid_distance_ <= 0.0 ||
-        !std::isfinite(avoid_offset_m_) || avoid_offset_m_ <= 0.0 ||
-        !std::isfinite(avoid_rate_) || avoid_rate_ <= 0.0 ||
-        !std::isfinite(avoid_disengage_margin_) || avoid_disengage_margin_ < 0.0 ||
-        !std::isfinite(avoid_min_slowdown_) || avoid_min_slowdown_ <= 0.0 ||
-        avoid_min_slowdown_ > 1.0 ||
-        !std::isfinite(side_cone_) || side_cone_ <= forward_cone_ ||
-        !std::isfinite(steering_cone_) || steering_cone_ <= 0.0 ||
-        !std::isfinite(turn_lead_m_) || turn_lead_m_ < 0.0 ||
+    roi_enter_margin_ = this->declare_parameter<double>("roi_enter_margin", 5.0);
+    if (!std::isfinite(turn_lead_m_) || turn_lead_m_ < 0.0 ||
         !std::isfinite(turn_offset_m_) || turn_offset_m_ <= 0.0 ||
-        max_consecutive_skips_ < 1 ||
-        max_recovery_attempts_ < 1 ||
-        !std::isfinite(duck_grace_time_) || duck_grace_time_ <= 0.0 ||
-        !std::isfinite(popup_grace_time_) || popup_grace_time_ <= 0.0 ||
-        !std::isfinite(hard_wedge_timeout_) || hard_wedge_timeout_ <= 0.0 ||
-        !std::isfinite(popup_clearance_) || popup_clearance_ <= 0.0 ||
-        !std::isfinite(popup_step_m_) || popup_step_m_ < 0.0 ||
-        !std::isfinite(popup_max_clearance_) || popup_max_clearance_ < popup_clearance_ ||
-        !std::isfinite(duck_clearance_) || duck_clearance_ <= 0.0 ||
-        !std::isfinite(alt_recover_travel_m_) || alt_recover_travel_m_ <= 0.0)
+        !std::isfinite(roi_enter_margin_) || roi_enter_margin_ < 0.0)
     {
-        throw std::invalid_argument("Sweep follower parameters are invalid");
+        throw std::invalid_argument("Sweep parameters are invalid");
+    }
+
+    // Lidar outage watchdog: the sweep stalls silently when the lidar dies.
+    scan_outage_timeout_ = this->declare_parameter<double>("scan_outage_timeout", 30.0);
+    if (!std::isfinite(scan_outage_timeout_) || scan_outage_timeout_ <= 0.0)
+    {
+        throw std::invalid_argument("scan_outage_timeout must be finite and positive");
     }
 
     // Create tf buffers and listeners
     tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
-    tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_, this, false);
+    tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_, this, true);
 
     // Clients for GetCurrentPose service, ComputePathToPose action and SetGroundPath service
     get_current_pose_client_ = this->create_client<rs1_interfaces::srv::GetCurrentPose>(
@@ -217,17 +114,6 @@ ParrotMissionExecutorNode::ParrotMissionExecutorNode() : Node("parrot_mission_ex
         "/husky1/set_ground_path");
 
     // Phase 2 clients/publisher for ROI sampling
-    navigate_through_poses_client_ = rclcpp_action::create_client<nav2_msgs::action::NavigateThroughPoses>(
-        this, "/parrot1/navigate_through_poses");
-
-    navigate_through_poses_goal_options_.goal_response_callback = std::bind(
-        &ParrotMissionExecutorNode::navigateThroughPosesResponseCb, this, std::placeholders::_1);
-    navigate_through_poses_goal_options_.result_callback = std::bind(
-        &ParrotMissionExecutorNode::navigateThroughPosesResultCb, this, std::placeholders::_1);
-    navigate_through_poses_goal_options_.feedback_callback = std::bind(
-        &ParrotMissionExecutorNode::navigateThroughPosesFeedbackCb, this,
-        std::placeholders::_1, std::placeholders::_2);
-
     detect_client_ = this->create_client<rs1_interfaces::srv::DetectYolo>("/yolo/detect");
     process_client_ = this->create_client<rs1_interfaces::srv::ProcessTreeLocations>(
         "/yolo/process_tree_locations");
@@ -237,12 +123,14 @@ ParrotMissionExecutorNode::ParrotMissionExecutorNode() : Node("parrot_mission_ex
     tree_map_pub_ = this->create_publisher<rs1_interfaces::msg::TreeMap>(
         "/parrot1/tree_map", rclcpp::QoS(1).reliable().transient_local());
 
-    // Velocity sweep follower: drive /parrot1/cmd_vel (terrain following adds z)
-    cmd_vel_pub_ = this->create_publisher<geometry_msgs::msg::Twist>(
-        "/parrot1/cmd_vel", rclcpp::QoS(10));
+    // Lidar outage watchdog: track the freshest scan and abort the sweep if it
+    // stops arriving (the GPU lidar or its bridge can die mid-flight).
     scan_sub_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
         "/parrot1/scan", rclcpp::SensorDataQoS().keep_last(1),
         std::bind(&ParrotMissionExecutorNode::scanCb, this, std::placeholders::_1));
+    lidar_watchdog_timer_ = this->create_wall_timer(
+        std::chrono::seconds(1),
+        std::bind(&ParrotMissionExecutorNode::lidarWatchdogCb, this));
 
     // Nav2pose client
     navigate_to_pose_client_ = rclcpp_action::create_client<nav2_msgs::action::NavigateToPose>(
@@ -1130,7 +1018,7 @@ void ParrotMissionExecutorNode::returnToIdle()
 
     // Clear any sampling state
     stopDetection();
-    navigate_through_poses_goal_handle_.reset();
+    sweep_nav_goal_handle_.reset();
     sample_roi_goal_handle_.reset();
     tree_map_.clear();
     total_waypoints_ = 0;
@@ -1226,9 +1114,9 @@ rclcpp_action::GoalResponse ParrotMissionExecutorNode::sampleROIGoalRequestCb(
         RCLCPP_WARN(this->get_logger(), "Rejecting SampleROI goal: ROI box is invalid");
         return rclcpp_action::GoalResponse::REJECT;
     }
-    if (sweep_controller_ == "nav2" && !navigate_through_poses_client_->action_server_is_ready())
+    if (!navigate_to_pose_client_->action_server_is_ready())
     {
-        RCLCPP_WARN(this->get_logger(), "Rejecting SampleROI goal: NavigateThroughPoses server unavailable");
+        RCLCPP_WARN(this->get_logger(), "Rejecting SampleROI goal: NavigateToPose server unavailable");
         return rclcpp_action::GoalResponse::REJECT;
     }
     if (!detect_client_->service_is_ready() || !process_client_->service_is_ready())
@@ -1392,23 +1280,12 @@ void ParrotMissionExecutorNode::setSearchClearance()
     if (!set_clearance_client_->service_is_ready())
     {
         RCLCPP_WARN(this->get_logger(), "SetClearance service unavailable; sweeping at the current clearance");
-        if (descend_resume_sweep_)
-        {
-            descend_resume_sweep_ = false;
-            return;
-        }
-        if (ascend_resume_sweep_)
-        {
-            ascend_resume_sweep_ = false;
-            return;
-        }
         beginSweep();
         return;
     }
 
     auto request = std::make_shared<rs1_interfaces::srv::SetClearance::Request>();
     request->clearance = mission_goal->get_goal()->search_clearance;
-    commanded_clearance_m_ = static_cast<double>(request->clearance);
     set_clearance_client_->async_send_request(request,
         std::bind(&ParrotMissionExecutorNode::setSearchClearanceResponseCb, this, std::placeholders::_1));
 }
@@ -1431,21 +1308,6 @@ void ParrotMissionExecutorNode::setSearchClearanceResponseCb(
 
     if (!sample_roi_goal_handle_ || !sample_roi_goal_handle_->is_active()) return;
 
-    // Descending after a pop-up recovery (or ascending after a duck): the sweep
-    // is already in flight, so do NOT re-plan it from the drone's current
-    // position. Re-running beginSweep() here regenerated the whole boustrophedon
-    // from wherever the drone happened to be and made it wander off the lanes.
-    if (descend_resume_sweep_)
-    {
-        descend_resume_sweep_ = false;
-        return;
-    }
-    if (ascend_resume_sweep_)
-    {
-        ascend_resume_sweep_ = false;
-        return;
-    }
-
     // The Nav2 costmap is usually incomplete around a fresh ROI, so explore
     // toward it first (weighted frontier exploration, as in phase 1) to grow
     // the map before attempting the sweep.
@@ -1462,6 +1324,10 @@ void ParrotMissionExecutorNode::beginSweep()
 {
     const auto mission_goal = sample_roi_goal_handle_;
     if (!mission_goal || !mission_goal->is_active() || mission_goal->is_canceling()) return;
+
+    // Arm the lidar watchdog: count from now so a lidar that never starts (or
+    // dies right at the start) still trips the abort.
+    latest_scan_time_ = this->now();
 
     std::vector<geometry_msgs::msg::PoseStamped> poses;
     // Start at the ROI corner nearest the drone.  The default run does not
@@ -1506,28 +1372,12 @@ void ParrotMissionExecutorNode::beginSweep()
 
     sweep_waypoints_ = poses;
 
-    // Nav2 flies the lanes by default now that the parrot obstacle layer keeps
-    // the lidar origin inside the costmap at flight altitude. "velocity" remains
-    // available as an opt-out for tests below the canopy.
-    if (sweep_controller_ != "nav2")
-    {
-        beginVelocitySweep();
-        return;
-    }
-
-    nav2_msgs::action::NavigateThroughPoses::Goal goal;
-    goal.poses = poses;
-
-    try
-    {
-        action_goal_pending_ = true;
-        navigate_through_poses_client_->async_send_goal(goal, navigate_through_poses_goal_options_);
-    }
-    catch (const std::exception &e)
-    {
-        action_goal_pending_ = false;
-        abortSampling(std::string("Could not send the ROI sweep goal: ") + e.what());
-    }
+    // One NavigateToPose per waypoint instead of a single NavigateThroughPoses
+    // for the whole box: the costmap is usually incomplete over a fresh ROI,
+    // so a whole-box plan fails, but a one-leg plan succeeds and the frontier
+    // explorer can fill the map ahead of the drone between legs.
+    sweep_index_ = 0;
+    navigateToNextWaypoint();
 }
 
 void ParrotMissionExecutorNode::computeSwaths(
@@ -1804,44 +1654,113 @@ void ParrotMissionExecutorNode::publishSamplingFeedback(const std::string & stag
     sample_roi_goal_handle_->publish_feedback(feedback);
 }
 
-void ParrotMissionExecutorNode::navigateThroughPosesFeedbackCb(
-    rclcpp_action::ClientGoalHandle<nav2_msgs::action::NavigateThroughPoses>::SharedPtr goal_handle,
-    const std::shared_ptr<const nav2_msgs::action::NavigateThroughPoses::Feedback> feedback)
+void ParrotMissionExecutorNode::navigateToNextWaypoint()
 {
-    if (!feedback || !goal_handle || !navigate_through_poses_goal_handle_ ||
-        goal_handle->get_goal_id() != navigate_through_poses_goal_handle_->get_goal_id()) return;
+    const auto mission_goal = sample_roi_goal_handle_;
+    if (!mission_goal || !mission_goal->is_active() || mission_goal->is_canceling()) return;
 
-    waypoints_remaining_ = feedback->number_of_poses_remaining;
-    publishSamplingFeedback("Sweeping ROI");
+    if (sweep_index_ >= sweep_waypoints_.size())
+    {
+        RCLCPP_INFO(this->get_logger(), "ROI sweep finished with %zu tree(s)", tree_map_.size());
+        finishSampling();
+        return;
+    }
+
+    if (!navigate_to_pose_client_->action_server_is_ready())
+    {
+        retrySweepWithExploration("NavigateToPose server unavailable");
+        return;
+    }
+
+    const auto & wp = sweep_waypoints_[sweep_index_];
+    nav2_msgs::action::NavigateToPose::Goal goal;
+
+    // Nav2's global costmap lives in parrot1_map, but the sweep waypoint is
+    // planned in parrot1_odom, so the goal must be expressed in the map frame
+    // before it is sent.  slam_toolbox only republishes parrot1_map ->
+    // parrot1_odom when its map updates, so a now-stamped goal handed to Nav2
+    // as-is makes the planner look the transform up in the future and abort the
+    // leg ("Extrapolation Error ... would require extrapolation into the
+    // future"); zero-stamping the goal header does NOT help because Nav2's
+    // planner restamps the goal to "now" itself.  Transforming here with the
+    // LATEST available map transform (TimePointZero) puts the goal straight into
+    // the costmap frame, where Nav2's goal transform is the identity and no
+    // map<->odom lookup happens at all.
+    geometry_msgs::msg::PoseStamped goal_pose = wp;
+    try
+    {
+        const auto tf = tf_buffer_->lookupTransform(
+            "parrot1_map", goal_pose.header.frame_id, tf2::TimePointZero,
+            std::chrono::seconds(1));
+        tf2::doTransform(goal_pose, goal_pose, tf);
+        goal_pose.header.frame_id = "parrot1_map";
+    }
+    catch (const std::exception & e)
+    {
+        // Map frame not available yet (SLAM still initialising).  The EKF pins
+        // parrot1_odom == world and the map starts at identity, so relabel the
+        // odom pose.  Accuracy does not matter while the map is settling.
+        RCLCPP_WARN(this->get_logger(),
+            "Could not transform the sweep waypoint into parrot1_map (%s); using the odom pose",
+            e.what());
+        goal_pose.header.frame_id = "parrot1_map";
+    }
+    goal.pose = goal_pose;
+
+    auto options = rclcpp_action::Client<nav2_msgs::action::NavigateToPose>::SendGoalOptions();
+    options.goal_response_callback = std::bind(
+        &ParrotMissionExecutorNode::sweepWaypointResponseCb, this, std::placeholders::_1);
+    options.result_callback = std::bind(
+        &ParrotMissionExecutorNode::sweepWaypointResultCb, this, std::placeholders::_1);
+    options.feedback_callback = [this, mission_goal](
+        rclcpp_action::ClientGoalHandle<nav2_msgs::action::NavigateToPose>::SharedPtr,
+        const std::shared_ptr<const nav2_msgs::action::NavigateToPose::Feedback>)
+        {
+            maybeDescendOnEntry();
+            publishSamplingFeedback("Sweeping ROI");
+        };
+
+    RCLCPP_INFO(this->get_logger(),
+        "Sweep waypoint %zu/%zu (%.1f, %.1f)",
+        sweep_index_ + 1, sweep_waypoints_.size(),
+        wp.pose.position.x, wp.pose.position.y);
+
+    try
+    {
+        action_goal_pending_ = true;
+        navigate_to_pose_client_->async_send_goal(goal, options);
+    }
+    catch (const std::exception &e)
+    {
+        action_goal_pending_ = false;
+        abortSampling(std::string("Could not send the sweep waypoint goal: ") + e.what());
+    }
 }
 
-void ParrotMissionExecutorNode::navigateThroughPosesResponseCb(
-    rclcpp_action::ClientGoalHandle<nav2_msgs::action::NavigateThroughPoses>::SharedPtr goal_handle)
+void ParrotMissionExecutorNode::sweepWaypointResponseCb(
+    rclcpp_action::ClientGoalHandle<nav2_msgs::action::NavigateToPose>::SharedPtr goal_handle)
 {
     action_goal_pending_ = false;
     if (!goal_handle)
     {
-        retrySweepWithExploration("Nav2 rejected the ROI sweep goal");
+        retrySweepWithExploration("Nav2 rejected the sweep waypoint goal");
         return;
     }
 
-    navigate_through_poses_goal_handle_ = goal_handle;
+    sweep_nav_goal_handle_ = goal_handle;
     if (sample_roi_goal_handle_ && sample_roi_goal_handle_->is_canceling())
     {
         cancelSampling();
-        return;
     }
-
-    RCLCPP_DEBUG(this->get_logger(), "ROI sweep goal accepted");
 }
 
-void ParrotMissionExecutorNode::navigateThroughPosesResultCb(
-    const rclcpp_action::ClientGoalHandle<nav2_msgs::action::NavigateThroughPoses>::WrappedResult & result)
+void ParrotMissionExecutorNode::sweepWaypointResultCb(
+    const rclcpp_action::ClientGoalHandle<nav2_msgs::action::NavigateToPose>::WrappedResult & result)
 {
-    if (!sample_roi_goal_handle_ || !navigate_through_poses_goal_handle_ ||
-        result.goal_id != navigate_through_poses_goal_handle_->get_goal_id()) return;
+    if (!sample_roi_goal_handle_ || !sweep_nav_goal_handle_ ||
+        result.goal_id != sweep_nav_goal_handle_->get_goal_id()) return;
 
-    navigate_through_poses_goal_handle_.reset();
+    sweep_nav_goal_handle_.reset();
     if (sample_roi_goal_handle_->is_canceling())
     {
         finishCancelledSampling();
@@ -1851,12 +1770,17 @@ void ParrotMissionExecutorNode::navigateThroughPosesResultCb(
     switch (result.code)
     {
         case rclcpp_action::ResultCode::SUCCEEDED:
-            RCLCPP_INFO(this->get_logger(), "ROI sweep finished with %zu tree(s)", tree_map_.size());
-            finishSampling();
+            ++sweep_index_;
+            fallback_hops_ = 0;
+            waypoints_remaining_ = static_cast<int16_t>(
+                std::min<std::size_t>(sweep_waypoints_.size() - sweep_index_, 32767));
+            publishSamplingFeedback("Sweeping ROI");
+            maybeDescendOnEntry();
+            navigateToNextWaypoint();
             break;
 
         case rclcpp_action::ResultCode::ABORTED:
-            retrySweepWithExploration("sweep aborted by Nav2");
+            retrySweepWithExploration("sweep waypoint aborted by Nav2");
             break;
 
         case rclcpp_action::ResultCode::CANCELED:
@@ -1971,8 +1895,42 @@ void ParrotMissionExecutorNode::restoreTransitClearance()
 
     auto request = std::make_shared<rs1_interfaces::srv::SetClearance::Request>();
     request->clearance = sample_roi_goal_handle_->get_goal()->transit_clearance;
-    commanded_clearance_m_ = static_cast<double>(request->clearance);
     set_clearance_client_->async_send_request(request);
+}
+
+void ParrotMissionExecutorNode::maybeDescendOnEntry()
+{
+    // The "descend to the search clearance once inside the ROI" transition is
+    // driven from the sweep waypoint feedback: within roi_enter_margin_ of the
+    // box counts as entered.  Sends the request directly (NOT via
+    // setSearchClearance(), which would re-plan the sweep from the start).
+    if (!descend_on_entry_ || !sample_roi_goal_handle_ ||
+        !sample_roi_goal_handle_->is_active())
+    {
+        return;
+    }
+
+    geometry_msgs::msg::PoseStamped here;
+    if (!currentPose(here)) return;
+
+    const double escape_x = std::max(
+        0.0, std::max(sweep_min_.x - here.pose.position.x,
+                      here.pose.position.x - sweep_max_.x));
+    const double escape_y = std::max(
+        0.0, std::max(sweep_min_.y - here.pose.position.y,
+                      here.pose.position.y - sweep_max_.y));
+    if (std::hypot(escape_x, escape_y) > roi_enter_margin_) return;
+
+    descend_on_entry_ = false;
+    RCLCPP_INFO(this->get_logger(), "Entered the ROI; starting the sweep lanes");
+
+    if (set_clearance_client_ && set_clearance_client_->service_is_ready())
+    {
+        auto request = std::make_shared<rs1_interfaces::srv::SetClearance::Request>();
+        request->clearance = sample_roi_goal_handle_->get_goal()->search_clearance;
+        set_clearance_client_->async_send_request(request);
+        RCLCPP_INFO(this->get_logger(), "Descending to the search clearance for the sweep");
+    }
 }
 
 void ParrotMissionExecutorNode::abortSampling(const std::string & message)
@@ -2009,10 +1967,10 @@ void ParrotMissionExecutorNode::cancelSampling()
 
     try
     {
-        if (navigate_through_poses_goal_handle_)
+        if (sweep_nav_goal_handle_)
         {
-            navigate_through_poses_client_->async_cancel_goal(
-                navigate_through_poses_goal_handle_,
+            navigate_to_pose_client_->async_cancel_goal(
+                sweep_nav_goal_handle_,
                 std::bind(&ParrotMissionExecutorNode::sampleROICancelResponseCb,
                     this, sample_roi_goal_handle_, std::placeholders::_1));
         }
@@ -2039,7 +1997,7 @@ void ParrotMissionExecutorNode::cancelSampling()
 void ParrotMissionExecutorNode::finishCancelledSampling()
 {
     if (!sample_roi_goal_handle_ || !sample_roi_goal_handle_->is_canceling() ||
-        action_goal_pending_ || navigate_through_poses_goal_handle_ ||
+        action_goal_pending_ || sweep_nav_goal_handle_ ||
         explore_to_pose_goal_handle_) return;
 
     stopSweep();
@@ -2056,7 +2014,7 @@ void ParrotMissionExecutorNode::finishCancelledSampling()
 
 void ParrotMissionExecutorNode::sampleROICancelResponseCb(
     std::shared_ptr<rclcpp_action::ServerGoalHandle<rs1_interfaces::action::SampleROI>> mission_goal,
-    rclcpp_action::Client<nav2_msgs::action::NavigateThroughPoses>::CancelResponse::SharedPtr response)
+    rclcpp_action::Client<nav2_msgs::action::NavigateToPose>::CancelResponse::SharedPtr response)
 {
     if (!mission_goal || mission_goal != sample_roi_goal_handle_ || !mission_goal->is_canceling()) return;
     if (!response || response->goals_canceling.empty())
@@ -2081,13 +2039,56 @@ void ParrotMissionExecutorNode::exploreToSweepTarget()
     // Drive the weighted frontier explorer toward the centre of the ROI. This
     // is the same exploration used in phase 1; it grows the costmap so the
     // sweep can be planned.
+    //
+    // explore_lite REJECTS any goal whose frame is not its costmap global frame
+    // ("parrot1_map"): it checks `goal.target_pose.header.frame_id ==
+    // costmap_client_.getGlobalFrameID()`.  The sweep is planned in
+    // parrot1_odom, so the ROI centre must be transformed into the map frame
+    // first - sending it in parrot1_odom made every exploration goal bounce
+    // with "target frame must be 'parrot1_map'".
+    geometry_msgs::msg::PoseStamped roi_centre_odom;
+    roi_centre_odom.header.frame_id = sweep_frame_;
+    roi_centre_odom.header.stamp = this->now();
+    roi_centre_odom.pose.orientation.w = 1.0;
+    if (sweep_index_ < sweep_waypoints_.size())
+    {
+        // Mid-sweep: steer the frontier explorer toward the NEXT waypoint we
+        // still need to reach, so the costmap grows along the lane we are about
+        // to fly rather than somewhere in the middle of the ROI.
+        roi_centre_odom.pose.position = sweep_waypoints_[sweep_index_].pose.position;
+    }
+    else
+    {
+        roi_centre_odom.pose.position.x = 0.5 * (sweep_min_.x + sweep_max_.x);
+        roi_centre_odom.pose.position.y = 0.5 * (sweep_min_.y + sweep_max_.y);
+        roi_centre_odom.pose.position.z = sweep_z_;
+    }
+
+    const std::string explore_frame = "parrot1_map";
+    geometry_msgs::msg::PoseStamped explore_target;
+    try
+    {
+        const auto tf = tf_buffer_->lookupTransform(
+            explore_frame, sweep_frame_, tf2::TimePointZero,
+            std::chrono::seconds(1));
+        tf2::doTransform(roi_centre_odom, explore_target, tf);
+        explore_target.header.frame_id = explore_frame;
+    }
+    catch (const std::exception & e)
+    {
+        // No map frame yet (e.g. SLAM still initialising): the EKF pins
+        // parrot1_odom == world, so fall back to the odom pose but relabel it
+        // so explore_lite accepts it.  Position accuracy is not critical here -
+        // this goal only steers frontier expansion toward the ROI.
+        RCLCPP_WARN(this->get_logger(),
+            "Could not transform the exploration target into %s (%s); using the odom pose",
+            explore_frame.c_str(), e.what());
+        explore_target = roi_centre_odom;
+        explore_target.header.frame_id = explore_frame;
+    }
+
     rs1_interfaces::action::ExploreToPose::Goal explore_goal;
-    explore_goal.target_pose.header.frame_id = sweep_frame_;
-    explore_goal.target_pose.header.stamp = this->now();
-    explore_goal.target_pose.pose.position.x = 0.5 * (sweep_min_.x + sweep_max_.x);
-    explore_goal.target_pose.pose.position.y = 0.5 * (sweep_min_.y + sweep_max_.y);
-    explore_goal.target_pose.pose.position.z = sweep_z_;
-    explore_goal.target_pose.pose.orientation.w = 1.0;
+    explore_goal.target_pose = explore_target;
 
     auto options = rclcpp_action::Client<rs1_interfaces::action::ExploreToPose>::SendGoalOptions();
     options.goal_response_callback = std::bind(
@@ -2161,8 +2162,20 @@ void ParrotMissionExecutorNode::exploreForSweepResultCb(
     switch (result.code)
     {
         case rclcpp_action::ResultCode::SUCCEEDED:
-            RCLCPP_INFO(this->get_logger(), "Exploration reached the ROI; resuming the sweep");
-            beginSweep();
+            if (sweep_index_ < sweep_waypoints_.size())
+            {
+                // Mid-sweep resume: keep the lane plan already computed and carry
+                // on from the waypoint we were heading for, rather than re-planning
+                // the whole box (which would restart at the nearest corner and
+                // re-fly lanes we already covered).
+                RCLCPP_INFO(this->get_logger(), "Exploration reached the waypoint; resuming the sweep");
+                navigateToNextWaypoint();
+            }
+            else
+            {
+                RCLCPP_INFO(this->get_logger(), "Exploration reached the ROI; starting the sweep");
+                beginSweep();
+            }
             break;
 
         case rclcpp_action::ResultCode::ABORTED:
@@ -2231,983 +2244,52 @@ bool ParrotMissionExecutorNode::currentPose(geometry_msgs::msg::PoseStamped & po
     }
 }
 
-double ParrotMissionExecutorNode::distanceToCurrentWaypoint(
-    const geometry_msgs::msg::PoseStamped & pose) const
+void ParrotMissionExecutorNode::scanCb(const sensor_msgs::msg::LaserScan &)
 {
-    if (sweep_index_ >= sweep_waypoints_.size()) return std::numeric_limits<double>::infinity();
-    const auto &t = sweep_waypoints_[sweep_index_].pose.position;
-    return std::hypot(t.x - pose.pose.position.x, t.y - pose.pose.position.y);
-}
-
-void ParrotMissionExecutorNode::beginVelocitySweep()
-{
-    sweep_index_ = 0;
-    velocity_sweep_active_ = true;
-    segment_ready_ = false;
-    avoid_offset_ = 0.0;
-    avoid_side_ = 0;
-    avoid_engaged_ = false;
-    avoid_clear_ticks_ = 0;
-    avoid_stuck_ticks_ = 0;
-    reverse_ticks_ = 0;
-    reversing_ = false;
-    skip_ticks_ = 0;
-    no_progress_ticks_ = 0;
-    leg_best_along_ = -1e18;
-    consecutive_skips_ = 0;
-    hard_wedge_ticks_ = 0;
-    popup_active_ = false;
-    descend_resume_sweep_ = false;
-    duck_active_ = false;
-    ascend_resume_sweep_ = false;
-    duck_grace_ticks_ = 0;
-    popup_grace_ticks_ = 0;
-    alt_recover_active_ = false;
-    alt_recover_target_dist_ = 1e18;
-    wedge_attempts_ = 0;
-    roi_escape_ticks_ = 0;
-    roi_transit_ticks_ = 0;
-    entered_roi_ = false;
-
-    const auto period = std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::duration<double>(1.0 / sweep_control_hz_));
-    if (sweep_timer_) sweep_timer_->cancel();
-    sweep_timer_ = this->create_wall_timer(
-        std::max(period, std::chrono::milliseconds(20)),
-        std::bind(&ParrotMissionExecutorNode::sweepControlCb, this));
-
-    RCLCPP_INFO(this->get_logger(),
-        "Flying the ROI sweep with the velocity follower (%zu waypoints)", sweep_waypoints_.size());
-}
-
-void ParrotMissionExecutorNode::sweepControlCb()
-{
-    if (!velocity_sweep_active_) return;
-    if (!sample_roi_goal_handle_ || !sample_roi_goal_handle_->is_active() ||
-        sample_roi_goal_handle_->is_canceling())
-    {
-        stopSweep();
-        return;
-    }
-
-    constexpr double kPi = 3.14159265358979323846;
-
-    geometry_msgs::msg::PoseStamped current;
-    if (!currentPose(current)) return;
-
-    // Lidar watchdog: a dead GPU lidar leaves stale scans that drive phantom
-    // avoidance, and tree anchoring needs the lidar.  Warn early, abort late.
-    if (scanFresh())
-    {
-        scan_outage_ticks_ = 0;
-        scan_outage_warned_ = false;
-    }
-    else
-    {
-        ++scan_outage_ticks_;
-        if (!scan_outage_warned_ &&
-            scan_outage_ticks_ >= scan_outage_warn_ticks_threshold_)
-        {
-            scan_outage_warned_ = true;
-            RCLCPP_WARN(this->get_logger(),
-                "No lidar scan for %.1f s; the GPU lidar may have died "
-                "(obstacle avoidance and tree anchoring disabled)",
-                static_cast<double>(scan_outage_ticks_) / sweep_control_hz_);
-        }
-        if (scan_outage_ticks_ >= scan_outage_ticks_threshold_)
-        {
-            stopSweep();
-            abortSampling(
-                "Sweep aborted: lidar scan stopped for " +
-                std::to_string(static_cast<int>(scan_outage_timeout_)) +
-                " s. The GPU lidar sensor has died; tree anchoring is impossible.");
-            return;
-        }
-    }
-
-    // Altitude recovery watchdog: after a duck / pop-up / canopy descent, resume
-    // the search clearance once the drone has physically moved a short distance
-    // past the obstacle.  Waiting for waypoint arrival leaves it at the altered
-    // height for a whole 100 m lane ("too high for too long").
-    if (alt_recover_active_ && (duck_active_ || popup_active_))
-    {
-        const double moved = std::hypot(
-            current.pose.position.x - alt_recover_origin_x_,
-            current.pose.position.y - alt_recover_origin_y_);
-        // Closing on the waypoint, not just displacement: backing out of a
-        // wedge or drifting sideways does not count as "past the obstacle",
-        // otherwise the recovery ends before the branch is actually cleared
-        // and the drone drops straight back into it.
-        double target_dist = std::numeric_limits<double>::infinity();
-        if (sweep_index_ < sweep_waypoints_.size())
-        {
-            const auto &t = sweep_waypoints_[sweep_index_].pose.position;
-            target_dist = std::hypot(
-                t.x - current.pose.position.x, t.y - current.pose.position.y);
-        }
-        const bool clear_of_obstacle =
-            std::isfinite(alt_recover_target_dist_) &&
-            target_dist <= alt_recover_target_dist_ - alt_recover_travel_m_;
-        if (clear_of_obstacle && moved >= alt_recover_travel_m_ * 0.5)
-        {
-            alt_recover_active_ = false;
-            wedge_attempts_ = 0;
-            const bool was_duck = duck_active_;
-            duck_active_ = false;
-            popup_active_ = false;
-            if (was_duck)
-            {
-                ascend_resume_sweep_ = true;
-                setSearchClearance();
-                RCLCPP_INFO(this->get_logger(),
-                    "Climbed %.1f m of the waypoint after ducking (moved %.1f m); rising to the search clearance",
-                    alt_recover_target_dist_ - target_dist, moved);
-            }
-            else
-            {
-                descend_resume_sweep_ = true;
-                setSearchClearance();
-                RCLCPP_INFO(this->get_logger(),
-                    "Climbed %.1f m of the waypoint after pop-up (moved %.1f m); descending to the search clearance",
-                    alt_recover_target_dist_ - target_dist, moved);
-            }
-        }
-    }
-
-    // Safety net: if the map-frame pose disagrees badly with the ROI box (broken
-    // world<->map registration, or a localisation jump), the drone chases
-    // waypoints that are not where it believes they are and leaves the ROI
-    // entirely.  Abort with a clear reason instead of wandering into blank space.
-    {
-        const double escape_x = std::max(
-            0.0, std::max(sweep_min_.x - current.pose.position.x,
-                          current.pose.position.x - sweep_max_.x));
-        const double escape_y = std::max(
-            0.0, std::max(sweep_min_.y - current.pose.position.y,
-                          current.pose.position.y - sweep_max_.y));
-        const double escape = std::hypot(escape_x, escape_y);
-        if (!entered_roi_)
-        {
-            // Inbound transit: an untel eported drone starts outside the box and
-            // flies in, so being far from the ROI is expected.  Bound how long
-            // that may take instead of aborting on distance.
-            if (escape <= roi_enter_margin_)
-            {
-                entered_roi_ = true;
-                roi_escape_ticks_ = 0;
-                roi_transit_ticks_ = 0;
-                RCLCPP_INFO(this->get_logger(), "Entered the ROI; starting the sweep lanes");
-                if (descend_on_entry_)
-                {
-                    descend_on_entry_ = false;
-                    if (set_clearance_client_ && set_clearance_client_->service_is_ready() &&
-                        sample_roi_goal_handle_)
-                    {
-                        auto request =
-                            std::make_shared<rs1_interfaces::srv::SetClearance::Request>();
-                        request->clearance =
-                            sample_roi_goal_handle_->get_goal()->search_clearance;
-                        set_clearance_client_->async_send_request(request);
-                        RCLCPP_INFO(this->get_logger(),
-                            "Descending to the search clearance for the sweep");
-                    }
-                }
-            }
-            else if (++roi_transit_ticks_ >= roi_transit_ticks_threshold_)
-            {
-                stopSweep();
-                abortSampling(
-                    "Sweep aborted: could not reach the ROI within " +
-                    std::to_string(static_cast<int>(roi_transit_timeout_)) +
-                    " s. Check the world<->parrot1_map frame and the drone's start pose.");
-                return;
-            }
-        }
-        else if (escape > roi_escape_margin_)
-        {
-            if (++roi_escape_ticks_ >= roi_escape_ticks_threshold_)
-            {
-                stopSweep();
-                abortSampling(
-                    "Sweep aborted: drone left the ROI by more than " +
-                    std::to_string(static_cast<int>(roi_escape_margin_)) +
-                    " m, so world and parrot1_map disagree. Check /mission/alignment "
-                    "and map->odom before sweeping.");
-                return;
-            }
-        }
-        else
-        {
-            roi_escape_ticks_ = 0;
-        }
-    }
-
-    // Consume any waypoints we are already standing on.
-    bool advanced = false;
-    bool arrived = false;
-    while (sweep_index_ < sweep_waypoints_.size())
-    {
-        const auto &t = sweep_waypoints_[sweep_index_].pose.position;
-        if (std::hypot(t.x - current.pose.position.x, t.y - current.pose.position.y) <= waypoint_tolerance_)
-        {
-            // The next leg runs from this waypoint to the following one.
-            seg_start_ = t;
-            segment_ready_ = true;
-            avoid_offset_ = 0.0;
-            avoid_engaged_ = false;
-            avoid_side_ = 0;
-            avoid_clear_ticks_ = 0;
-            avoid_stuck_ticks_ = 0;
-            reverse_ticks_ = 0;
-            reversing_ = false;
-            skip_ticks_ = 0;
-            no_progress_ticks_ = 0;
-            consecutive_skips_ = 0;
-            leg_best_along_ = -1e18;
-            ++sweep_index_;
-            advanced = true;
-            arrived = true;
-            continue;
-        }
-        break;
-    }
-
-    // If the drone is close to the waypoint but an obstacle (e.g. a tree) keeps
-    // it from reaching the tolerance, give up and move on to the next point
-    // instead of fighting the collision avoidance forever.
-    if (sweep_index_ < sweep_waypoints_.size())
-    {
-        const auto &t = sweep_waypoints_[sweep_index_].pose.position;
-        const double dist_to_target =
-            std::hypot(t.x - current.pose.position.x, t.y - current.pose.position.y);
-        if (dist_to_target <= waypoint_skip_distance_ &&
-            dist_to_target > waypoint_tolerance_ &&
-            (avoid_engaged_ || reversing_))
-        {
-            if (++skip_ticks_ >= skip_ticks_threshold_)
-            {
-                RCLCPP_WARN(this->get_logger(),
-                    "Waypoint unreachable with an obstacle in the way; skipping it");
-                seg_start_ = t;
-                segment_ready_ = true;
-                avoid_offset_ = 0.0;
-                avoid_engaged_ = false;
-                avoid_side_ = 0;
-                avoid_clear_ticks_ = 0;
-                avoid_stuck_ticks_ = 0;
-                reverse_ticks_ = 0;
-                reversing_ = false;
-                skip_ticks_ = 0;
-                no_progress_ticks_ = 0;
-                leg_best_along_ = -1e18;
-                ++sweep_index_;
-                advanced = true;
-                if (++consecutive_skips_ >= max_consecutive_skips_)
-                {
-                    maybeDuckRecovery();
-                }
-            }
-        }
-        else
-        {
-            skip_ticks_ = 0;
-        }
-    }
-
-    // Stuck mid-lane safety: if the drone stops making ALONG-TRACK progress
-    // toward the current waypoint (e.g. wedged against a trunk with no side
-    // route), give up on this leg and move on instead of oscillating back and
-    // forth forever.  Progress is measured ALONG the leg, not as Euclidean
-    // distance to the endpoint, so legitimately weaving sideways around trees
-    // no longer counts as "blocked" - previously this fired on every U-turn and
-    // skipped healthy lanes, leaving parts of the ROI unswept.
-    if (sweep_index_ < sweep_waypoints_.size())
-    {
-        const auto &t = sweep_waypoints_[sweep_index_].pose.position;
-        double leg_ux = t.x - seg_start_.x;
-        double leg_uy = t.y - seg_start_.y;
-        const double leg_len = std::hypot(leg_ux, leg_uy);
-        double along = 0.0;
-        if (leg_len >= 1e-3)
-        {
-            leg_ux /= leg_len;
-            leg_uy /= leg_len;
-            along = std::clamp(
-                (current.pose.position.x - seg_start_.x) * leg_ux +
-                    (current.pose.position.y - seg_start_.y) * leg_uy,
-                0.0, leg_len);
-        }
-        const bool progressing = along > leg_best_along_ + 0.3;
-        if (popup_grace_ticks_ > 0 || duck_grace_ticks_ > 0)
-        {
-            // Climbing after a pop-up (or descending after a duck): hold off
-            // skipping so the altitude change has time to clear the wedge
-            // before the watchdog fires again.
-            if (popup_grace_ticks_ > 0)
-            {
-                if (progressing)
-                {
-                    popup_grace_ticks_ = 0;
-                }
-                else if (--popup_grace_ticks_ == 0 && popup_active_)
-                {
-                    // The pop-up did not clear the obstructed band either (the
-                    // canopy was deeper than the target height).  Come back down
-                    // and escalate: the next pop-up climbs one step higher.
-                    popup_active_ = false;
-                    alt_recover_active_ = false;
-                    ++wedge_attempts_;
-                    descend_resume_sweep_ = true;
-                    setSearchClearance();
-                    RCLCPP_WARN(this->get_logger(),
-                        "Pop-up did not clear the obstructed band; the next recovery will climb higher");
-                }
-            }
-            if (duck_grace_ticks_ > 0)
-            {
-                if (progressing)
-                {
-                    // The duck is working (moving under the branches): hand
-                    // control back to the normal no-progress watchdog instead
-                    // of timing out to a pop-up mid-lane.
-                    duck_grace_ticks_ = 0;
-                }
-                else if (--duck_grace_ticks_ == 0 && duck_active_)
-                {
-                    // The duck never cleared the wedge; fall back to popping
-                    // above the canopy.
-                    duck_active_ = false;
-                    ++wedge_attempts_;
-                    maybePopUpRecovery();
-                }
-            }
-            if (progressing)
-            {
-                leg_best_along_ = along;
-            }
-            no_progress_ticks_ = 0;
-        }
-        else if (progressing)
-        {
-            leg_best_along_ = along;
-            no_progress_ticks_ = 0;
-        }
-        else if (++no_progress_ticks_ >= no_progress_ticks_threshold_)
-        {
-            // NOTE: `reversing_` deliberately does NOT reset this timer any more.
-            // A reverse/dodge oscillation makes negative along-track progress, and
-            // clearing the timer on every reverse tick meant a genuine wedge could
-            // sit there for minutes without ever attempting a recovery - which is
-            // exactly the "it waits too long and then gives up on the lane".
-            no_progress_ticks_ = 0;
-            bool skip_leg = false;
-            if (!duck_active_ && !popup_active_)
-            {
-                if (wedge_attempts_ >= max_recovery_attempts_)
-                {
-                    // The whole ladder has been tried on this spot; stop wasting
-                    // time here and sacrifice the leg.
-                    skip_leg = true;
-                }
-                else
-                {
-                    RCLCPP_WARN(this->get_logger(),
-                        "No along-track progress for %.1f s (blocked); attempting an altitude recovery (%d/%d)",
-                        no_progress_timeout_, wedge_attempts_ + 1, max_recovery_attempts_);
-                    maybeDuckRecovery();
-                    // No recovery was possible (service not ready): drop the leg
-                    // instead of sitting here forever.
-                    skip_leg = !duck_active_ && !popup_active_;
-                }
-            }
-            else
-            {
-                // A recovery is still holding the drone at the altered height but
-                // it has stalled again: count it as a failed rung and escalate
-                // (the next attempt ducks and then pops one step higher) rather
-                // than abandoning the lane.
-                duck_active_ = false;
-                popup_active_ = false;
-                alt_recover_active_ = false;
-                ++wedge_attempts_;
-                descend_resume_sweep_ = true;
-                setSearchClearance();
-                RCLCPP_WARN(this->get_logger(),
-                    "Altitude recovery did not clear the obstruction (%d/%d); escalating",
-                    wedge_attempts_, max_recovery_attempts_);
-                skip_leg = wedge_attempts_ >= max_recovery_attempts_;
-            }
-
-            if (skip_leg)
-            {
-                RCLCPP_WARN(this->get_logger(),
-                    "No along-track progress for %.1f s (blocked); skipping leg",
-                    no_progress_timeout_);
-                seg_start_ = t;
-                segment_ready_ = true;
-                avoid_offset_ = 0.0;
-                avoid_engaged_ = false;
-                avoid_side_ = 0;
-                avoid_clear_ticks_ = 0;
-                avoid_stuck_ticks_ = 0;
-                reverse_ticks_ = 0;
-                reversing_ = false;
-                skip_ticks_ = 0;
-                no_progress_ticks_ = 0;
-                leg_best_along_ = -1e18;
-                wedge_attempts_ = 0;
-                ++sweep_index_;
-                advanced = true;
-                if (++consecutive_skips_ >= max_consecutive_skips_)
-                {
-                    maybeDuckRecovery();
-                }
-            }
-        }
-    }
-
-    if (advanced)
-    {
-        // If the drone popped up to clear a wedge and has now physically
-        // reached a waypoint, descend back to the search clearance to resume
-        // trunk-level detection.
-        if (arrived && duck_active_)
-        {
-            duck_active_ = false;
-            alt_recover_active_ = false;
-            alt_recover_target_dist_ = 1e18;
-            wedge_attempts_ = 0;
-            ascend_resume_sweep_ = true;
-            setSearchClearance();
-            RCLCPP_INFO(this->get_logger(),
-                "Reached a waypoint after ducking; ascending to search clearance");
-        }
-        else if (arrived && popup_active_)
-        {
-            popup_active_ = false;
-            alt_recover_active_ = false;
-            alt_recover_target_dist_ = 1e18;
-            wedge_attempts_ = 0;
-            descend_resume_sweep_ = true;
-            setSearchClearance();
-            RCLCPP_INFO(this->get_logger(),
-                "Reached a waypoint after pop-up; descending to search clearance");
-        }
-        waypoints_remaining_ = static_cast<int16_t>(
-            std::min<std::size_t>(sweep_waypoints_.size() - sweep_index_, 32767));
-        publishSamplingFeedback("Sweeping ROI");
-    }
-
-    if (sweep_index_ >= sweep_waypoints_.size())
-    {
-        stopSweep();
-        finishSampling();
-        return;
-    }
-
-    const auto &target = sweep_waypoints_[sweep_index_].pose.position;
-    if (!segment_ready_)
-    {
-        seg_start_ = current.pose.position;
-        segment_ready_ = true;
-    }
-
-    // Follow the swath line: aim at a look-ahead point on the segment, then add
-    // a perpendicular avoidance offset that decays back to zero (rejoining the
-    // line) once a way around the obstacle opens up.
-    double ux = target.x - seg_start_.x;
-    double uy = target.y - seg_start_.y;
-    const double seg_len = std::hypot(ux, uy);
-    if (seg_len < 1e-3)
-    {
-        ux = 1.0;
-        uy = 0.0;
-    }
-    else
-    {
-        ux /= seg_len;
-        uy /= seg_len;
-    }
-
-    const double px = current.pose.position.x;
-    const double py = current.pose.position.y;
-    const auto &q = current.pose.orientation;
-    const double current_yaw = std::atan2(
-        2.0 * (q.w * q.z + q.x * q.y), 1.0 - 2.0 * (q.y * q.y + q.z * q.z));
-    const double along = std::clamp(
-        (px - seg_start_.x) * ux + (py - seg_start_.y) * uy, 0.0, seg_len);
-    const double look = std::min(along + lookahead_distance_, seg_len);
-    const double path_x = seg_start_.x + ux * look;
-    const double path_y = seg_start_.y + uy * look;
-    const double remaining = std::max(0.0, seg_len - along);
-    const bool near_end = remaining <= lookahead_distance_;
-    const double perp_x = -uy;  // left of travel direction
-    const double perp_y = ux;
-
-    // Pick a side to detour to when something is close ahead, and hold that
-    // side for the whole encounter so noisy canopy returns cannot flip it back
-    // and forth. Engagement uses hysteresis: it only clears once the obstacle
-    // stays beyond the avoidance distance plus a margin for several ticks.
-    double left = std::numeric_limits<double>::infinity();
-    double front = std::numeric_limits<double>::infinity();
-    double right = std::numeric_limits<double>::infinity();
-    const bool have_scan = scanClearances(left, front, right);
-    const bool front_blocked = have_scan && std::isfinite(front) && front < avoid_distance_;
-
-    // Widest contiguous angular gap in the forward half-plane. Unlike the fixed
-    // min-range cones, this cannot be poisoned by a single nearby trunk and is
-    // used to (a) pick the escape side and (b) declare a route open.
-    double gap_centre = 0.0;
-    double gap_width = -1.0;
-    const bool have_gap = widestGap(gap_centre, gap_width);
-    const bool gap_open = have_gap && gap_width >= min_gap_width_;
-
-    if (front_blocked)
-    {
-        avoid_engaged_ = true;
-        avoid_clear_ticks_ = 0;
-    }
-    else if (avoid_engaged_)
-    {
-        if (!have_scan || !std::isfinite(front) || front > avoid_distance_ + avoid_disengage_margin_)
-        {
-            if (++avoid_clear_ticks_ >= 4)
-            {
-                avoid_engaged_ = false;
-                avoid_side_ = 0;
-                avoid_clear_ticks_ = 0;
-            }
-        }
-        else
-        {
-            avoid_clear_ticks_ = 0;
-        }
-    }
-
-    // Whether the endpoint is visible from here (clear line of sight).
-    const double target_bearing = std::remainder(
-        std::atan2(target.y - py, target.x - px) - current_yaw, 2.0 * kPi);
-    double target_range = std::numeric_limits<double>::infinity();
-    const bool target_clear = !scanMinRange(target_bearing, steering_cone_, target_range) ||
-        target_range > obstacle_stop_distance_;
-
-    double desired_offset = 0.0;
-    if (avoid_engaged_)
-    {
-        if (avoid_side_ == 0)
-        {
-            // Head for the widest angular gap; fall back to the roomier fixed
-            // side cone only when no contiguous gap was found at all.
-            if (have_gap)
-            {
-                avoid_side_ = (gap_centre >= 0.0) ? 1 : -1;
-            }
-            else
-            {
-                avoid_side_ = (left >= right) ? 1 : -1;
-            }
-        }
-        desired_offset = static_cast<double>(avoid_side_) * avoid_offset_m_;
-    }
-    else if (near_end && !target_clear)
-    {
-        // Hold the current detour offset while the endpoint is still blocked so
-        // the drone keeps going around instead of rejoining the blocked line.
-        desired_offset = avoid_offset_;
-    }
-    avoid_offset_ += std::clamp(desired_offset - avoid_offset_, -avoid_rate_, avoid_rate_);
-    avoid_offset_ = std::clamp(avoid_offset_, -avoid_offset_m_, avoid_offset_m_);
-
-    const double steer_x = path_x + perp_x * avoid_offset_;
-    const double steer_y = path_y + perp_y * avoid_offset_;
-    const double sdx = steer_x - px;
-    const double sdy = steer_y - py;
-    const double sdist = std::hypot(sdx, sdy);
-    const double desired_yaw = (sdist > 1e-3) ? std::atan2(sdy, sdx) : current_yaw;
-    const double heading_error = std::remainder(desired_yaw - current_yaw, 2.0 * kPi);
-
-    geometry_msgs::msg::Twist cmd;
-    cmd.angular.z = std::clamp(sweep_yaw_gain_ * heading_error, -max_yaw_rate_, max_yaw_rate_);
-
-    // Reduce speed and add a little yaw damping when the robot is close to a
-    // canopy obstacle so it does not oscillate on the obstacle boundary.
-    const double obstacle_bias = (std::isfinite(front) && front < avoid_distance_ * 1.5) ? 0.5 : 1.0;
-    cmd.angular.z *= obstacle_bias;
-
-    // Allow a slow forward push whenever the chosen detour path has room, even
-    // if the exact centerline is temporarily blocked by a trunk or canopy.
-    double steer_range = std::numeric_limits<double>::infinity();
-    const bool steer_clear =
-        !scanMinRange(heading_error, steering_cone_, steer_range) ||
-        steer_range > obstacle_stop_distance_;
-    const bool side_route_open =
-        (std::isfinite(left) && left > obstacle_stop_distance_ * 0.75) ||
-        (std::isfinite(right) && right > obstacle_stop_distance_ * 0.75);
-
-    const bool can_drive = std::abs(heading_error) < heading_gate_ &&
-        (steer_clear || side_route_open || gap_open);
-    if (can_drive)
-    {
-        const double speed = std::min(max_sweep_speed_, sweep_speed_gain_ * sdist);
-        double linear_speed = std::max(0.0, speed);
-        if (front_blocked)
-        {
-            // Slow down in proportion to the remaining clearance instead of the
-            // old fixed 45% multiplier.  With avoid_distance at 5 m there is
-            // almost always a tree inside that radius in this forest, so the
-            // fixed factor pinned the sweep to 0.45*max_sweep_speed (1.35 m/s)
-            // and made the higher top speed pointless.
-            const double clearance = std::isfinite(front) ? front : avoid_distance_;
-            linear_speed *= std::clamp(
-                clearance / avoid_distance_, avoid_min_slowdown_, 1.0);
-        }
-        cmd.linear.x = linear_speed;
-    }
-
-    // If the held side turns out to be fully blocked (trunk dead ahead with no
-    // room either side at lidar height), flip the side once after a short
-    // delay instead of oscillating or freezing in place.
-    if (avoid_engaged_ && !steer_clear && !side_route_open)
-    {
-        if (++avoid_stuck_ticks_ >= 25)
-        {
-            avoid_side_ *= -1;
-            avoid_stuck_ticks_ = 0;
-            avoid_clear_ticks_ = 0;
-        }
-    }
-    else
-    {
-        avoid_stuck_ticks_ = 0;
-    }
-
-    // Hard-wedge detection: stuck near the end of a leg with no forward route.
-    // The reverse/avoidance oscillation below keeps flipping reversing_ on and
-    // off, which suppresses the no-progress watchdog, so this uses its own
-    // timer and ducks/ pops up to break the deadlock.
-    if (!can_drive && near_end)
-    {
-        if (++hard_wedge_ticks_ >= hard_wedge_ticks_threshold_)
-        {
-            hard_wedge_ticks_ = 0;
-            if (wedge_attempts_ >= max_recovery_attempts_)
-            {
-                // The whole ladder has already been tried on this spot.  This
-                // branch used to call maybeDuckRecovery() unconditionally, and
-                // because the grace-window expiries bump wedge_attempts_ without
-                // consulting the limit, the drone re-armed the ladder forever:
-                // observed 20 recovery attempts, 0 leg skips, sweep frozen at
-                // 44% until the test timed out.  Force the no-progress watchdog
-                // to fire so the leg is abandoned through that single path.
-                no_progress_ticks_ = no_progress_ticks_threshold_;
-            }
-            else
-            {
-                maybeDuckRecovery();
-            }
-        }
-    }
-    else
-    {
-        hard_wedge_ticks_ = 0;
-    }
-
-    // When wedged near the end of a leg with no forward route, back out to make
-    // room and then drive around, instead of sitting still. Once reversing,
-    // keep going until there is clearly clear space ahead so it does not hunt
-    // back and forth.
-    if (reversing_)
-    {
-        if (std::isfinite(front) && front > avoid_distance_ + avoid_disengage_margin_)
-        {
-            reversing_ = false;
-        }
-        else
-        {
-            double rear_range = std::numeric_limits<double>::infinity();
-            const bool rear_clear = !scanMinRange(kPi, steering_cone_, rear_range) ||
-                rear_range > obstacle_stop_distance_ * 0.8;
-            if (rear_clear)
-            {
-                cmd.linear.x = -0.8;
-                cmd.angular.z = 0.0;
-            }
-            else
-            {
-                reversing_ = false;
-            }
-        }
-    }
-    else if (!can_drive && near_end)
-    {
-        if (++reverse_ticks_ >= 8)
-        {
-            reversing_ = true;
-            reverse_ticks_ = 0;
-        }
-    }
-    else
-    {
-        reverse_ticks_ = 0;
-    }
-
-    cmd_vel_pub_->publish(cmd);
-}
-
-void ParrotMissionExecutorNode::maybeDuckRecovery()
-{
-    // Hysteresis for "the drone is flying above the sweep altitude" so noise
-    // around the search clearance does not cancel a duck.
-    constexpr double kElevatedClearanceMargin = 0.3;
-    // Slip UNDER the oak branches instead of popping over the canopy.  At the
-    // search clearance the forward lidar sits in the branch zone and sees oak
-    // branches in every direction, but a metre off the deck only the widely
-    // spaced trunks remain, so the gap-seeking avoidance can find a route while
-    // tree detection stays active.  Ascend again on arrival (the
-    // `arrived && duck_active_` branch in sweepControlCb); if the duck does not
-    // clear the wedge in time the grace countdown falls back to a pop-up.
-    if (duck_active_ || popup_active_)
-    {
-        return;
-    }
-    if (!set_clearance_client_ || !set_clearance_client_->service_is_ready())
-    {
-        RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 5000,
-            "Cannot duck: SetClearance service unavailable");
-        return;
-    }
-
-    // If the drone is currently flying well ABOVE the search altitude (e.g. it
-    // is still up at the transit clearance, or a pop-up left it high), dropping
-    // straight to the duck clearance would plunge it through the branches.
-    // Return to the search clearance first; ducking only makes sense once it is
-    // already down at trunk level.
-    //
-    // This is judged from the clearance we last COMMANDED, not from a world-z
-    // difference against the last waypoint: the ground in v2_forest rises by up
-    // to ~7 m across a lane, so a world-z test fired constantly on the uphill
-    // half of the ROI and silently turned every duck into a no-op descent to
-    // the search clearance - the drone then stayed wedged in the branches with
-    // only a warning in the log to show for it.
-    double target = duck_clearance_;
-    geometry_msgs::msg::PoseStamped here;
-    const auto mission_goal = sample_roi_goal_handle_;
-    const double search_clearance =
-        mission_goal ? static_cast<double>(mission_goal->get_goal()->search_clearance)
-                     : duck_clearance_;
-    if (commanded_clearance_m_ > 0.0 &&
-        commanded_clearance_m_ > search_clearance + kElevatedClearanceMargin)
-    {
-        target = search_clearance;
-        RCLCPP_WARN(this->get_logger(),
-            "Currently holding a %.1f m clearance; descending to the search clearance (%.1f m) "
-            "before ducking under the branches",
-            commanded_clearance_m_, search_clearance);
-    }
-
-    duck_active_ = true;
-    duck_grace_ticks_ = duck_grace_ticks_threshold_;
-    if (currentPose(here))
-    {
-        alt_recover_origin_x_ = here.pose.position.x;
-        alt_recover_origin_y_ = here.pose.position.y;
-        alt_recover_target_dist_ = distanceToCurrentWaypoint(here);
-        alt_recover_active_ = true;
-    }
-    auto req = std::make_shared<rs1_interfaces::srv::SetClearance::Request>();
-    req->clearance = target;
-    commanded_clearance_m_ = static_cast<double>(target);
-    set_clearance_client_->async_send_request(req);
-    RCLCPP_WARN(this->get_logger(),
-        "Recovery descent to %.1f m clearance (attempt %d)", target, wedge_attempts_ + 1);
-}
-
-void ParrotMissionExecutorNode::maybePopUpRecovery()
-{
-    // Ascend above the canopy (the drone is a quadcopter; up is always clear)
-    // so the lidar sees open space and the follower can reach the next
-    // waypoint.  The descend happens on physical arrival (the
-    // `arrived && popup_active_` branch in sweepControlCb).
-    if (popup_active_)
-    {
-        return;
-    }
-    if (!set_clearance_client_ || !set_clearance_client_->service_is_ready())
-    {
-        RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 5000,
-            "Cannot pop up: SetClearance service unavailable");
-        return;
-    }
-    popup_active_ = true;
-    // Give the drone time to climb (max_vertical_speed is now 2 m/s, so 8 m
-    // takes ~4 s) before the no-progress watchdog starts skipping legs again.
-    popup_grace_ticks_ = popup_grace_ticks_threshold_;
-    // Escalate: the first pop-up targets popup_clearance (above the ~6.5 m oak
-    // canopy); every further attempt in the same wedge climbs another step, up
-    // to popup_max_clearance, so a taller stand is still cleared instead of
-    // looping at a height that is inside the branches.
-    const double climb_to = std::min(
-        popup_max_clearance_,
-        popup_clearance_ + popup_step_m_ * static_cast<double>(wedge_attempts_));
-    geometry_msgs::msg::PoseStamped here;
-    if (currentPose(here))
-    {
-        alt_recover_origin_x_ = here.pose.position.x;
-        alt_recover_origin_y_ = here.pose.position.y;
-        alt_recover_target_dist_ = distanceToCurrentWaypoint(here);
-        alt_recover_active_ = true;
-    }
-    auto req = std::make_shared<rs1_interfaces::srv::SetClearance::Request>();
-    req->clearance = climb_to;
-    commanded_clearance_m_ = static_cast<double>(climb_to);
-    set_clearance_client_->async_send_request(req);
-    RCLCPP_WARN(this->get_logger(),
-        "Popping up to %.1f m to clear the canopy (attempt %d)", climb_to, wedge_attempts_ + 1);
-}
-
-bool ParrotMissionExecutorNode::forwardClear(double & min_range) const
-{
-    min_range = std::numeric_limits<double>::infinity();
-    if (!scanFresh()) return true;
-
-    const auto &scan = *latest_scan_;
-    if (scan.ranges.empty() || scan.angle_increment == 0.0) return true;
-
-    for (std::size_t i = 0; i < scan.ranges.size(); ++i)
-    {
-        const double angle = scan.angle_min + static_cast<double>(i) * scan.angle_increment;
-        if (std::abs(angle) > forward_cone_) continue;
-        const double range = scan.ranges[i];
-        if (!std::isfinite(range) || range <= 0.0) continue;
-        min_range = std::min(min_range, range);
-    }
-    if (!std::isfinite(min_range)) return true;
-    return min_range > obstacle_stop_distance_;
-}
-
-void ParrotMissionExecutorNode::stopSweep()
-{
-    if (sweep_timer_)
-    {
-        sweep_timer_->cancel();
-        sweep_timer_.reset();
-    }
-    velocity_sweep_active_ = false;
-
-    // VelocityControl holds the last command, so actively command a stop.
-    if (cmd_vel_pub_)
-    {
-        cmd_vel_pub_->publish(geometry_msgs::msg::Twist());
-    }
-}
-
-void ParrotMissionExecutorNode::scanCb(const sensor_msgs::msg::LaserScan & msg)
-{
-    latest_scan_ = std::make_shared<const sensor_msgs::msg::LaserScan>(msg);
     latest_scan_time_ = this->now();
 }
 
-bool ParrotMissionExecutorNode::scanFresh() const
+void ParrotMissionExecutorNode::lidarWatchdogCb()
 {
-    if (!latest_scan_ || latest_scan_time_.nanoseconds() == 0) return false;
+    // Only guard the sampling sweep (phase 2).  Phase 1 navigation and idle are
+    // not lidar-critical.
+    if (!sample_roi_goal_handle_ || !sample_roi_goal_handle_->is_active() ||
+        sample_roi_goal_handle_->is_canceling())
+    {
+        return;
+    }
+
+    // No scan received since the sweep started yet: count from the sweep start.
+    if (latest_scan_time_.nanoseconds() == 0)
+    {
+        return;
+    }
+
     const double age = (this->now() - latest_scan_time_).seconds();
-    return age >= 0.0 && age <= scan_stale_timeout_;
+    if (age >= scan_outage_timeout_)
+    {
+        abortSampling(
+            "Sweep aborted: lidar scan stopped for " +
+            std::to_string(static_cast<int>(age)) +
+            " s. The GPU lidar (or its ros_gz bridge) has died; tree anchoring "
+            "and Nav2 obstacle avoidance are impossible.");
+    }
 }
 
-bool ParrotMissionExecutorNode::scanMinRange(double centre, double half_width, double & out) const
+
+void ParrotMissionExecutorNode::stopSweep()
 {
-    out = std::numeric_limits<double>::infinity();
-    if (!scanFresh()) return false;
-
-    const auto &scan = *latest_scan_;
-    if (scan.ranges.empty() || scan.angle_increment == 0.0) return false;
-
-    constexpr double kTwoPi = 6.28318530717958647692;
-    bool any = false;
-    for (std::size_t i = 0; i < scan.ranges.size(); ++i)
+    if (sweep_nav_goal_handle_)
     {
-        const double angle = scan.angle_min + static_cast<double>(i) * scan.angle_increment;
-        if (std::abs(std::remainder(angle - centre, kTwoPi)) > half_width) continue;
-        const double range = scan.ranges[i];
-        if (!std::isfinite(range) || range <= 0.0) continue;
-        any = true;
-        out = std::min(out, range);
+        navigate_to_pose_client_->async_cancel_goal(sweep_nav_goal_handle_);
+        sweep_nav_goal_handle_.reset();
     }
-    return any;
-}
-
-bool ParrotMissionExecutorNode::scanClearances(double & left, double & front, double & right) const
-{
-    if (!scanFresh()) return false;
-
-    // Front sector is the narrow forward cone; the side sectors cover the rest
-    // of the forward half-plane so the detour can pick the roomier side.
-    const double side_centre = (forward_cone_ + side_cone_) * 0.5;
-    const double side_half = (side_cone_ - forward_cone_) * 0.5;
-    const bool have_front = scanMinRange(0.0, forward_cone_, front);
-    const bool have_left = scanMinRange(side_centre, side_half, left);
-    const bool have_right = scanMinRange(-side_centre, side_half, right);
-    return have_front || have_left || have_right;
-}
-
-bool ParrotMissionExecutorNode::widestGap(double & centre, double & width) const
-{
-    centre = 0.0;
-    width = -1.0;
-    if (!scanFresh()) return false;
-
-    constexpr double kPi = 3.14159265358979323846;
-    constexpr double kHalfPi = 1.57079632679489661923;
-    const auto & scan = *latest_scan_;
-    const std::size_t n = scan.ranges.size();
-    if (n == 0 || scan.angle_increment == 0.0) return false;
-
-    // A beam is "clear" when its range is finite and beyond the stop distance,
-    // so a single nearby trunk no longer marks a whole fixed cone as blocked.
-    const double threshold = obstacle_stop_distance_ * 0.9;
-
-    // Restrict the search to the forward half-plane (bearings within +/-90 deg
-    // of the heading) so the drone keeps making progress along the lane.
-    std::vector<std::pair<double, bool>> beams;
-    beams.reserve(n);
-    for (std::size_t i = 0; i < n; ++i)
+    if (explore_to_pose_goal_handle_)
     {
-        double a = scan.angle_min + static_cast<double>(i) * scan.angle_increment;
-        a = std::remainder(a, 2.0 * kPi);  // [-pi, pi]
-        if (std::abs(a) > kHalfPi) continue;
-        const double r = scan.ranges[i];
-        beams.emplace_back(a, std::isfinite(r) && r > threshold);
+        explore_to_pose_client_->async_cancel_goal(explore_to_pose_goal_handle_);
+        explore_to_pose_goal_handle_.reset();
     }
-    if (beams.empty()) return false;
-
-    // Sort by bearing so the wrap across 0 deg forms one contiguous run.
-    std::sort(beams.begin(), beams.end(),
-              [](const auto & l, const auto & r) { return l.first < r.first; });
-
-    // Longest contiguous run of clear beams.
-    std::size_t best_start = 0, best_len = 0;
-    std::size_t run_start = 0, run_len = 0;
-    for (std::size_t i = 0; i < beams.size(); ++i)
-    {
-        if (beams[i].second)
-        {
-            if (run_len == 0) run_start = i;
-            ++run_len;
-        }
-        else
-        {
-            if (run_len > best_len) { best_len = run_len; best_start = run_start; }
-            run_len = 0;
-        }
-    }
-    if (run_len > best_len) { best_len = run_len; best_start = run_start; }
-    if (best_len == 0) return false;
-
-    const double a0 = beams[best_start].first;
-    const double a1 = beams[best_start + best_len - 1].first;
-    width = std::abs(a1 - a0) + scan.angle_increment;
-    centre = 0.5 * (a0 + a1);
-    return true;
+    exploring_for_sweep_ = false;
 }
 
 

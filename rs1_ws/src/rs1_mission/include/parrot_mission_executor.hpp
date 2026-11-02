@@ -15,14 +15,12 @@
 #include "tf2/time.h"
 
 #include "geometry_msgs/msg/pose_stamped.hpp"
-#include "geometry_msgs/msg/twist.hpp"
 #include "sensor_msgs/msg/laser_scan.hpp"
 #include "nav_msgs/msg/occupancy_grid.hpp"
 #include "nav_msgs/msg/path.hpp"
 
 #include "rclcpp_action/rclcpp_action.hpp"
 #include "nav2_msgs/action/navigate_to_pose.hpp"
-#include "nav2_msgs/action/navigate_through_poses.hpp"
 #include "nav2_msgs/action/compute_path_to_pose.hpp"
 
 #include "rs1_interfaces/action/traverse_to_roi.hpp"
@@ -125,40 +123,36 @@ private:
     void mergeTree(const rs1_interfaces::msg::TreeLocation & tree);
     std::size_t publishTreeMap();
     void finishSampling();
-    void maybePopUpRecovery();
-    void maybeDuckRecovery();
     void abortSampling(const std::string & message);
     void cancelSampling();
     void finishCancelledSampling();
     void sampleROICancelResponseCb(
         std::shared_ptr<rclcpp_action::ServerGoalHandle<rs1_interfaces::action::SampleROI>> mission_goal,
-        rclcpp_action::Client<nav2_msgs::action::NavigateThroughPoses>::CancelResponse::SharedPtr response);
-    void navigateThroughPosesResponseCb(
-        rclcpp_action::ClientGoalHandle<nav2_msgs::action::NavigateThroughPoses>::SharedPtr goal_handle);
-    void navigateThroughPosesResultCb(
-        const rclcpp_action::ClientGoalHandle<nav2_msgs::action::NavigateThroughPoses>::WrappedResult & result);
-    void navigateThroughPosesFeedbackCb(
-        rclcpp_action::ClientGoalHandle<nav2_msgs::action::NavigateThroughPoses>::SharedPtr goal_handle,
-        const std::shared_ptr<const nav2_msgs::action::NavigateThroughPoses::Feedback> feedback);
+        rclcpp_action::Client<nav2_msgs::action::NavigateToPose>::CancelResponse::SharedPtr response);
+    // Per-waypoint Nav2 sweep: fly the lanes one NavigateToPose goal at a time
+    // so the costmap only needs to be valid one leg ahead of the drone (a single
+    // NavigateThroughPoses across the whole box fails on an incomplete map).
+    void navigateToNextWaypoint();
+    void sweepWaypointResponseCb(
+        rclcpp_action::ClientGoalHandle<nav2_msgs::action::NavigateToPose>::SharedPtr goal_handle);
+    void sweepWaypointResultCb(
+        const rclcpp_action::ClientGoalHandle<nav2_msgs::action::NavigateToPose>::WrappedResult & result);
     void stopDetection();
     void restoreTransitClearance();
+    // Called from the sweep waypoint feedback/result callbacks: descends from the
+    // transit clearance to the search clearance once the drone is inside the ROI
+    // box.
+    void maybeDescendOnEntry();
+    // Lidar watchdog: the sweep relies on the lidar for tree anchoring and on
+    // Nav2's costmap for obstacle avoidance, so a dead lidar stalls the drone
+    // silently.  Abort sampling with a clear message instead.
+    void scanCb(const sensor_msgs::msg::LaserScan & msg);
+    void lidarWatchdogCb();
     void publishSamplingFeedback(const std::string & stage);
     bool currentPose(geometry_msgs::msg::PoseStamped & pose) const;
-    // Ground distance from a pose to the current sweep waypoint (infinity when
-    // there is no active waypoint).  Used as the anchor for altitude recoveries
-    // so they only end once the drone has genuinely closed on the target.
-    double distanceToCurrentWaypoint(const geometry_msgs::msg::PoseStamped & pose) const;
 
-    // Direct velocity lane follower: flies the swath lines without the costmap.
-    void beginVelocitySweep();
-    void sweepControlCb();
+    // Cancels the in-flight per-waypoint sweep goal and any exploration fallback.
     void stopSweep();
-    void scanCb(const sensor_msgs::msg::LaserScan & msg);
-    bool forwardClear(double & min_range) const;
-    bool scanMinRange(double centre, double half_width, double & out) const;
-    bool scanClearances(double & left, double & front, double & right) const;
-    bool widestGap(double & centre, double & width) const;
-    bool scanFresh() const;
 
     bool validROIBox(const geometry_msgs::msg::Point & min, const geometry_msgs::msg::Point & max) const;
     bool prepareSweepBox();
@@ -272,6 +266,8 @@ private:
     rclcpp_action::Client<nav2_msgs::action::NavigateToPose>::SharedPtr navigate_to_pose_client_;
     rclcpp_action::Client<nav2_msgs::action::NavigateToPose>::SendGoalOptions navigate_to_pose_goal_options_;
     rclcpp_action::ClientGoalHandle<nav2_msgs::action::NavigateToPose>::SharedPtr navigate_to_pose_goal_handle_;
+    // Goal handle for the per-waypoint sweep navigation (see navigateToNextWaypoint).
+    rclcpp_action::ClientGoalHandle<nav2_msgs::action::NavigateToPose>::SharedPtr sweep_nav_goal_handle_;
 
     // TF for checking Parrot's arrival at the ROI
     std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
@@ -310,14 +306,16 @@ private:
     // Phase 2: ROI sampling server/clients and detected tree map
     rclcpp_action::Server<rs1_interfaces::action::SampleROI>::SharedPtr sample_roi_server_;
     std::shared_ptr<rclcpp_action::ServerGoalHandle<rs1_interfaces::action::SampleROI>> sample_roi_goal_handle_;
-    rclcpp_action::Client<nav2_msgs::action::NavigateThroughPoses>::SharedPtr navigate_through_poses_client_;
-    rclcpp_action::Client<nav2_msgs::action::NavigateThroughPoses>::SendGoalOptions navigate_through_poses_goal_options_;
-    rclcpp_action::ClientGoalHandle<nav2_msgs::action::NavigateThroughPoses>::SharedPtr navigate_through_poses_goal_handle_;
     rclcpp::Client<rs1_interfaces::srv::DetectYolo>::SharedPtr detect_client_;
     rclcpp::Client<rs1_interfaces::srv::ProcessTreeLocations>::SharedPtr process_client_;
     rclcpp::Client<rs1_interfaces::srv::SetClearance>::SharedPtr set_clearance_client_;
     rclcpp::Publisher<rs1_interfaces::msg::TreeMap>::SharedPtr tree_map_pub_;
     rclcpp::TimerBase::SharedPtr detection_timer_;
+    // Lidar outage watchdog
+    rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_sub_;
+    rclcpp::Time latest_scan_time_;
+    rclcpp::TimerBase::SharedPtr lidar_watchdog_timer_;
+    double scan_outage_timeout_{30.0};
     bool detection_request_pending_{false};
     std::vector<MergedTree> tree_map_;
     std::size_t total_waypoints_{0};
@@ -335,151 +333,20 @@ private:
     int max_fallback_hops_{3};
     bool explore_before_sweep_{false};
 
-    // Velocity sweep follower state
-    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub_;
-    rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_sub_;
-    sensor_msgs::msg::LaserScan::ConstSharedPtr latest_scan_;
-    rclcpp::Time latest_scan_time_;
-    rclcpp::TimerBase::SharedPtr sweep_timer_;
+    // Sweep lane state (per-waypoint Nav2 follower)
     std::vector<geometry_msgs::msg::PoseStamped> sweep_waypoints_;
     std::size_t sweep_index_{0};
-    bool velocity_sweep_active_{false};
-    int avoid_side_{0};
-    bool avoid_engaged_{false};
-    int avoid_clear_ticks_{0};
-    int avoid_stuck_ticks_{0};
-    int reverse_ticks_{0};
-    bool reversing_{false};
-    std::string sweep_controller_{"nav2"};
-    double sweep_control_hz_{10.0};
-    double max_sweep_speed_{1.0};
-    double sweep_speed_gain_{0.6};
-    double max_yaw_rate_{1.0};
-    double sweep_yaw_gain_{1.5};
-    double heading_gate_{0.7};
-    double waypoint_tolerance_{1.0};
-    double waypoint_skip_distance_{2.5};
-    double waypoint_skip_time_{4.0};
-    int skip_ticks_{0};
-    int skip_ticks_threshold_{40};
-    // No-progress watchdog: if the drone stops closing on a waypoint (wedged
-    // against a tree mid-lane), skip that leg instead of oscillating forever.
-    double no_progress_timeout_{12.0};
-    int no_progress_ticks_threshold_{120};
-    int no_progress_ticks_{0};
-    double leg_best_along_{-1e18};
 
-    // Pop-up recovery: when the drone skips several legs in a row, or is
-    // hard-wedged near a leg end (can't drive forward and the reverse/avoidance
-    // oscillation suppresses the no-progress watchdog), ascend above the canopy
-    // to clear the wedge, then descend again once a waypoint is reached freely.
-    int consecutive_skips_{0};
-    int max_consecutive_skips_{3};
-    double hard_wedge_timeout_{8.0};
-    int hard_wedge_ticks_{0};
-    int hard_wedge_ticks_threshold_{80};
-    bool popup_active_{false};
-    bool descend_resume_sweep_{false};
-    int popup_grace_ticks_{0};
-    int popup_grace_ticks_threshold_{400};
-    // The oak canopy in v2_forest occupies ~1.2-6.5 m above the ground (mesh
-    // bbox 1.24-6.53 m), so a pop-up only clears the branches when it ends up
-    // ABOVE that band.  A 4 m pop-up sits in the middle of the canopy and
-    // wedges the drone again, which is why the recovery appeared to do nothing.
-    double popup_clearance_{8.0};
-    // Each successive pop-up within the same wedge climbs one step higher
-    // (bounded) so an unexpectedly deep canopy is still cleared instead of
-    // looping at a height that is inside the branches.
-    double popup_step_m_{2.0};
-    double popup_max_clearance_{12.0};
-    int wedge_attempts_{0};
-    // How many rungs of the duck/pop-up ladder to try before the leg is
-    // abandoned.  Without this the ladder could loop forever and never sweep.
-    int max_recovery_attempts_{4};
-    double popup_grace_time_{10.0};
-
-    // Duck recovery: at branch height the forward lidar sees oak branches in
-    // every direction, but a metre off the deck only the widely spaced trunks
-    // remain, so descending gets the drone unstuck while tree detection stays
-    // active.  Falls back to a pop-up if the duck does not clear the wedge.
-    bool duck_active_{false};
-    bool ascend_resume_sweep_{false};
-    int duck_grace_ticks_{0};
-    int duck_grace_ticks_threshold_{200};
-    // The oak branches start ~1.2 m above the ground and the scan ring sits
-    // 0.2 m above base_link, so ducking to 1.0 m leaves the lidar inside the
-    // lowest branches.  0.8 m puts the ring clearly below the branch band.
-    double duck_clearance_{0.8};
-    // Grace window before the duck is declared useless (seconds).  Kept short so
-    // the ladder moves on quickly instead of parking the drone in the branches.
-    double duck_grace_time_{5.0};
-    // Clearance (metres above the ground) that was last requested from the
-    // terrain-following node.  The duck guard is judged from THIS, not from a
-    // world-z difference against the last waypoint: the terrain in v2_forest
-    // rises by up to ~7 m across a lane, so on the uphill half of the ROI a
-    // world-z test always thought the drone was "up in the canopy" and silently
-    // turned every duck into a no-op descent to the search clearance.
-    double commanded_clearance_m_{0.0};
-
-    // Altitude recovery: after a duck / pop-up / canopy descent, resume the
-    // search clearance once the drone has physically moved a short distance
-    // past the obstacle (not on waypoint arrival, which can be a whole 100 m
-    // lane away and leaves it at the altered height for too long).
-    bool alt_recover_active_{false};
-    double alt_recover_origin_x_{0.0};
-    double alt_recover_origin_y_{0.0};
-    // Distance to the current waypoint when the recovery started.  The resume
-    // is anchored on CLOSING that distance, not on raw displacement, so backing
-    // out of a wedge (reverse) or strafing in place cannot end the recovery
-    // early and drop the drone straight back into the obstacle.
-    double alt_recover_target_dist_{1e18};
-    double alt_recover_travel_m_{2.5};
-
-    // Safety net: a broken world<->map registration (or a localisation jump)
-    // makes the drone chase waypoints that are not where it thinks they are, so
-    // it leaves the ROI entirely.  Abort with a clear reason instead.
-    double roi_escape_margin_{20.0};
-    double roi_escape_timeout_{8.0};
-    int roi_escape_ticks_threshold_{80};
-    int roi_escape_ticks_{0};
-
-    // Transit leg: with no teleport the drone starts outside the ROI and flies
-    // in, so it is expected to be far from the box at first.  Track whether it
-    // has arrived yet, and bound the inbound leg instead of aborting it.
+    // Inbound transit: with no teleport the drone starts outside the ROI and
+    // flies in.  Drives the descend-on-entry transition (search clearance only
+    // once the drone is inside the box).
     double roi_enter_margin_{5.0};
-    double roi_transit_timeout_{120.0};
-    int roi_transit_ticks_threshold_{1200};
-    int roi_transit_ticks_{0};
-    bool entered_roi_{false};
-    // Set when the drone has to fly in: transit at the higher clearance and only
-    // descend to the search clearance once the ROI is reached.
+    // Set when the drone has to fly in: hold the transit clearance on the way in
+    // and descend to the search clearance once the ROI is reached.
     bool descend_on_entry_{false};
-    double forward_cone_{0.6};
-    double obstacle_stop_distance_{1.2};
-    double min_gap_width_{0.25};
 
-    // Lidar watchdog: a GPU lidar can die mid-flight, leaving only a stale
-    // scan.  Stale scans must not drive avoidance, and a long outage aborts the
-    // sweep because tree anchoring needs the lidar.
-    double scan_stale_timeout_{2.0};
-    double scan_outage_timeout_{30.0};
-    int scan_outage_warn_ticks_threshold_{50};
-    int scan_outage_ticks_threshold_{300};
-    int scan_outage_ticks_{0};
-    bool scan_outage_warned_{false};
-
-    // Detour / line-rejoin state
-    geometry_msgs::msg::Point seg_start_;
-    bool segment_ready_{false};
-    double avoid_offset_{0.0};
-    double lookahead_distance_{3.0};
-    double avoid_distance_{2.5};
-    double avoid_offset_m_{2.5};
-    double avoid_rate_{0.5};
-    double avoid_disengage_margin_{1.5};
-    double avoid_min_slowdown_{0.5};
-    double side_cone_{1.2};
-    double steering_cone_{0.5};
+    // U-turn geometry for the lane-end turnaround (turn_lead must match the
+    // test's hardcoded value for the --teleport path).
     double turn_lead_m_{3.0};
     double turn_offset_m_{3.0};
 
