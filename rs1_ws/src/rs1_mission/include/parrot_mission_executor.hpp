@@ -335,6 +335,15 @@ private:
     int consecutive_stalls_{0};
     int max_consecutive_stalls_{3};
     bool detection_request_pending_{false};
+    // Stationary-inference limiter: a parked drone sees the same frame again and
+    // again, and YOLO is the heaviest CPU consumer in the stack, so inference is
+    // paused after `stationary_detection_limit_` requests at one spot until the
+    // drone has moved `detection_motion_threshold_m_.
+    geometry_msgs::msg::Point detection_motion_anchor_;
+    bool detection_motion_anchor_valid_{false};
+    int stationary_detections_{0};
+    int stationary_detection_limit_{3};
+    double detection_motion_threshold_m_{0.5};
     std::vector<MergedTree> tree_map_;
     std::size_t total_waypoints_{0};
     int16_t waypoints_remaining_{0};
@@ -367,6 +376,12 @@ private:
     // test's hardcoded value for the --teleport path).
     double turn_lead_m_{3.0};
     double turn_offset_m_{3.0};
+    // Long lanes are split into legs of at most this length.  A "lane" on the
+    // 80x100 m ROI is ~106 m: a single NavigateToPose across it needs the global
+    // costmap to be usable over the whole strip, and if the planner wedges there
+    // is no intermediate goal to fall back to.  Shorter legs also give the stall
+    // watchdog somewhere to resume from mid-lane.
+    double max_leg_length_m_{25.0};
 
     // Sampling parameters
     double detection_rate_hz_{1.0};

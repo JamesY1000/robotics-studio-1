@@ -43,11 +43,11 @@ ros2 run rs1_mission test_roi_sampling.py --roi 62 -88 92 -58
 BIGGER SWEEPS
 
 ``` bash
-ros2 launch rs1_mission roi_sampling_viz.launch.py roi_x_min:=0 roi_y_min:=-90 roi_x_max:=80 roi_y_max:=10
+ros2 launch rs1_mission roi_sampling_viz.launch.py roi_x_min:=0 roi_y_min:=-70 roi_x_max:=80 roi_y_max:=10
 ```
 
 ``` bash
-ros2 run rs1_mission test_roi_sampling.py --roi 0 -90 80 10 --timeout 2400
+ros2 run rs1_mission test_roi_sampling.py --roi 0 -70 80 10 --timeout 2400
 ```
 
 ### What flies the sweep
@@ -66,6 +66,38 @@ takes effect while the sweep is executing.
 The sweep is **Nav2-only**: there is no internal velocity follower any more.
 Every lane and waypoint is a Nav2 `NavigateToPose` goal, and altitude comes solely
 from the terrain-following node.
+
+### Lane checkpoints (`max_leg_length_m`)
+
+Each lane is emitted as a series of checkpoints rather than one long leg: the
+executor inserts evenly spaced intermediate goals so that no single
+`NavigateToPose` leg is longer than `max_leg_length_m` (default **25 m**, a
+parameter of the parrot mission executor). On the 80x100 m ROI a lane is ~106 m,
+so it becomes 5 legs of ~21 m instead of one 106 m plan, taking the sweep from 14
+to 34 waypoints.
+
+This matters because a single leg has to be plannable across its whole length
+from the global costmap. Short legs mean each plan only needs the map over a small
+strip, a failure costs one checkpoint instead of a whole lane, and the per-waypoint
+stall watchdog has somewhere to resume from mid-lane. Raise it to reduce the number
+of goals (and the ~1 s of Nav2 overhead each one costs); lower it for a denser,
+more forgiving sweep.
+
+### Inference pauses while the drone is stationary
+
+During sampling the executor asks the perception stack to detect at
+`detection_rate_hz` (default 1 Hz). It stops asking while the drone is parked: once
+`stationary_detection_limit` requests (default **3**) have been issued from the same
+spot, the timer issues no more until the drone has moved
+`detection_motion_threshold_m` (default **0.5 m**). A moving drone resets the
+counter every tick, so normal flight still detects at the full rate.
+
+This matters because a hovering drone re-reports the same trees from the same
+viewpoint, and YOLO is the heaviest CPU consumer in the stack — it competes with
+Gazebo, SLAM and Nav2 for the same cores. The pause covers waiting at a lane end,
+reversing out of a wedge, and the gap between two waypoint goals. Set
+`stationary_detection_limit: 0` to pause immediately on stopping, or a large value
+to disable the limiter.
 
 ### Sweep start: fly in from the nearest corner (default)
 

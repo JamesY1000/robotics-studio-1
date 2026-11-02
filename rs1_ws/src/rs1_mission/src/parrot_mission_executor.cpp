@@ -47,6 +47,12 @@ ParrotMissionExecutorNode::ParrotMissionExecutorNode() : Node("parrot_mission_ex
 
     // Sampling (phase 2) parameters
     detection_rate_hz_ = this->declare_parameter<double>("detection_rate_hz", 1.0);
+    // A parked drone sees the same frame over and over, so inference is paused
+    // after this many requests at one spot until the drone moves again.
+    stationary_detection_limit_ =
+        this->declare_parameter<int>("stationary_detection_limit", 3);
+    detection_motion_threshold_m_ =
+        this->declare_parameter<double>("detection_motion_threshold_m", 0.5);
     detection_range_ = this->declare_parameter<double>("detection_range", 20.0);
     camera_hfov_ = this->declare_parameter<double>("camera_hfov", 2.0944);
     swath_overlap_ = this->declare_parameter<double>("swath_overlap", 0.2);
@@ -56,6 +62,8 @@ ParrotMissionExecutorNode::ParrotMissionExecutorNode() : Node("parrot_mission_ex
     roi_tree_margin_ = this->declare_parameter<double>("roi_tree_margin", 0.0);
     min_observations_ = this->declare_parameter<int>("min_observations", 2);
     if (!std::isfinite(detection_rate_hz_) || detection_rate_hz_ <= 0.0 ||
+        !std::isfinite(detection_motion_threshold_m_) || detection_motion_threshold_m_ <= 0.0 ||
+        stationary_detection_limit_ < 0 ||
         !std::isfinite(detection_range_) || detection_range_ <= 0.0 ||
         !std::isfinite(camera_hfov_) || camera_hfov_ <= 0.0 || camera_hfov_ >= 3.14159265358979323846 ||
         !std::isfinite(swath_overlap_) || swath_overlap_ < 0.0 || swath_overlap_ >= 1.0 ||
@@ -83,9 +91,11 @@ ParrotMissionExecutorNode::ParrotMissionExecutorNode() : Node("parrot_mission_ex
     // placed in clear air past the ROI edge.
     turn_lead_m_ = this->declare_parameter<double>("turn_lead_m", 3.0);
     turn_offset_m_ = this->declare_parameter<double>("turn_offset_m", 3.0);
+    max_leg_length_m_ = this->declare_parameter<double>("max_leg_length_m", 25.0);
     roi_enter_margin_ = this->declare_parameter<double>("roi_enter_margin", 5.0);
     if (!std::isfinite(turn_lead_m_) || turn_lead_m_ < 0.0 ||
         !std::isfinite(turn_offset_m_) || turn_offset_m_ <= 0.0 ||
+        !std::isfinite(max_leg_length_m_) || max_leg_length_m_ <= 0.0 ||
         !std::isfinite(roi_enter_margin_) || roi_enter_margin_ < 0.0)
     {
         throw std::invalid_argument("Sweep parameters are invalid");
@@ -1374,6 +1384,8 @@ void ParrotMissionExecutorNode::beginSweep()
     waypoints_remaining_ = static_cast<int16_t>(std::min<std::size_t>(poses.size(), 32767));
     consecutive_stalls_ = 0;
     resetSweepProgress();
+    detection_motion_anchor_valid_ = false;
+    stationary_detections_ = 0;
 
     publishSamplingFeedback("Sweeping ROI");
 
@@ -1475,6 +1487,26 @@ void ParrotMissionExecutorNode::computeSwaths(
         make_pose(along_x ? lane_pos : ord_pos, along_x ? ord_pos : lane_pos, lane_yaw);
     };
 
+    // Emit a lane as a series of CHECKPOINTS instead of one long leg.  `emit_leg`
+    // keeps the lane start (the drone arrives from the previous U-turn) and then
+    // adds evenly spaced intermediate goals so that no single NavigateToPose leg
+    // is longer than `max_leg_length_m_`.  On a 100 m lane this turns one fragile
+    // 100 m plan - which needs the global costmap to be valid over the whole
+    // strip - into four 25 m plans that each fail independently, and it gives the
+    // stall watchdog a waypoint to skip without losing the rest of the lane.
+    auto emit_leg = [&](double lane_from, double lane_to, double ord_pos, double lane_yaw)
+    {
+        emit(lane_from, ord_pos, lane_yaw);
+        const double dist = std::abs(lane_to - lane_from);
+        const std::size_t segments = std::max<std::size_t>(
+            1, static_cast<std::size_t>(std::ceil(dist / max_leg_length_m_)));
+        for (std::size_t s = 1; s <= segments; ++s)
+        {
+            const double t = static_cast<double>(s) / static_cast<double>(segments);
+            emit(lane_from + (lane_to - lane_from) * t, ord_pos, lane_yaw);
+        }
+    };
+
     const double span = ord_hi - ord_lo;
     std::size_t swaths = static_cast<std::size_t>(std::ceil(span / spacing));
     swaths = std::clamp<std::size_t>(swaths, 1, kMaxSwaths);
@@ -1487,7 +1519,7 @@ void ParrotMissionExecutorNode::computeSwaths(
         return ord_lo + (static_cast<double>(i) + 0.5) * step;
     };
 
-    // Emit both endpoints of lane k; consecutive lanes alternate direction.
+    // Emit lane k as checkpoint-ed legs; consecutive lanes alternate direction.
     auto emit_lane = [&](std::size_t k)
     {
         const bool toward_high =
@@ -1495,13 +1527,11 @@ void ParrotMissionExecutorNode::computeSwaths(
         const double ord = lane_offset(k);
         if (toward_high)
         {
-            emit(lane_lo - lead, ord, yaw_high);
-            emit(lane_hi + lead, ord, yaw_high);
+            emit_leg(lane_lo - lead, lane_hi + lead, ord, yaw_high);
         }
         else
         {
-            emit(lane_hi + lead, ord, yaw_low);
-            emit(lane_lo - lead, ord, yaw_low);
+            emit_leg(lane_hi + lead, lane_lo - lead, ord, yaw_low);
         }
         return toward_high;
     };
@@ -1529,9 +1559,40 @@ void ParrotMissionExecutorNode::detectionTimerCb()
     if (detection_request_pending_) return;
     if (!detect_client_->service_is_ready()) return;
 
+    // Pause inference while the drone is not moving.  A hovering drone re-reports
+    // the same trees over and over, and YOLO is the heaviest CPU consumer in the
+    // stack, so once `stationary_detection_limit` requests have been issued at one
+    // spot the timer stops issuing more until the drone has moved
+    // `detection_motion_threshold_m`.  This covers waiting at a lane end, a wedge
+    // recovery, and the pause between two waypoint goals.  If the pose is not
+    // available the limiter is skipped rather than silently stopping detection.
+    geometry_msgs::msg::PoseStamped pose;
+    if (currentPose(pose))
+    {
+        const bool moved = !detection_motion_anchor_valid_ ||
+            std::hypot(
+                pose.pose.position.x - detection_motion_anchor_.x,
+                pose.pose.position.y - detection_motion_anchor_.y) >=
+                detection_motion_threshold_m_;
+        if (moved)
+        {
+            detection_motion_anchor_ = pose.pose.position;
+            detection_motion_anchor_valid_ = true;
+            stationary_detections_ = 0;
+        }
+        else if (stationary_detections_ >= stationary_detection_limit_)
+        {
+            // Stationary and already sampled from here: nothing new to detect.
+            return;
+        }
+    }
+
     auto request = std::make_shared<rs1_interfaces::srv::DetectYolo::Request>();
     request->start_yolo = true;
     detection_request_pending_ = true;
+    // Counted against the current anchor; a moving drone resets the anchor on the
+    // next tick, so this only ever limits a genuinely parked one.
+    ++stationary_detections_;
     detect_client_->async_send_request(request,
         std::bind(&ParrotMissionExecutorNode::detectResponseCb, this, std::placeholders::_1));
 }
@@ -1896,6 +1957,9 @@ void ParrotMissionExecutorNode::stopDetection()
         detection_timer_.reset();
     }
     detection_request_pending_ = false;
+    // Start the next sweep with a clean stationary-inference state.
+    detection_motion_anchor_valid_ = false;
+    stationary_detections_ = 0;
 }
 
 void ParrotMissionExecutorNode::restoreTransitClearance()

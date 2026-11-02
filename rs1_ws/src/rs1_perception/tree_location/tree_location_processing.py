@@ -145,6 +145,17 @@ class TreeLocationNode(Node):
         self.declare_parameter("cloud_min_column_span_m", 1.0)    # a trunk spans height; a branch sheet does not
         self.declare_parameter("cloud_width_percentile", 85.0)    # robust lateral-width percentile
 
+        # ONE lidar subscription.  The gpu_lidar fans 25 rings over +/-45 deg, so
+        # the horizontal centre ring is at elevation 0 and is exactly what
+        # /parrot1/scan publishes.  Carving that slice back out of the cloud means
+        # the ring test, the trunk-column test and the bush guard all read the
+        # SAME set of points, and the node no longer subscribes to the LaserScan
+        # as well.  Set false to fall back to the /parrot1/scan subscription (a
+        # node restart is required - the subscription is created at startup).
+        self.declare_parameter("ring_from_cloud", True)
+        self.declare_parameter("ring_bins", 360)                # azimuth bins; matches the 1 deg ring
+        self.declare_parameter("ring_elevation_tolerance", 0.0327)  # rad; half the 3.75 deg ring spacing
+
         # Per-frame dedup: two locations this close (m) within one response are
         # the same tree seen twice -> keep the highest-confidence one.
         self.declare_parameter("frame_dedup_distance", 1.0)
@@ -205,6 +216,11 @@ class TreeLocationNode(Node):
         self.lidar_cluster_max_width_m = float(self.get_parameter("lidar_cluster_max_width_m").value)
         self.pointcloud_topic = self.get_parameter("pointcloud_topic").value
         self.use_pointcloud = bool(self.get_parameter("use_pointcloud").value)
+        self.ring_from_cloud = bool(self.get_parameter("ring_from_cloud").value)
+        self.ring_bins = int(self.get_parameter("ring_bins").value)
+        self.ring_elevation_tolerance = float(
+            self.get_parameter("ring_elevation_tolerance").value
+        )
         self.cloud_max_age_s = float(self.get_parameter("cloud_max_age_s").value)
         self.cloud_angle_tolerance = float(self.get_parameter("cloud_angle_tolerance").value)
         self.cloud_depth_gap = float(self.get_parameter("cloud_depth_gap").value)
@@ -245,12 +261,15 @@ class TreeLocationNode(Node):
             self._rgb_cb,
             qos_profile_sensor_data,
         )
-        self.create_subscription(
-            LaserScan,
-            self.get_parameter("lidar_topic").value,
-            self._scan_cb,
-            qos_profile_sensor_data,
-        )
+        # The LaserScan subscription is only needed when the level ring is NOT
+        # derived from the cloud (see `ring_from_cloud`).
+        if not self.ring_from_cloud:
+            self.create_subscription(
+                LaserScan,
+                self.get_parameter("lidar_topic").value,
+                self._scan_cb,
+                qos_profile_sensor_data,
+            )
         self.create_subscription(
             PointCloud2,
             self.pointcloud_topic,
@@ -608,14 +627,25 @@ class TreeLocationNode(Node):
             return []
         return []
 
-    def _lidar_scan_data(self):
-        """Latest lidar scan in a cluster-friendly form.
+    def _lidar_scan_data(self, cloud=None):
+        """Latest lidar ring in a cluster-friendly form.
 
         Returns ``(origin_xy, beam_azimuths_world, beam_ranges, angle_increment)``
         or ``None`` when no usable scan/TF is available.  ``beam_ranges`` keeps
         the original per-beam ordering (invalid beams are left as-is) so a
         contiguous trunk echo can be found by beam index.
+
+        With ``ring_from_cloud`` (the default) the ring is carved out of the
+        already-decoded 3D cloud, so the ring test and the trunk-column / bush
+        tests all read the SAME points and only one lidar topic is subscribed.
         """
+        if self.ring_from_cloud:
+            if cloud is not None:
+                ring = self._ring_from_cloud(cloud[2], cloud[0], cloud[1])
+                if ring is not None:
+                    return cloud[1], ring[0], ring[1], ring[2]
+            return None
+
         scan = self.scan_msg
         if scan is None:
             return None
@@ -733,11 +763,15 @@ class TreeLocationNode(Node):
         return pts
 
     def _cloud_points_world(self):
-        """Lidar cloud transformed into the world frame: ``(points, origin_xy)``.
+        """Lidar cloud transformed into the world frame.
 
-        Returns ``None`` (and the level-ring path is used instead) when the cloud
-        has not arrived, is stale, cannot be decoded, or the sensor pose is not
-        available.
+        Returns ``(pts_world, origin_xy, pts_link, origin_z)``.  ``pts_link`` is
+        the raw cloud in the SENSOR frame and is what the level-ring slice is
+        taken from (the ring tilts with the drone, so a world-z test would pick a
+        different ring every time the drone pitches).
+
+        Returns ``None`` when the cloud has not arrived, is stale, cannot be
+        decoded, or the sensor pose is not available.
         """
         msg = self.cloud_msg
         if not self.use_pointcloud or msg is None:
@@ -764,7 +798,47 @@ class TreeLocationNode(Node):
         pts = pts[np.isfinite(pts).all(axis=1)]
         if pts.size == 0:
             return None
-        return pts.astype(np.float64) @ R.T + origin, origin[:2]
+        pts_link = pts.astype(np.float64)
+        pts_world = pts_link @ R.T + origin
+        return pts_world, origin[:2], pts_link, float(origin[2])
+
+    def _ring_from_cloud(self, pts_link, pts_world, origin_xy):
+        """Level ring carved out of the 3D cloud: ``(azimuths, ranges, increment)``.
+
+        The horizontal centre ring of the gpu_lidar is at elevation 0, so slicing
+        the sensor-frame cloud to ``|z| <= tan(tol) * r`` rebuilds exactly the
+        scan a 1 deg ring publishes.  Each azimuth bin keeps its NEAREST return,
+        so a trunk front wins over anything behind it - the same beam behaviour
+        ``_lidar_cluster_at`` was written against.  Empty bins stay NaN, which
+        terminates a contiguous cluster run exactly like an invalid beam does.
+        """
+        n = int(self.ring_bins)
+        if n < 36 or pts_link is None or pts_world is None or pts_world.size == 0:
+            return None
+
+        r_link = np.hypot(pts_link[:, 0], pts_link[:, 1])
+        band = (r_link > 0.05) & (
+            np.abs(pts_link[:, 2]) <= math.tan(self.ring_elevation_tolerance) * r_link
+        )
+        if not np.any(band):
+            return None
+
+        dx = pts_world[band, 0] - origin_xy[0]
+        dy = pts_world[band, 1] - origin_xy[1]
+        ranges = np.hypot(dx, dy)
+        az = np.arctan2(dy, dx)
+
+        increment = 2.0 * math.pi / float(n)
+        bins = np.floor((az + math.pi) / increment).astype(np.int64) % n
+        order = np.lexsort((ranges, bins))
+        bins_sorted = bins[order]
+        uniq, first = np.unique(bins_sorted, return_index=True)
+
+        ring = np.full(n, np.nan)
+        ring[uniq] = ranges[order][first]
+        # Bin centres, so a trunk centred on a ring sample still maps to one bin.
+        azimuths = -math.pi + (np.arange(n) + 0.5) * increment
+        return azimuths, ring, increment
 
     def _cloud_trunk_at(self, pts_world, origin_xy, az_seed: float, target_range=None):
         """Find the trunk column in the FULL lidar cloud at a given bearing.
@@ -1005,7 +1079,12 @@ class TreeLocationNode(Node):
             return response
         cam_origin, R_wc = sensor
 
-        lidar_data = self._lidar_scan_data()
+        # Full 3D cloud (all 25 vertical rings), decoded ONCE per request.  With
+        # `ring_from_cloud` this is the node's only lidar input: the level ring,
+        # the trunk-column test and the bush guard all read these same points.
+        cloud_world = self._cloud_points_world()
+
+        lidar_data = self._lidar_scan_data(cloud_world)
         if self.require_lidar_confirmation and lidar_data is None:
             self.get_logger().warn("Lidar confirmation required but no usable scan; returning no locations")
             return response
@@ -1013,10 +1092,6 @@ class TreeLocationNode(Node):
         scan_az = lidar_data[1] if lidar_data else None
         scan_ranges = lidar_data[2] if lidar_data else None
         angle_increment = lidar_data[3] if lidar_data else None
-
-        # Full 3D cloud (all 9 vertical rings), once per request.  None when the
-        # cloud is disabled/missing/stale, in which case the level ring is used.
-        cloud_world = self._cloud_points_world()
 
         h, w = depth.shape[:2]
         img_h, img_w = self.depth_msg.height, self.depth_msg.width

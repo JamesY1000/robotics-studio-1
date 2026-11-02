@@ -78,6 +78,19 @@ tree_location_node:
     cloud_min_column_span_m: 1.0   # m; a trunk spans height, a branch sheet does not
     cloud_width_percentile: 85.0   # robust lateral-width percentile
 
+    # ONE LIDAR SUBSCRIPTION.  The gpu_lidar fans 25 rings over +/-45 deg, so the
+    # horizontal centre ring sits at elevation 0 - which is exactly what
+    # /parrot1/scan publishes.  With ``ring_from_cloud`` the node carves that
+    # slice back out of the cloud it has already decoded, so the ring test, the
+    # trunk-column test and the bush guard all read the SAME points and the
+    # LaserScan subscription is not created at all.  This does NOT re-introduce
+    # the "cloud preferred" regression described above: the primary decision is
+    # still made by the single-level ring logic, only its SOURCE changes.
+    # Set false to go back to subscribing to /parrot1/scan (node restart needed).
+    ring_from_cloud: true
+    ring_bins: 360                 # azimuth bins; matches the ring's 1 deg spacing
+    ring_elevation_tolerance: 0.0327  # rad; half of the 3.75 deg vertical ring spacing
+
     # BUSH GUARD (needs the full cloud).  The detector has no bush class and no
     # negative examples, so a bush is boxed as an OAK_TREE.  Measured geometry
     # (rs1_sim/models): bush_2 is 2.5 m wide and 1.5 m tall, bush_3 is 2.7 m wide
