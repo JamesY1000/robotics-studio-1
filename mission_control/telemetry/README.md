@@ -65,7 +65,7 @@ only one telemetry launch per ROS domain.
 
 Use **Reset to starter layout** in the Telemetry section, or download the starter
 JSON and import it through Lichtblick's Layout menu. The checked-in
-[default-layout.json](default-layout.json) contains the world and camera panels,
+[layout1.json](layout1.json) contains the world and camera panels,
 with **Mission & commands**, **ROS logs**, and **Exploration** tabs underneath:
 
 | Panel | Actual ROS data | Meaning |
@@ -214,7 +214,7 @@ viewer and bridge together before upgrading the pinned release.
 The layout was checked against official v1.29.1 source and this repository's
 topic definitions:
 
-- [Layout example](https://github.com/lichtblick-suite/lichtblick/blob/v1.29.1/e2e/fixtures/assets/default-layout.json), [layout validation and panel title key](https://github.com/lichtblick-suite/lichtblick/blob/v1.29.1/packages/suite-base/src/util/layout.ts).
+- [Layout example](https://github.com/lichtblick-suite/lichtblick/blob/v1.29.1/e2e/fixtures/assets/layout1.json), [layout validation and panel title key](https://github.com/lichtblick-suite/lichtblick/blob/v1.29.1/packages/suite-base/src/util/layout.ts).
 - [Image/3D configuration](https://github.com/lichtblick-suite/lichtblick/blob/v1.29.1/packages/suite-base/src/panels/ThreeDeeRender/IRenderer.ts), [plot configuration](https://github.com/lichtblick-suite/lichtblick/blob/v1.29.1/packages/suite-base/src/panels/Plot/utils/config.ts).
 - [URL state](https://github.com/lichtblick-suite/lichtblick/blob/v1.29.1/packages/suite-base/src/util/appURLState.ts) accepts `ds=foxglove-websocket`, `ds.url=<ws-or-wss-url>` and `layoutUrl=<absolute-http-or-https-json-url>`; [the importer](https://github.com/lichtblick-suite/lichtblick/blob/v1.29.1/packages/suite-base/src/Workspace.tsx) controls replacement behavior. Cross-origin layout fetches require CORS; the dashboard's layout endpoint provides it for this public preset.
 - [ROS 2 connections](https://lichtblick-suite.github.io/docs/docs/connecting-to-data/frameworks/ros2/), [layouts](https://lichtblick-suite.github.io/docs/docs/visualization/layouts/), [extensions](https://lichtblick-suite.github.io/docs/docs/extensions/introduction/), and [upstream releases](https://github.com/lichtblick-suite/lichtblick/releases).
