@@ -188,6 +188,54 @@ are saved under the deployment's backend data directory in `sessions/<id>/`,
 including `plan.json` and `ros.log`. The default data directory is
 `.mission-control/deploy`.
 
+## Manual assistance and keyboard control
+
+During an active mission, choose **Manual Husky** or **Manual Parrot** at any
+time. An executor failure or rejected goal also selects manual assistance for
+the affected robot automatically. The coordinator keeps the ROI and cancels the
+current attempts; the other robot holds still. Localisation, mapping, Nav2 and
+terrain following stay running.
+
+1. In Mission Control, select **Connect keyboard** in the manual-control panel
+2. Hold **Space** and use **W/S** to move forward/back or **A/D** to turn
+3. For Parrot, use **Q/E** to move sideways and **R/F** to move up/down
+4. Release **Space**, press **Escape**, or click **Stop keyboard control** to stop
+5. Select **Resume autonomous mission** once the previous attempts have stopped
+
+The panel must have keyboard focus. Leaving it, switching tabs, disconnecting
+or changing control mode clears held keys. Reconnect and press Space again to
+drive. Only one dashboard keyboard connection can control a robot at a time.
+The browser sends fresh input at 20 Hz; the selector stops after 0.3 seconds
+without a command or 1.5 seconds without coordinator status. Slow keyboard
+connections disconnect rather than accumulating movement commands.
+
+Resume rechecks localisation transforms and executor availability, then retries
+the **whole traversal to the same ROI from the current robot positions**. Maps
+are retained. Parrot navigates to/verifies the ROI again and generates a fresh
+ground path for Husky. This does not restore an exact waypoint checkpoint. A
+failed readiness check leaves assistance selected and displays the reason;
+another failed attempt returns to assistance. Completion and explicit
+cancellation remain terminal outcomes. A process or simulation shutdown still
+requires recovering the underlying stack.
+
+Parrot's manual command supplies all movement axes, including height. The
+terrain-following node stays on, but its output is selected only in autonomous
+mode. Keyboard commands cannot select manual mode themselves or override an
+autonomous mission.
+
+For ROS debugging, the same controls are Trigger services:
+`/mission/manual_husky`, `/mission/manual_parrot`, and `/mission/resume`.
+Manual Twist publishers must use `/husky1/cmd_vel_manual` or
+`/parrot1/cmd_vel_manual`. The selectors are the only intended publishers to
+each robot's `cmd_vel_controlled` bridge input. A future joystick node can use
+these same manual topics. Standalone Nav2 still works before any coordinator
+status has been received; once a coordinator is observed, its mode and heartbeat
+gate movement.
+
+After updating an existing checkout, rebuild the ROS packages and frontend and
+refresh backend requirements as described above. Restart the robot launch so
+the selectors and updated bridge configuration are loaded.
+
 ## Robot telemetry
 
 The **Telemetry** section embeds a local, unmodified Lichtblick workspace for

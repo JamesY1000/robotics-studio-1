@@ -50,6 +50,11 @@ install(DIRECTORY
 
 if(BUILD_TESTING)
   find_package(ament_cmake_pytest REQUIRED)
+  ament_add_pytest_test(test_velocity_selector test/test_velocity_selector.py
+    TIMEOUT 60
+    ENV VELOCITY_SELECTOR_EXECUTABLE=$<TARGET_FILE:velocity_selector>
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
+  )
   ament_add_pytest_test(test_terrain_following test/test_terrain_following.py
     TIMEOUT 90
     ENV TERRAIN_FOLLOWING_EXECUTABLE=$<TARGET_FILE:terrain_following>

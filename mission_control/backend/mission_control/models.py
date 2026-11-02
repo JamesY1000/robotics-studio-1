@@ -14,6 +14,14 @@ class XY(StrictModel):
     y: float
 
 
+class TeleopCommand(StrictModel):
+    enabled: bool = Field(default=False, strict=True)
+    x: float = Field(default=0, ge=-1, le=1)
+    y: float = Field(default=0, ge=-1, le=1)
+    z: float = Field(default=0, ge=-1, le=1)
+    yaw: float = Field(default=0, ge=-1, le=1)
+
+
 class Calibration(StrictModel):
     # Continuous image EDGES, not pixel sample centres. Axis aligned for v1.
     x_min: float

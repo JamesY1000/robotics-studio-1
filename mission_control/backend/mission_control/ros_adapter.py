@@ -41,6 +41,7 @@ class RosAdapter:
         from rs1_interfaces.msg import MissionStatus
         from rs1_interfaces.action import TraverseToROI, ExploreToPose
         from nav2_msgs.action import NavigateToPose, NavigateThroughPoses, ComputePathToPose
+        from geometry_msgs.msg import Twist
 
         self.context = Context()
         rclpy.init(context=self.context)
@@ -56,6 +57,12 @@ class RosAdapter:
         self.trigger_type = Trigger
         self.start_client = self.node.create_client(Trigger, "/mission/start")
         self.cancel_client = self.node.create_client(Trigger, "/mission/cancel")
+        self.command_clients = {"start": self.start_client, "cancel": self.cancel_client}
+        for operation in ("manual_husky", "manual_parrot", "resume"):
+            self.command_clients[operation] = self.node.create_client(Trigger, f"/mission/{operation}")
+        self.twist_type = Twist
+        self.manual_publishers = {robot: self.node.create_publisher(Twist, f"/{robot}/cmd_vel_manual", 1)
+                                  for robot in ("husky1", "parrot1")}
         self.parameters = self.node.create_client(SetParametersAtomically,
             "/mission_coordinator_node/set_parameters_atomically")
         self.actions = {name: ActionClient(self.node, kind, name) for name, kind in [
@@ -99,8 +106,13 @@ class RosAdapter:
 
     def on_mission(self, msg):
         with self.lock:
+            previous = self.data["mission"]
             self.data["mission"] = {key: getattr(msg, key) for key in (
-                "session_id", "instance_id", "state", "parrot_stage", "husky_stage", "message", "cleanup_complete")}
+                "session_id", "instance_id", "state", "parrot_stage", "husky_stage", "message", "cleanup_complete", "control_mode")}
+            # Invalidate old keyboard connections even if the mode changes back between dashboard polls
+            changed = any(previous.get(key) != self.data["mission"][key]
+                          for key in ("instance_id", "state", "control_mode"))
+            self.data["mission"]["control_revision"] = previous.get("control_revision", 0) + int(changed)
             self.data["mission"]["roi"] = {"frame_id": msg.roi.header.frame_id,
                 "x": msg.roi.pose.position.x, "y": msg.roi.pose.position.y, "z": msg.roi.pose.position.z}
             self.data["mission_at"] = time.monotonic()
@@ -163,7 +175,7 @@ class RosAdapter:
         return value
 
     async def call(self, kind):
-        client = self.start_client if kind == "start" else self.cancel_client
+        client = self.command_clients[kind]
         if not client.service_is_ready():
             raise RuntimeError(f"/mission/{kind} is unavailable")
         future = client.call_async(self.trigger_type.Request())
@@ -180,6 +192,17 @@ class RosAdapter:
         if not result.success:
             raise RuntimeError(result.message)
         return result.message
+
+    def publish_manual(self, robot, command=None):
+        msg = self.twist_type()
+        if command is not None and command.enabled:
+            # Convert keyboard directions to velocities - the selector also enforces its own limits
+            msg.linear.x = command.x * 0.5
+            msg.angular.z = command.yaw * 0.7
+            if robot == "parrot1":
+                msg.linear.y = command.y * 0.5
+                msg.linear.z = command.z * 0.3
+        self.manual_publishers[robot].publish(msg)
 
     async def configure_roi(self, roi):
         from rclpy.parameter import Parameter

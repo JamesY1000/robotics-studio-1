@@ -58,6 +58,9 @@ export type State = {
       state?: string;
       parrot_stage: string;
       husky_stage: string;
+      control_mode?: "auto" | "husky1" | "parrot1" | "hold";
+      cleanup_complete?: boolean;
+      message?: string;
     };
     alignment?: {
       ready?: Record<string, boolean>;

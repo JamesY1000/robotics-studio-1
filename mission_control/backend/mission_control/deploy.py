@@ -126,7 +126,7 @@ class DeploySessionManager(ExternalSessionManager):
         if not self.lock.locked() and self.deployment and not self.deployment.get("roi_selected"):
             mission = self.adapter.snapshot().get("mission", {})
             if (mission.get("session_id") == self.deployment["session_id"]
-                    and mission.get("state") in ("executing", "cancellation_requested", *TERMINAL)):
+                    and mission.get("state") in ("executing", "manual_assistance", "cancellation_requested", *TERMINAL)):
                 # Recover a Start acknowledgement lost during a backend restart.
                 self.deployment["roi_selected"] = True
                 self.runtime.save(self.deployment)
@@ -285,7 +285,7 @@ class DeploySessionManager(ExternalSessionManager):
     def check_cancel_owner(self, ros):
         if (not self.deployment or ros.get("mission", {}).get("session_id") != self.deployment["session_id"]
                 or ros.get("world", {}).get("instance_id") != self.deployment["world_instance_id"]):
-            raise Conflict("The observed mission does not belong to this deployment; it was not cancelled")
+            raise Conflict("The observed mission does not belong to this deployment; no command was sent")
 
     async def stop_deployment(self):
         async with self.lock:
@@ -297,7 +297,7 @@ class DeploySessionManager(ExternalSessionManager):
                 raise Conflict("Wait for a single world session before cleaning up this deployment; restart the world if it has stopped")
             mission = ros.get("mission", {})
             same_world = ros["world"].get("instance_id") == record["world_instance_id"]
-            if same_world and (self.command or mission.get("state") in ("executing", "cancellation_requested") or (
+            if same_world and (self.command or mission.get("state") in ("executing", "manual_assistance", "cancellation_requested") or (
                     mission.get("state") in TERMINAL and not mission.get("cleanup_complete"))):
                 raise Conflict("Cancel the mission and wait for cleanup before stopping robots")
             if record.get("phase") == "deployed" and self.runtime.alive(record) and same_world and not ros.get("checks", {}).get("mission_status"):

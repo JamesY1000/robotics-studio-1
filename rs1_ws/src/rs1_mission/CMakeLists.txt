@@ -56,6 +56,11 @@ install(DIRECTORY launch
 
 if(BUILD_TESTING)
   find_package(ament_cmake_pytest REQUIRED)
+  ament_add_pytest_test(test_manual_assistance test/test_manual_assistance.py
+    TIMEOUT 90
+    ENV COORDINATOR_EXECUTABLE=$<TARGET_FILE:mission_coordinator>
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
+  )
   ament_add_pytest_test(test_husky_transform_readiness
     test/test_husky_transform_readiness.py
     TIMEOUT 90

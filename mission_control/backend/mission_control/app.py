@@ -3,16 +3,17 @@ import fcntl
 import io
 import json
 import os
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from pathlib import Path
+from typing import Literal
 from uuid import uuid4
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from PIL import Image, UnidentifiedImageError
 
-from .models import ExternalStart, Plan, SpawnPlan, UploadCalibration, XY
+from .models import ExternalStart, Plan, SpawnPlan, TeleopCommand, UploadCalibration, XY
 from .external import ExternalSessionManager
 from .deploy import DeploySessionManager
 from .deployment_logs import DeploymentLogTail, stream_deployment_logs
@@ -44,6 +45,7 @@ async def lifespan(app):
     manager = manager_type(Terrain(ROOT / "rs1_ws/src/rs1_sim"), DATA, create_adapter,
                              timeout=float(os.getenv("MISSION_PREPARE_TIMEOUT", "180")))
     app.state.manager = manager
+    app.state.teleop = None
     async def sample():
         while True:
             if isinstance(manager, DeploySessionManager):
@@ -61,6 +63,7 @@ async def lifespan(app):
         for task in tasks:
             task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
+        await stop_teleop()
         await manager.close()
         lock.close()
 
@@ -183,17 +186,95 @@ async def deployment_spawn(plan: SpawnPlan):
 
 @app.post("/api/deployment/stop")
 async def deployment_stop():
+    await stop_teleop()
     return await deploy_manager().stop_deployment()
 
 
 @app.post("/api/mission/cancel")
 async def cancel():
+    await stop_teleop()
     return await app.state.manager.cancel()
 
 
 @app.post("/api/session/reset")
 async def reset():
+    await stop_teleop()
     return await app.state.manager.reset()
+
+
+async def stop_teleop(code=1000, reason="Keyboard control stopped"):
+    record = app.state.teleop
+    if record is None:
+        return
+
+    # Revoke ownership before awaiting shutdown so an old socket cannot send another command
+    app.state.teleop = None
+    with suppress(Exception):
+        if app.state.manager.adapter is record["adapter"]:
+            record["adapter"].publish_manual(record["robot"])
+    with suppress(Exception):
+        await record["socket"].close(code=code, reason=reason)
+
+
+def check_manual_control(manager, adapter, robot):
+    if manager.adapter is not adapter or manager.lock.locked():
+        raise Conflict("Mission control is changing; connect keyboard again shortly")
+    mission = manager.control_status()
+    if mission.get("state") != "manual_assistance" or mission.get("control_mode") != robot:
+        raise Conflict("This robot is not selected for manual control")
+    return mission["instance_id"], mission.get("control_revision", 0)
+
+
+@app.post("/api/mission/control/{operation}")
+async def mission_control(operation: Literal["manual_husky", "manual_parrot", "resume"]):
+    await stop_teleop()
+    return await app.state.manager.control(operation)
+
+
+@app.websocket("/api/teleop/{robot}")
+async def teleop(socket: WebSocket, robot: str):
+    record = None
+    try:
+        if robot not in ("husky1", "parrot1"):
+            raise Conflict("Unknown robot")
+        if app.state.teleop is not None:
+            raise Conflict("Keyboard control is already connected in another panel")
+
+        manager = app.state.manager
+        adapter = manager.adapter
+        identity = check_manual_control(manager, adapter, robot)
+        record = {"socket": socket, "adapter": adapter, "robot": robot}
+        app.state.teleop = record
+        await socket.accept()
+
+        while app.state.teleop is record:
+            raw = await asyncio.wait_for(socket.receive_json(), timeout=0.35)
+            if app.state.teleop is not record:
+                break
+            if check_manual_control(manager, adapter, robot) != identity:
+                raise Conflict("Mission control changed; reconnect and press Space again")
+
+            # Only publish newly received input - never repeat a cached nonzero command here
+            command = TeleopCommand.model_validate(raw)
+            adapter.publish_manual(robot, command)
+            await socket.send_json({"ok": True})
+    except WebSocketDisconnect:
+        pass
+    except (asyncio.TimeoutError, ValueError, RuntimeError) as exc:
+        reason = "Keyboard input timed out" if isinstance(exc, asyncio.TimeoutError) else str(exc)
+        reason = reason.encode("utf-8")[:120].decode("utf-8", errors="ignore")
+        if record is not None and app.state.teleop is record:
+            await stop_teleop(code=1008, reason=reason)
+        else:
+            with suppress(Exception):
+                await socket.close(code=1008, reason=reason)
+    finally:
+        # A retiring connection must not stop a newer operator's input
+        if record is not None and app.state.teleop is record:
+            await stop_teleop()
+        else:
+            with suppress(Exception):
+                await socket.close()
 
 
 DIST = ROOT / "mission_control/frontend/dist"
