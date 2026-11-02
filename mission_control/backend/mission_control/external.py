@@ -165,7 +165,7 @@ class ExternalSessionManager(SessionManager):
                 raise Conflict("Mission coordinator is unavailable; use its terminal to inspect the ROS stack.")
             if mission.get("state") == "cancellation_requested" or (self.command and self.command[0] == "cancel"):
                 return self.snapshot()
-            if mission.get("state") != "executing" and not (
+            if mission.get("state") not in ("executing", "manual_assistance") and not (
                     mission.get("state") == "failed" and not mission.get("cleanup_complete")):
                 raise Conflict("There is no running external mission to cancel")
             self.command = ("cancel", time.monotonic())

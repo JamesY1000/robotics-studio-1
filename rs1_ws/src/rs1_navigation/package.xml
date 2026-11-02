@@ -13,9 +13,14 @@
   <depend>action_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>sensor_msgs</depend>
+  <depend>rs1_interfaces</depend>
+
 
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>joy</exec_depend>
+  <exec_depend>teleop_twist_joy</exec_depend>
   <exec_depend>explore_lite</exec_depend>
   <exec_depend>nav2_bringup</exec_depend>
   <exec_depend>nav2_smac_planner</exec_depend>

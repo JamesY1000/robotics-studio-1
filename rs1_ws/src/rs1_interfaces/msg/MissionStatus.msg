@@ -9,3 +9,9 @@ string parrot_stage
 string husky_stage
 string message
 bool cleanup_complete
+# auto (Autonomous), husky1 (husky teleop), parrot1 (parrot teleop), or hold (stop)
+string control_mode
+# Only one manual input can command the selected robot
+string manual_input
+# Changes when input or control is reselected so quick switches also clear held input
+uint64 input_revision

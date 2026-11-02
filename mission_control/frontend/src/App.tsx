@@ -3,6 +3,7 @@ import { TerrainMap, type Mode } from "./Map";
 import type { Plan, Preset, State, XY } from "./types";
 import { canStartAttached, missionRequest, spawnRequest } from "./workflow";
 import { Telemetry } from "./Telemetry";
+import { ManualControl } from "./ManualControl";
 
 async function api<T>(path: string, body?: unknown): Promise<T> {
   const response = await fetch(`/api/${path}`, {
@@ -477,17 +478,36 @@ export default function App() {
     );
   };
   const act = async (
-    action: "start" | "cancel" | "reset" | "spawn" | "stop",
+    action:
+      | "start"
+      | "cancel"
+      | "reset"
+      | "spawn"
+      | "stop"
+      | "manual_husky"
+      | "manual_parrot"
+      | "input_keyboard"
+      | "input_controller"
+      | "resume",
   ) => {
     setBusy(true);
     setError("");
     try {
+      const controlAction = [
+        "manual_husky",
+        "manual_parrot",
+        "input_keyboard",
+        "input_controller",
+        "resume",
+      ].includes(action);
       const next = await api<State>(
-        action === "reset"
-          ? "session/reset"
-          : action === "spawn" || action === "stop"
-            ? `deployment/${action}`
-            : `mission/${action}`,
+        controlAction
+          ? `mission/control/${action}`
+          : action === "reset"
+            ? "session/reset"
+            : action === "spawn" || action === "stop"
+              ? `deployment/${action}`
+              : `mission/${action}`,
         action === "start"
           ? missionRequest(state?.mode, roi, externalRoiDirty.current, plan)
           : action === "spawn"
@@ -532,9 +552,13 @@ export default function App() {
     }
   };
   const active =
-    ["preparing", "ready", "executing", "cancellation_requested"].includes(
-      phase,
-    ) &&
+    [
+      "preparing",
+      "ready",
+      "executing",
+      "manual_assistance",
+      "cancellation_requested",
+    ].includes(phase) &&
     (!deploy || deployment?.phase === "deployed");
   const placements = deployment?.placements || state?.placements || preview;
   const canStart = attached
@@ -544,6 +568,9 @@ export default function App() {
   const canSpawn =
     deploy && !!deployment?.can_spawn && !spawnLocked && !!preview;
   const canStop = deploy && !!deployment?.plan && !active;
+  const controlMode = state?.ros.mission?.control_mode;
+  const manualRobot =
+    controlMode === "husky1" || controlMode === "parrot1" ? controlMode : null;
   return (
     <div className="shell">
       <aside className="sidebar">
@@ -630,6 +657,38 @@ export default function App() {
             </p>
           </div>
           <div className="header-actions">
+            {["executing", "manual_assistance"].includes(phase) && (
+              <>
+                <button
+                  disabled={busy || !connected}
+                  onClick={() => act("manual_husky")}
+                >
+                  Manual Husky
+                </button>
+                <button
+                  disabled={busy || !connected}
+                  onClick={() => act("manual_parrot")}
+                >
+                  Manual Parrot
+                </button>
+              </>
+            )}
+            {phase === "manual_assistance" && (
+              <button
+                className="primary"
+                disabled={
+                  busy || !connected || !state?.ros.mission?.cleanup_complete
+                }
+                title={
+                  state?.ros.mission?.cleanup_complete
+                    ? "Recheck readiness and retry the same ROI"
+                    : "Waiting for previous navigation to stop"
+                }
+                onClick={() => act("resume")}
+              >
+                Resume autonomous mission
+              </button>
+            )}
             <span
               className={`badge ${phase === "executing" || phase === "complete" ? "green" : ""}`}
             >
@@ -666,6 +725,32 @@ export default function App() {
             )}
           </div>
         </header>
+        {tab === "mission" &&
+          phase === "manual_assistance" &&
+          manualRobot &&
+          connected &&
+          !busy && (
+            <>
+              <div className="notice" role="status">
+                {state?.ros.mission?.message}
+                {!state?.ros.mission?.cleanup_complete &&
+                  " Previous navigation is still stopping; manual control is available while you wait."}
+              </div>
+              <ManualControl
+                key={`${state?.ros.mission?.instance_id}:${manualRobot}:${state?.ros.mission?.input_revision}`}
+                robot={manualRobot}
+                input={state?.ros.mission?.manual_input}
+                controllerConnected={!!state?.ros.controller?.connected}
+                onSelectInput={(input) =>
+                  act(
+                    input === "keyboard"
+                      ? "input_keyboard"
+                      : "input_controller",
+                  )
+                }
+              />
+            </>
+          )}
         {(error || (!connected && state)) && (
           <div className="alert" role="alert">
             {error ||
@@ -1131,12 +1216,6 @@ export default function App() {
                       ? "External world · persistent robot deployment"
                       : "Dashboard backend"}
                 </dd>
-                {!external && (
-                  <>
-                    <dt>Default UAV clearance</dt>
-                    <dd>4 m from downward sensor</dd>
-                  </>
-                )}
                 <dt>Session</dt>
                 <dd className="session-id">
                   {state?.plan?.session_id ||

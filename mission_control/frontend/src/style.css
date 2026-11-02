@@ -1306,3 +1306,38 @@ hr {
   gap: 16px;
   align-items: flex-start;
 }
+
+.manual-control {
+  margin: 16px 0;
+  padding: 18px 20px;
+  border: 2px solid #b7791f;
+  border-radius: 8px;
+  background: #fffaf0;
+}
+.keyboard-control:focus {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+}
+.manual-control p {
+  margin: 10px 0;
+}
+.manual-control-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.manual-control-actions button[aria-pressed="true"] {
+  background: #2e654c;
+  border-color: #2e654c;
+  color: #fff;
+  opacity: 1;
+  cursor: default;
+}
+.manual-control kbd {
+  font-family: inherit;
+  font-weight: 700;
+}
+.header-actions {
+  flex-wrap: wrap;
+}

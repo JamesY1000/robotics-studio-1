@@ -65,16 +65,35 @@ only one telemetry launch per ROS domain.
 
 Use **Reset to starter layout** in the Telemetry section, or download the starter
 JSON and import it through Lichtblick's Layout menu. The checked-in
-[default-layout.json](default-layout.json) contains six panels:
+[layout1.json](layout1.json) contains the world and camera panels,
+with **Mission & commands**, **ROS logs**, and **Exploration** tabs underneath:
 
 | Panel | Actual ROS data | Meaning |
 | --- | --- | --- |
-| World | `/tf`, `/tf_static`, `/husky1/map`, `/parrot1/map`, both robots' `/scan`, `/parrot1/downwards_scan`, `/mission/roi_marker` | Registered SLAM maps, sensor scans, robot frame axes and ROI in `world`. Husky map is cyan; Parrot map is amber. |
+| World | `/tf`, `/tf_static`, both robots' `/robot_description`, `/map`, `/plan`, `/local_plan`, `/husky1/scan_filtered`, `/parrot1/scan`, `/parrot1/downwards_scan`, `/parrot1/explore/frontiers`, `/mission/roi_marker` | Actual URDF robot models, registered SLAM maps, navigation scans, planned paths, frontier candidates, robot frame axes and ROI in `world`. Husky overlays are cyan; Parrot overlays are amber. |
 | Husky camera | `/husky1/camera/image` | Raw RGB image from Husky's existing camera bridge. |
 | Parrot camera | `/parrot1/camera/image` | Raw RGB image from Parrot's existing camera bridge. |
 | Downward centre ray | `/parrot1/downwards_scan.ranges[1]` | The same centre ray used by terrain following, in metres. |
-| Commanded vertical velocity | `/parrot1/cmd_vel_combined.linear.z` | Terrain-following command, in m/s; this is not measured vehicle velocity. |
-| Mission status | `/mission/status` | The existing `rs1_interfaces/msg/MissionStatus`, including state, robot stages, ROI and coordinator message. |
+| Selected commands | `/parrot1/cmd_vel_controlled.linear.z`, `/parrot1/cmd_vel_controlled.linear.x`, `/husky1/cmd_vel_controlled.linear.x` | Final vertical/forward commands sent to Gazebo after autonomous/manual selection, in m/s; these are not measured vehicle velocities. |
+| Mission status | `/mission/status` | The existing `rs1_interfaces/msg/MissionStatus`, including state, robot stages, ROI, coordinator message, control mode and selected manual input. |
+| ROS logs | `/rosout` | ROS node logging with logger-name, severity and text filters; not a mirror of a particular terminal. |
+| Exploration | `/parrot1/explore/status` | Guided exploration's current status. |
+
+Husky's raw `/scan` still exists, but SLAM and Nav2 use `/scan_filtered` after
+terrain filtering. Likewise, Parrot's `/cmd_vel_combined` still exists as the
+autonomous input to the selector; `/cmd_vel_controlled` shows its final decision
+during both autonomy and manual assistance.
+
+The world panel also has disabled entries for both robots' footprint outlines, costmaps, LiDAR and
+depth point clouds, Husky's ground/obstacle/navigation points, the raw Husky scan,
+and tree-location markers. Enable these in the 3D panel's topic settings when
+needed. Costmaps and point clouds start hidden to keep the default view light.
+Tree markers require their separate perception/visualisation scripts.
+
+The bridge also exposes `/teleop/joy`, `/teleop/cmd_vel_controller`, and
+`/yolo/debug_image` for custom Raw Messages, Plot or Image panels. The YOLO image
+requires the perception node. Adding a topic to the bridge's allowlist does not
+start that publisher or make the viewer subscribe to it automatically.
 
 The world panel starts with an overhead view centred on the forest. Zoom and pan
 to your deployment, or change the display frame/camera in the panel settings.
@@ -83,6 +102,16 @@ overlay Gazebo ground truth. Missing `world`/robot frames before alignment and
 empty camera panels before spawning are expected. ROI markers appear when the
 coordinator publishes them. No camera calibration topic is assumed: the current
 simulation bridge exposes image topics without a CameraInfo topic.
+
+The **Husky robot model** and **Parrot robot model** custom layers load the live
+`/husky1/robot_description` and `/parrot1/robot_description` topics. Their URDF
+links already have robot-specific prefixes, so the layers use an empty frame
+prefix. Visual meshes and materials come from `rs1_description` through the
+bridge's existing asset support using `package://` URIs. Gazebo resolves the same
+URIs using the resource path exported by `rs1_description/package.xml`.
+After rebuilding a mesh-URI change, restart the simulation and robot publishers
+so they publish the updated description and Gazebo picks up its resource path.
+The model layers need the description topics and aligned TF before they appear.
 
 The range plot is a raw beam measurement. Robot tilt and invalid/out-of-range
 returns affect it; it is not an independent, filtered ground-clearance estimate.
@@ -97,6 +126,33 @@ the current saved workspace. Upstream's `layoutUrl` importer replaces existing
 layouts with the same URL-derived name, so duplicate or export a customised
 starter before loading the preset again. Browser layouts live in IndexedDB and
 can be lost when browser site data is cleared.
+
+## Log monitoring
+
+Open the **ROS logs** tab in the preset. In the Log panel settings, **Namespaces**
+lists the logger names seen so far. Use **Hide all**, then enable the loggers you
+want, or use the severity and text filters. Newly encountered logger names are
+visible by default, so this is a display filter rather than a fixed launch boundary.
+The panel can only show levels that the source nodes actually publish; selecting
+Debug in the panel does not change a node launched with `log_level:=info` or
+`stack_log_level:=warn`.
+
+`/rosout` contains ROS log messages from nodes in the ROS domain, regardless of
+which terminal started them. It has no terminal number or launch-session field.
+Plain stdout/stderr, Python prints, Uvicorn messages and ROS launch announcements
+are not automatically published to `/rosout`.
+
+For `ros2 launch rs1_dashboard dashboard.launch.py mode:=deploy`, the dashboard
+already tails the deployment's `ros.log` into its terminal when `show_logs:=true`.
+Those ROS nodes also normally publish their own log messages to `/rosout`, so
+they can be monitored in Lichtblick. The terminal additionally contains backend,
+viewer and launch output that the ROS Log panel cannot reproduce.
+
+Showing **all and only that dashboard launch's terminal output** would require
+a dedicated stdout/stderr capture relay publishing `rcl_interfaces/msg/Log` on
+a separate topic. No such terminal relay is installed by this preset update.
+Use the terminal or deployment's saved `ros.log` when the complete process output
+is needed; `/rosout` filters cannot provide that guarantee.
 
 ## Remote containers and existing viewers
 
@@ -158,7 +214,7 @@ viewer and bridge together before upgrading the pinned release.
 The layout was checked against official v1.29.1 source and this repository's
 topic definitions:
 
-- [Layout example](https://github.com/lichtblick-suite/lichtblick/blob/v1.29.1/e2e/fixtures/assets/default-layout.json), [layout validation and panel title key](https://github.com/lichtblick-suite/lichtblick/blob/v1.29.1/packages/suite-base/src/util/layout.ts).
+- [Layout example](https://github.com/lichtblick-suite/lichtblick/blob/v1.29.1/e2e/fixtures/assets/layout1.json), [layout validation and panel title key](https://github.com/lichtblick-suite/lichtblick/blob/v1.29.1/packages/suite-base/src/util/layout.ts).
 - [Image/3D configuration](https://github.com/lichtblick-suite/lichtblick/blob/v1.29.1/packages/suite-base/src/panels/ThreeDeeRender/IRenderer.ts), [plot configuration](https://github.com/lichtblick-suite/lichtblick/blob/v1.29.1/packages/suite-base/src/panels/Plot/utils/config.ts).
 - [URL state](https://github.com/lichtblick-suite/lichtblick/blob/v1.29.1/packages/suite-base/src/util/appURLState.ts) accepts `ds=foxglove-websocket`, `ds.url=<ws-or-wss-url>` and `layoutUrl=<absolute-http-or-https-json-url>`; [the importer](https://github.com/lichtblick-suite/lichtblick/blob/v1.29.1/packages/suite-base/src/Workspace.tsx) controls replacement behavior. Cross-origin layout fetches require CORS; the dashboard's layout endpoint provides it for this public preset.
 - [ROS 2 connections](https://lichtblick-suite.github.io/docs/docs/connecting-to-data/frameworks/ros2/), [layouts](https://lichtblick-suite.github.io/docs/docs/visualization/layouts/), [extensions](https://lichtblick-suite.github.io/docs/docs/extensions/introduction/), and [upstream releases](https://github.com/lichtblick-suite/lichtblick/releases).

@@ -50,7 +50,7 @@ TerrainFollowingNode::TerrainFollowingNode() : Node("terrain_following_node"),
   );
 
   combined_vel_pub_ = this->create_publisher<geometry_msgs::msg::Twist>(
-    "cmd_vel_combined", // TODO (james): Store in config file
+    "cmd_vel_combined", // TODO (james): Store in rs1_interfaces
     cmd_vel_qos
   );
 

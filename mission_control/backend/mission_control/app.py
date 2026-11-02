@@ -3,16 +3,25 @@ import fcntl
 import io
 import json
 import os
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from pathlib import Path
+from typing import Literal
 from uuid import uuid4
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import (
+    FastAPI,
+    File,
+    Form,
+    HTTPException,
+    UploadFile,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from PIL import Image, UnidentifiedImageError
 
-from .models import ExternalStart, Plan, SpawnPlan, UploadCalibration, XY
+from .models import ExternalStart, Plan, SpawnPlan, TeleopCommand, UploadCalibration, XY
 from .external import ExternalSessionManager
 from .deploy import DeploySessionManager
 from .deployment_logs import DeploymentLogTail, stream_deployment_logs
@@ -35,24 +44,39 @@ async def lifespan(app):
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError as exc:
         lock.close()
-        raise RuntimeError("A mission-control backend already owns this ROS domain") from exc
+        raise RuntimeError(
+            "A mission-control backend already owns this ROS domain"
+        ) from exc
     mode = os.getenv("MISSION_MODE", "managed")
-    managers = {"managed": SessionManager, "external": ExternalSessionManager, "deploy": DeploySessionManager}
+    managers = {
+        "managed": SessionManager,
+        "external": ExternalSessionManager,
+        "deploy": DeploySessionManager,
+    }
     if mode not in managers:
         raise ValueError("MISSION_MODE must be managed, external or deploy")
     manager_type = managers[mode]
-    manager = manager_type(Terrain(ROOT / "rs1_ws/src/rs1_sim"), DATA, create_adapter,
-                             timeout=float(os.getenv("MISSION_PREPARE_TIMEOUT", "180")))
+    manager = manager_type(
+        Terrain(ROOT / "rs1_ws/src/rs1_sim"),
+        DATA,
+        create_adapter,
+        timeout=float(os.getenv("MISSION_PREPARE_TIMEOUT", "180")),
+    )
     app.state.manager = manager
+    app.state.teleop = None
+
     async def sample():
         while True:
             if isinstance(manager, DeploySessionManager):
                 await manager.observe_deployment()
             manager.sample_trails()
             await asyncio.sleep(0.5)
+
     sampler = asyncio.create_task(sample())
     tasks = [sampler]
-    if isinstance(manager, DeploySessionManager) and os.getenv("MISSION_SHOW_LOGS", "true").lower() in ("true", "1"):
+    if isinstance(manager, DeploySessionManager) and os.getenv(
+        "MISSION_SHOW_LOGS", "true"
+    ).lower() in ("true", "1"):
         tail = DeploymentLogTail(manager.deployment)
         tasks.append(asyncio.create_task(stream_deployment_logs(manager, tail)))
     try:
@@ -61,6 +85,7 @@ async def lifespan(app):
         for task in tasks:
             task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
+        await stop_teleop()
         await manager.close()
         lock.close()
 
@@ -71,13 +96,17 @@ app = FastAPI(title="RS1 Mission Control", lifespan=lifespan)
 @app.exception_handler(ValueError)
 async def validation_error(_, exc):
     from fastapi.responses import JSONResponse
-    return JSONResponse(status_code=409 if isinstance(exc, Conflict) else 422,
-                        content={"detail": str(exc)})
+
+    return JSONResponse(
+        status_code=409 if isinstance(exc, Conflict) else 422,
+        content={"detail": str(exc)},
+    )
 
 
 @app.exception_handler(RuntimeError)
 async def ros_error(_, exc):
     from fastapi.responses import JSONResponse
+
     return JSONResponse(status_code=503, content={"detail": str(exc)})
 
 
@@ -89,23 +118,32 @@ async def state():
 @app.get("/api/telemetry")
 def telemetry():
     adapter = app.state.manager.adapter
-    return {**connection_settings(),
-            "bridge_available": getattr(adapter, "telemetry_available", lambda: False)()}
+    return {
+        **connection_settings(),
+        "bridge_available": getattr(adapter, "telemetry_available", lambda: False)(),
+    }
 
 
 @app.get("/api/telemetry/layout")
 def telemetry_layout():
     # This public, static project layout is fetched by the viewer on another port.
     # Keep CORS limited to this route rather than exposing mission-control APIs.
-    return FileResponse(ROOT / "mission_control/telemetry/default-layout.json",
-                        media_type="application/json",
-                        headers={"Access-Control-Allow-Origin": "*"})
+    return FileResponse(
+        ROOT / "mission_control/telemetry/layout1.json",
+        media_type="application/json",
+        headers={"Access-Control-Allow-Origin": "*"},
+    )
 
 
 @app.get("/api/presets")
 def presets():
-    return [{**{k: v for k, v in item.items() if k != "path"}, "url": f"/api/images/{item['id']}"}
-            for item in app.state.manager.images()]
+    return [
+        {
+            **{k: v for k, v in item.items() if k != "path"},
+            "url": f"/api/images/{item['id']}",
+        }
+        for item in app.state.manager.images()
+    ]
 
 
 @app.get("/api/images/{image_id}")
@@ -134,11 +172,19 @@ async def upload(file: UploadFile = File(...), registration: str = Form(...)):
     directory.mkdir(parents=True, exist_ok=True)
     path = directory / f"{identifier}.png"
     image.save(path)
-    item = {"id": identifier, "calibration_id": identifier, "world_id": metadata.world_id,
-            "calibration": metadata.calibration.model_dump(), "name": (file.filename or "Uploaded image")[:100],
-            "path": str(path)}
+    item = {
+        "id": identifier,
+        "calibration_id": identifier,
+        "world_id": metadata.world_id,
+        "calibration": metadata.calibration.model_dump(),
+        "name": (file.filename or "Uploaded image")[:100],
+        "path": str(path),
+    }
     (directory / f"{identifier}.json").write_text(json.dumps(item))
-    return {**{k: v for k, v in item.items() if k != "path"}, "url": f"/api/images/{identifier}"}
+    return {
+        **{k: v for k, v in item.items() if k != "path"},
+        "url": f"/api/images/{identifier}",
+    }
 
 
 @app.post("/api/plan/preview")
@@ -160,7 +206,9 @@ async def start(plan: Plan | ExternalStart):
     manager = app.state.manager
     expected = ExternalStart if isinstance(manager, ExternalSessionManager) else Plan
     if not isinstance(plan, expected):
-        raise ValueError("External/deploy modes accept only an ROI; managed mode requires a complete launch plan")
+        raise ValueError(
+            "External/deploy modes accept only an ROI; managed mode requires a complete launch plan"
+        )
     return await manager.start(plan)
 
 
@@ -183,17 +231,110 @@ async def deployment_spawn(plan: SpawnPlan):
 
 @app.post("/api/deployment/stop")
 async def deployment_stop():
+    await stop_teleop()
     return await deploy_manager().stop_deployment()
 
 
 @app.post("/api/mission/cancel")
 async def cancel():
+    await stop_teleop()
     return await app.state.manager.cancel()
 
 
 @app.post("/api/session/reset")
 async def reset():
+    await stop_teleop()
     return await app.state.manager.reset()
+
+
+async def stop_teleop(code=1000, reason="Keyboard control stopped"):
+    record = app.state.teleop
+    if record is None:
+        return
+
+    # Revoke ownership before awaiting shutdown so an old socket cannot send another command
+    app.state.teleop = None
+    with suppress(Exception):
+        if app.state.manager.adapter is record["adapter"]:
+            record["adapter"].publish_manual(record["robot"])
+    with suppress(Exception):
+        await record["socket"].close(code=code, reason=reason)
+
+
+def check_manual_control(manager, adapter, robot):
+    if manager.adapter is not adapter or manager.lock.locked():
+        raise Conflict("Mission control is changing; connect keyboard again shortly")
+    mission = manager.control_status()
+    if (
+        mission.get("state") != "manual_assistance"
+        or mission.get("control_mode") != robot
+    ):
+        raise Conflict("This robot is not selected for manual control")
+    if mission.get("manual_input") != "keyboard":
+        raise Conflict("Select Keyboard input before connecting keyboard control")
+    return mission["instance_id"], mission.get("control_revision", 0)
+
+
+@app.post("/api/mission/control/{operation}")
+async def mission_control(
+    operation: Literal[
+        "manual_husky", "manual_parrot", "resume", "input_keyboard", "input_controller"
+    ],
+):
+    await stop_teleop()
+    return await app.state.manager.control(operation)
+
+
+@app.websocket("/api/teleop/{robot}")
+async def teleop(socket: WebSocket, robot: str):
+    record = None
+    try:
+        if robot not in ("husky1", "parrot1"):
+            raise Conflict("Unknown robot")
+        if app.state.teleop is not None:
+            raise Conflict("Keyboard control is already connected in another panel")
+
+        manager = app.state.manager
+        adapter = manager.adapter
+        identity = check_manual_control(manager, adapter, robot)
+        record = {"socket": socket, "adapter": adapter, "robot": robot}
+        app.state.teleop = record
+        await socket.accept()
+
+        while app.state.teleop is record:
+            raw = await asyncio.wait_for(socket.receive_json(), timeout=0.35)
+            if app.state.teleop is not record:
+                break
+            if check_manual_control(manager, adapter, robot) != identity:
+                raise Conflict(
+                    "Mission control changed; reconnect and press Space again"
+                )
+
+            # Only publish newly received input - never repeat a cached nonzero command here
+            command = TeleopCommand.model_validate(raw)
+            adapter.publish_manual(robot, command)
+            await socket.send_json({"ok": True})
+    except WebSocketDisconnect:
+        pass
+    except (asyncio.TimeoutError, ValueError, RuntimeError) as exc:
+        reason = (
+            "Keyboard input timed out"
+            if isinstance(exc, asyncio.TimeoutError)
+            else str(exc)
+        )
+        reason = reason.encode("utf-8")[:120].decode("utf-8", errors="ignore")
+        if record is not None and app.state.teleop is record:
+            await stop_teleop(code=1008, reason=reason)
+        else:
+            with suppress(Exception):
+                await socket.close(code=1008, reason=reason)
+    finally:
+        # A retiring connection must not stop a newer operator's input
+        if record is not None and app.state.teleop is record:
+            await stop_teleop()
+        else:
+            with suppress(Exception):
+                await socket.close()
 
 
 DIST = ROOT / "mission_control/frontend/dist"

@@ -134,6 +134,25 @@ MissionCoordinatorNode::MissionCoordinatorNode() : Node("mission_coordinator_nod
         )
     );
 
+    // Manual selection only changes command ownership - the robot stacks stay running
+    manual_husky_service_ = create_service<std_srvs::srv::Trigger>(
+        "/mission/manual_husky", std::bind(&MissionCoordinatorNode::manualMissionCb,
+            this, Robot::Husky, std::placeholders::_1, std::placeholders::_2));
+    manual_parrot_service_ = create_service<std_srvs::srv::Trigger>(
+        "/mission/manual_parrot", std::bind(&MissionCoordinatorNode::manualMissionCb,
+            this, Robot::Parrot, std::placeholders::_1, std::placeholders::_2));
+    resume_mission_service_ = create_service<std_srvs::srv::Trigger>(
+        "/mission/resume", std::bind(&MissionCoordinatorNode::resumeMissionCb,
+            this, std::placeholders::_1, std::placeholders::_2));
+
+    // Keep input ownership in ROS so keyboard and controller publishers cannot compete
+    keyboard_input_service_ = create_service<std_srvs::srv::Trigger>(
+        "/mission/input_keyboard", std::bind(&MissionCoordinatorNode::manualInputCb,
+            this, "keyboard", std::placeholders::_1, std::placeholders::_2));
+    controller_input_service_ = create_service<std_srvs::srv::Trigger>(
+        "/mission/input_controller", std::bind(&MissionCoordinatorNode::manualInputCb,
+            this, "controller", std::placeholders::_1, std::placeholders::_2));
+
     RCLCPP_INFO(this->get_logger(), "Mission coordinator initialised to IDLE");
 
 }
@@ -224,10 +243,15 @@ void MissionCoordinatorNode::startMissionCb(const std::shared_ptr<std_srvs::srv:
 {
     response->success = false;
 
-    // Check if the current mission state is IDLE. Reject service request if not.
-    if (mission_state_ != MissionState::IDLE)
+    // Reuse the start checks when retrying the saved ROI after manual assistance
+    if (mission_state_ != MissionState::IDLE && mission_state_ != MissionState::MANUAL_ASSISTANCE)
     {
-        response->message = "Mission can only start from IDLE state";
+        response->message = "Mission can only start from idle or resume from manual assistance";
+        return;
+    }
+    if (traversalPending())
+    {
+        response->message = "Previous navigation is still stopping; continue manual assistance and try Resume again shortly";
         return;
     }
     // Synchronize immediately even when Start follows a parameter update before
@@ -312,11 +336,10 @@ void MissionCoordinatorNode::cancelMissionCb(const std::shared_ptr<std_srvs::srv
         response->message = "Mission already finished; create a new session";
         return;
     }
-    // Keep a failed mission marked as failed while retrying its cleanup
-    if (mission_state_ != MissionState::FAILED)
-    {
-        mission_state_ = MissionState::CANCELLING;
-    }
+    mission_state_ = MissionState::CANCELLING;
+    control_mode_ = "hold";
+    message_ = "Cancellation requested; waiting for both executors";
+    publishStatus();
 
     // A pending goal will be canceled once its goal handle arrives
     cancelTraversalToROI(Robot::Parrot);
@@ -340,7 +363,7 @@ void MissionCoordinatorNode::traverseToROIGoalResponseCb(Robot robot,
     {
         if (mission_state_ == MissionState::TRAVERSINGTOROI)
         {
-            failMission(robot_name + " executor rejected the TraverseToROI goal");
+            enterManualAssistance(robot, robot_name + " executor rejected the TraverseToROI goal");
         }
         else
         {
@@ -353,7 +376,7 @@ void MissionCoordinatorNode::traverseToROIGoalResponseCb(Robot robot,
     (robot == Robot::Parrot ? parrot_stage_ : husky_stage_) = "Accepted";
 
     // Cancellation may have arrived before the executor accepted its goal
-    if (mission_state_ == MissionState::FAILED || mission_state_ == MissionState::CANCELLING)
+    if (mission_state_ == MissionState::MANUAL_ASSISTANCE || mission_state_ == MissionState::CANCELLING)
     {
         cancelTraversalToROI(robot);
         return;
@@ -366,7 +389,7 @@ void MissionCoordinatorNode::traverseToROIGoalResponseCb(Robot robot,
     {
         if (!traverse_to_roi_client_parrot_->action_server_is_ready())
         {
-            failMission("Parrot TraverseToROI server became unavailable");
+            enterManualAssistance(Robot::Parrot, "Parrot TraverseToROI server became unavailable");
             return;
         }
 
@@ -378,7 +401,7 @@ void MissionCoordinatorNode::traverseToROIGoalResponseCb(Robot robot,
         catch (const std::exception &e)
         {
             parrot_goal_pending_ = false;
-            failMission(std::string("Could not send Parrot's TraverseToROI goal: ") + e.what());
+            enterManualAssistance(Robot::Parrot, std::string("Could not send Parrot's TraverseToROI goal: ") + e.what());
         }
     }
 }
@@ -432,11 +455,15 @@ void MissionCoordinatorNode::traverseToROIResultCb(Robot robot,
     }
 
     // A success received while stopping must not advance the mission
-    if (mission_state_ == MissionState::FAILED || mission_state_ == MissionState::CANCELLING)
+    if (mission_state_ == MissionState::MANUAL_ASSISTANCE || mission_state_ == MissionState::CANCELLING)
     {
         evaluateTransitions();
         return;
     }
+
+    // Keep the executor's reason visible so the operator knows why assistance was requested
+    const std::string detail = result.result && !result.result->message.empty() ?
+        ": " + result.result->message : "";
 
     // Handle each result case for the action: SUCCEEDED, ABORTED, CANCELLED
     switch (result.code)
@@ -456,15 +483,15 @@ void MissionCoordinatorNode::traverseToROIResultCb(Robot robot,
             break;
 
         case rclcpp_action::ResultCode::ABORTED:
-            failMission(robot_name + " traversal to ROI aborted");
+            enterManualAssistance(robot, robot_name + " traversal to ROI aborted" + detail);
             break;
 
         case rclcpp_action::ResultCode::CANCELED:
-            failMission(robot_name + " traversal to ROI was canceled");
+            enterManualAssistance(robot, robot_name + " traversal to ROI was canceled" + detail);
             break;
 
         default:
-            failMission(robot_name + " TraverseToROI returned an unexpected result code");
+            enterManualAssistance(robot, robot_name + " TraverseToROI returned an unexpected result code" + detail);
             break;
     }
 }
@@ -494,6 +521,11 @@ bool MissionCoordinatorNode::startTraverseToROI()
     husky_succeded_ = false;
     mission_state_ = MissionState::TRAVERSINGTOROI;
     message_ = "Traversal to ROI; sampling and return-home are not implemented";
+    control_mode_ = "auto";
+    ++input_revision_;
+    parrot_stage_ = "Waiting";
+    husky_stage_ = "Waiting";
+    publishStatus();
 
     // Send husky its goal first; its acceptance callback starts parrot
     try
@@ -504,7 +536,7 @@ bool MissionCoordinatorNode::startTraverseToROI()
     catch (const std::exception &e)
     {
         husky_goal_pending_ = false;
-        failMission(std::string("Could not send Husky's TraverseToROI goal: ") + e.what());
+        enterManualAssistance(Robot::Husky, std::string("Could not send Husky's TraverseToROI goal: ") + e.what());
         return false;
     }
 
@@ -544,17 +576,11 @@ void MissionCoordinatorNode::evaluateTransitions()
         return;
     }
 
-    // Do not allow a new mission while a goal or cancellation is still pending
-    if ((mission_state_ == MissionState::FAILED || mission_state_ == MissionState::CANCELLING) &&
-        !parrot_goal_pending_ && !husky_goal_pending_ && !parrot_goal_handle_ && !husky_goal_handle_)
+    // Manual assistance keeps the mission alive even after both old attempts have stopped
+    if (mission_state_ == MissionState::CANCELLING && !traversalPending())
     {
-        RCLCPP_INFO(this->get_logger(), "%s; both executors have finished",
-            mission_state_ == MissionState::FAILED ? "Mission failed" : "Mission canceled");
-        if (mission_state_ == MissionState::CANCELLING)
-        {
-            mission_state_ = MissionState::CANCELLED;
-            message_ = "Cancellation completed; both executors finished";
-        }
+        mission_state_ = MissionState::CANCELLED;
+        message_ = "Cancellation completed; both executors finished";
         finalizeMission();
     }
 }
@@ -604,16 +630,74 @@ void MissionCoordinatorNode::publishROIMarker()
     roi_marker_pub_->publish(markers);
 }
 
-void MissionCoordinatorNode::failMission(const std::string &message)
+bool MissionCoordinatorNode::traversalPending() const
 {
-    mission_state_ = MissionState::FAILED;
-    message_ = message;
-    RCLCPP_ERROR(this->get_logger(), "%s", message.c_str());
+    return parrot_goal_pending_ || husky_goal_pending_ || parrot_goal_handle_ || husky_goal_handle_;
+}
 
-    // Stop the other robot too, then wait for both final results
+void MissionCoordinatorNode::enterManualAssistance(Robot robot, const std::string &message)
+{
+    mission_state_ = MissionState::MANUAL_ASSISTANCE;
+    control_mode_ = robot == Robot::Husky ? "husky1" : "parrot1";
+    // A quick retry followed by another failure must not reuse a held controller input
+    ++input_revision_;
+    message_ = message + ". Manual assistance selected for " + control_mode_ +
+        "; reposition the robot, then select Resume";
+    RCLCPP_WARN(this->get_logger(), "%s", message_.c_str());
+
+    // Gate autonomous velocities immediately, then cancel the old attempts without losing the ROI
+    publishStatus();
+
     cancelTraversalToROI(Robot::Parrot);
     cancelTraversalToROI(Robot::Husky);
-    evaluateTransitions();
+}
+
+void MissionCoordinatorNode::manualMissionCb(Robot robot,
+    const std::shared_ptr<std_srvs::srv::Trigger::Request>,
+    std::shared_ptr<std_srvs::srv::Trigger::Response> response)
+{
+    response->success = false;
+    if (mission_state_ != MissionState::TRAVERSINGTOROI && mission_state_ != MissionState::MANUAL_ASSISTANCE)
+    {
+        response->message = "No active mission to assist";
+        return;
+    }
+    enterManualAssistance(robot, "Manual control requested by operator");
+    response->success = true;
+    response->message = message_;
+}
+
+void MissionCoordinatorNode::resumeMissionCb(
+    const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
+    std::shared_ptr<std_srvs::srv::Trigger::Response> response)
+{
+    if (mission_state_ != MissionState::MANUAL_ASSISTANCE)
+    {
+        response->success = false;
+        response->message = "Mission is not in manual assistance";
+        return;
+    }
+
+    // Failed readiness checks leave manual mode selected and explain why Resume was rejected
+    startMissionCb(request, response);
+}
+
+void MissionCoordinatorNode::manualInputCb(const std::string &input,
+    const std::shared_ptr<std_srvs::srv::Trigger::Request>,
+    std::shared_ptr<std_srvs::srv::Trigger::Response> response)
+{
+    response->success = false;
+    if (mission_state_ != MissionState::MANUAL_ASSISTANCE)
+    {
+        response->message = "Select manual assistance before choosing an input";
+        return;
+    }
+
+    manual_input_ = input;
+    ++input_revision_;
+    publishStatus();
+    response->success = true;
+    response->message = input + " selected; release the enable button before driving";
 }
 
 void MissionCoordinatorNode::cancelTraversalToROI(Robot robot)
@@ -651,7 +735,8 @@ void MissionCoordinatorNode::finalizeMission()
     husky_cancel_requested_ = false;
     parrot_succeded_ = false;
     husky_succeded_ = false;
-    // Preserve the terminal outcome. A new process/session is required to restart.
+    // Preserve the terminal outcome and stop all command sources until a new session
+    control_mode_ = "hold";
     publishStatus();
 }
 
@@ -672,13 +757,16 @@ void MissionCoordinatorNode::publishStatus()
         case MissionState::CANCELLING: status.state = "cancellation_requested"; break;
         case MissionState::CANCELLED: status.state = "cancelled"; break;
         case MissionState::COMPLETE: status.state = "complete"; break;
-        case MissionState::FAILED: status.state = "failed"; break;
+        case MissionState::MANUAL_ASSISTANCE: status.state = "manual_assistance"; break;
         default: status.state = "unsupported_phase";
     }
     status.parrot_stage = parrot_stage_;
     status.husky_stage = husky_stage_;
     status.message = message_;
-    status.cleanup_complete = !parrot_goal_pending_ && !husky_goal_pending_ && !parrot_goal_handle_ && !husky_goal_handle_;
+    status.control_mode = control_mode_;
+    status.manual_input = manual_input_;
+    status.input_revision = input_revision_;
+    status.cleanup_complete = !traversalPending();
     status_pub_->publish(status);
 }
 

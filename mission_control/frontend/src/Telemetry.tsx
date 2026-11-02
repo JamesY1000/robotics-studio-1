@@ -95,8 +95,9 @@ export function TelemetryViewer({
           viewer reports connection errors and topic data.
         </p>
         <p>
-          Select “Reset to starter layout” for the RS1 maps, TF, camera and
-          LiDAR panels. This replaces any saved copy of that starter layout;
+          Select “Reset to starter layout” for the RS1 maps, robot models, paths,
+          cameras, navigation scans, selected commands and ROS logs. This replaces
+          any saved copy of that starter layout;
           duplicate it under a new name or export your changes first. If it
           cannot be fetched, download it and import it using the viewer’s Layout
           menu. Regular viewer reloads preserve saved layouts. Mission controls

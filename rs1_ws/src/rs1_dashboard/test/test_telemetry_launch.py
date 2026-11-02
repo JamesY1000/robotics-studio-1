@@ -74,9 +74,12 @@ def test_bridge_is_an_observer_in_the_namespace_exempted_by_deployment(repositor
     # Monitoring must remain responsive while the simulation clock is paused.
     assert parameters["use_sim_time"] is False
     allowed = lambda topic: any(re.fullmatch(pattern, topic) for pattern in parameters["topic_whitelist"])
-    for topic in ("/husky1/scan", "/parrot1/map", "/tf", "/tf_static", "/clock", "/mission/status"):
+    for topic in ("/husky1/scan", "/parrot1/map", "/tf", "/tf_static", "/clock", "/mission/status",
+                  "/rosout", "/teleop/joy", "/teleop/cmd_vel_controller", "/yolo/debug_image",
+                  "/tree_locations/markers", "/tree_locations/map"):
         assert allowed(topic)
-    for topic in ("/other_robot/scan", "/husky10/scan", "/unrelated/mission/status"):
+    for topic in ("/other_robot/scan", "/husky10/scan", "/unrelated/mission/status",
+                  "/teleop/unrelated", "/yolo/unrelated", "/tree_locations/unrelated", "/rosout_extra"):
         assert not allowed(topic)
 
 
