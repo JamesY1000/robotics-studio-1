@@ -440,7 +440,8 @@ For managed and deploy placement, elevation is barycentrically interpolated from
 the **binary STL collision triangles**, with a spatial index. Husky spawn uses the highest sampled height
 under its footprint + 0.13228 m wheel-to-base extent + 0.10 m initial clearance.
 Parrot starts at ground + configured sensor clearance + 0.10 m sensor offset;
-default clearance is 4 m, matching the existing terrain-following target.
+the default spawn clearance is 4 m. Terrain following uses its separate
+`target_clearance` parameter in `rs1_navigation/config/terrain_following_params.yml`.
 Changing the initial clearance does not change that controller's target.
 In managed mode, station height uses its own sampled footprint + 0.05 m. The
 generated SDF moves the single existing station; it does not append another

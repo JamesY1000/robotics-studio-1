@@ -1216,12 +1216,6 @@ export default function App() {
                       ? "External world · persistent robot deployment"
                       : "Dashboard backend"}
                 </dd>
-                {!external && (
-                  <>
-                    <dt>Default UAV clearance</dt>
-                    <dd>4 m from downward sensor</dd>
-                  </>
-                )}
                 <dt>Session</dt>
                 <dd className="session-id">
                   {state?.plan?.session_id ||
