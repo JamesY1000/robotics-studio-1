@@ -151,7 +151,7 @@ Visualization Manager:
       Value: true
   Global Options:
     Background Color: 48; 48; 48
-    Fixed Frame: parrot1_odom
+    Fixed Frame: world
     Frame Rate: 30
   Tools:
     - Class: rviz_default_plugins/MoveCamera

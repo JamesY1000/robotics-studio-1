@@ -157,6 +157,13 @@ private:
     // nothing - only a shrinking distance_remaining does.
     void sweepStallWatchdogCb();
     void resetSweepProgress();
+    // Abandon the waypoint the sweep is currently on and continue with the next
+    // one.  Used both by the stall watchdog (no progress) and when the
+    // exploration fallback has been exhausted, so a single unreachable waypoint
+    // (a tree in the lane, a goal inside lethal space) costs one leg instead of
+    // the whole run.  Aborts sampling only if this happens
+    // `max_consecutive_skips_` times in a row.
+    void skipCurrentWaypoint(const std::string & reason);
     void publishSamplingFeedback(const std::string & stage);
     bool currentPose(geometry_msgs::msg::PoseStamped & pose) const;
 
@@ -332,8 +339,12 @@ private:
     bool sweep_progress_anchor_valid_{false};
     double waypoint_stall_timeout_{60.0};
     double waypoint_progress_epsilon_{1.0};
-    int consecutive_stalls_{0};
-    int max_consecutive_stalls_{3};
+    int consecutive_skips_{0};
+    int max_consecutive_skips_{3};
+    // Where the drone was at the previous skipped waypoint.  Skips from the same
+    // spot are what "wedged" looks like; skips while moving down a lane are not.
+    geometry_msgs::msg::Point skip_anchor_;
+    bool skip_anchor_valid_{false};
     bool detection_request_pending_{false};
     // Stationary-inference limiter: a parked drone sees the same frame again and
     // again, and YOLO is the heaviest CPU consumer in the stack, so inference is
@@ -348,16 +359,21 @@ private:
     std::size_t total_waypoints_{0};
     int16_t waypoints_remaining_{0};
 
-    // ROI box normalised into the executor's planning frame (parrot1_map)
+    // ROI box normalised into the executor's planning frame (parrot1_odom)
     geometry_msgs::msg::Point sweep_min_;
     geometry_msgs::msg::Point sweep_max_;
+    // The same ROI box expressed in `world`, which is the frame perception
+    // reports tree positions in.  parrot1_odom only equals `world` while the EKF
+    // fuses the odometry POSE, so the tree filter cannot reuse sweep_min_/max_.
+    geometry_msgs::msg::Point tree_min_;
+    geometry_msgs::msg::Point tree_max_;
     std::string sweep_frame_;
     double sweep_z_{0.0};
 
     // Exploration fallback state
     bool exploring_for_sweep_{false};
     int fallback_hops_{0};
-    int max_fallback_hops_{3};
+    int max_fallback_hops_{1};
     bool explore_before_sweep_{false};
 
     // Sweep lane state (per-waypoint Nav2 follower)

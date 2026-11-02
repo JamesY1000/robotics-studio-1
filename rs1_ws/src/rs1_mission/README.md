@@ -54,14 +54,17 @@ ros2 run rs1_mission test_roi_sampling.py --roi 0 -70 80 10 --timeout 2400
 The lanes are flown by **Nav2**, one `NavigateToPose` goal per waypoint rather
 than a single `NavigateThroughPoses` for the whole box. A whole-box plan needs the
 costmap to be valid across the entire ROI, which it never is at the start; a
-one-leg plan only needs the map valid one leg ahead. When a leg fails (empty /
-unknown costmap), the executor falls back to the weighted frontier explorer
-(`ExploreToPose`, the same exploration used in phase 1) targeted at the *next*
-waypoint, so the costmap grows along the lane it is about to fly, then resumes
-from where it left off. Terrain following follows the sweep because it watches
-the `navigate_to_pose` action status (as well as `navigate_through_poses`), so
-the search-clearance descent the executor requests via `/parrot1/set_clearance`
-takes effect while the sweep is executing.
+one-leg plan only needs the map valid one leg ahead. Every aimpoint is a
+`NavigateToPose` goal in `parrot1_odom`, and altitude comes solely from the
+terrain-following node, which follows the sweep because it watches the
+`navigate_to_pose` action status.
+
+A leg that fails first gets **one** frontier-exploration retry to grow the
+costmap (`max_fallback_hops`), and if that does not make it reachable the waypoint
+is **abandoned** and the sweep continues with the next one (see *A waypoint it
+cannot reach is skipped* below), so one blocked lane checkpoint cannot stall the
+run. The explorer is `ExploreToPose`, the same weighted frontier exploration phase
+1 uses.
 
 The sweep is **Nav2-only**: there is no internal velocity follower any more.
 Every lane and waypoint is a Nav2 `NavigateToPose` goal, and altitude comes solely
@@ -82,6 +85,40 @@ strip, a failure costs one checkpoint instead of a whole lane, and the per-waypo
 stall watchdog has somewhere to resume from mid-lane. Raise it to reduce the number
 of goals (and the ~1 s of Nav2 overhead each one costs); lower it for a denser,
 more forgiving sweep.
+
+### A waypoint it cannot reach is skipped, not fatal
+
+If a checkpoint cannot be reached - a tree sits on the lane, the goal lands in
+lethal space, or the planner wedges - the executor **skips that waypoint and
+carries on with the next one** instead of aborting the run, because on a long lane
+losing one checkpoint is far cheaper than losing the rest of the sweep. Two paths
+lead there:
+
+* **No progress.** Once a per-waypoint goal has been in flight with the drone
+  moving less than `waypoint_progress_epsilon` (1 m) for `waypoint_stall_timeout`
+  seconds (default **60 s**), the goal is cancelled and the waypoint skipped. The
+  progress signal is the drone's own pose, not Nav2 feedback (bt_navigator keeps
+  ticking while the planner is blocked).
+* **A failed leg.** A failed leg first falls back to the frontier explorer to grow
+  the costmap (`max_fallback_hops`, default **1**). If that still cannot reach the
+  waypoint it is skipped. Raise the value for more exploration attempts, or set it
+  to `0` to skip the moment a leg fails.
+
+Sampling only aborts if **three waypoints in a row cannot be reached from the same
+spot** (`max_consecutive_skips`), which means the drone is genuinely wedged rather
+than one lane leg being blocked. Skipping several blocked checkpoints while the
+drone still moves down the lane is normal and does not abort the run. The tunable
+knobs are launch arguments of `roi_sampling_test.launch.py`:
+
+``` bash
+ros2 launch rs1_mission roi_sampling_test.launch.py \
+    waypoint_stall_timeout:=30.0      # give up on a stalled leg sooner
+ros2 launch rs1_mission roi_sampling_test.launch.py \
+    max_fallback_hops:=0              # skip at once, no exploration retry
+```
+
+Skipped waypoints are logged as `Skipping waypoint N/M (x, y): <reason>`, and the
+partial tree map still covers every lane that was flown.
 
 ### Inference pauses while the drone is stationary
 
@@ -135,15 +172,28 @@ ros2 run rs1_mission test_roi_sampling.py --roi 0 -90 80 10 --teleport
 ### If the sweep flies away or leaves the ROI
 
 The sweep plans and controls in **`parrot1_odom`** (`sweep_frame_`), NOT in the SLAM
-map. That matters because `parrot1_odom` is the EKF output, which fuses the exact
-Gazebo pose, so it equals `world` numerically. A bad `world <-> parrot1_map`
-registration therefore cannot make the drone chase waypoints in the wrong place -
-but a corrupt EKF pose still can. Two guards catch that:
+map, so SLAM's map<->odom wander cannot make the drone chase waypoints in the wrong
+place.
 
-* `test_roi_sampling.py` verifies `parrot1_map` still agrees with the (ground-truth)
-  odometry frame before sampling (`--teleport` additionally re-initialises SLAM
-  **after** odometry has settled and checks the drone sits on the ROI start). Both
-  exit 2 with `parrot1_map is N m away from the odometry frame` on failure.
+`parrot1_odom` is the EKF output and is **not** the same frame as Gazebo's `world`:
+with the current EKF config (`odom0_config` fuses `vx, vy, vyaw` only) it is a dead
+reckoned frame whose origin is wherever the filter started, so anything expressed in
+one frame must be converted, never relabelled. Three places matter:
+
+| Data | Frame it is really in | Converted by |
+| --- | --- | --- |
+| ROI box (`test_roi_sampling.py`, dashboard) | `world` | the executor, in `prepareSweepBox()` |
+| Tree positions (`/parrot1/tree_map`) | `world` (perception anchors on `/parrot1/odometry`) | published with `frame_id: world`; filtered against a `world` copy of the ROI |
+| Sweep waypoints | `parrot1_odom` | by construction |
+
+`roi_sampling_viz.py` publishes its markers in `world` for the same reason.
+
+Two guards catch a genuinely broken localisation chain:
+
+* `test_roi_sampling.py` checks the `parrot1_odom -> parrot1_base_link` chain exists
+  before sampling, and `--teleport` waits for the drone to reach the target on the
+  ground-truth `world` chain, re-initialises SLAM afterwards, and verifies the
+  drone's map pose sits on the ROI start.
 * Nav2's own goal/progress checker bounds each lane leg, so a leg that cannot be
   completed is abandoned rather than flown away from the ROI.
 
@@ -212,10 +262,11 @@ spaced trunks remain) and **above ~6.5 m** (above the canopy). A clearance in
 between - including the default 2.0 m search altitude - is inside the branches;
 that is expected. The sweep relies on Nav2 plus two behaviours:
 
-* **Exploration fallback.** When a `NavigateToPose` leg aborts (the costmap cannot
-  plan through the canopy), the executor hands the *next* waypoint to the frontier
-  explorer (`ExploreToPose`) so the map grows along the lane, then resumes the
-  sweep at the same waypoint.
+* **Explore once, then skip.** When a `NavigateToPose` leg aborts (the costmap
+  cannot plan through the canopy) the executor hands the current waypoint to the
+  frontier explorer for one round-trip so the map can grow along the lane, then
+  retries. A second failure skips the waypoint (`max_fallback_hops:=0` skips at
+  once; raise it for more attempts).
 * **DWB recovery.** The controller's own `BackUp` / replan cycle in the custom
   behaviour tree (`navigate_to_pose_custom.xml`) clears the costmap and retreats
   when the path is blocked.

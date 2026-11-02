@@ -77,7 +77,12 @@ ParrotMissionExecutorNode::ParrotMissionExecutorNode() : Node("parrot_mission_ex
     }
 
     // Exploration fallback when the Nav2 costmap is incomplete over the ROI
-    max_fallback_hops_ = this->declare_parameter<int>("max_fallback_hops", 3);
+    // How many frontier-exploration round-trips to spend on ONE waypoint before
+    // skipping it.  Default 1: a failed leg usually means the costmap does not
+    // reach that far yet, so let the weighted frontier explorer grow it once and
+    // retry; a second failure means the waypoint is genuinely blocked (a tree on
+    // the lane, the goal inside lethal space) and retrying only wastes minutes.
+    max_fallback_hops_ = this->declare_parameter<int>("max_fallback_hops", 1);
     // Default off: fly straight to the ROI with the velocity follower instead of
     // waiting on Nav2/explore_lite, which is unreliable below the canopy.
     explore_before_sweep_ = this->declare_parameter<bool>("explore_before_sweep", false);
@@ -1168,62 +1173,90 @@ bool ParrotMissionExecutorNode::prepareSweepBox()
     if (!mission_goal) return false;
     const auto goal = mission_goal->get_goal();
 
-    // The sweep is planned and controlled in parrot1_odom, NOT parrot1_map.
-    // The EKF fuses the exact Gazebo pose, so parrot1_odom == world (numerically),
-    // whereas SLAM's parrot1_map -> parrot1_odom diverges badly on this repetitive
-    // forest (3 Hz lidar): mid-sweep it reached a ~72 m / 164 m z correction,
-    // which made the velocity follower fly the drone physically out of the ROI
-    // while its map pose looked fine.
+    // The sweep is planned and controlled in parrot1_odom, NOT parrot1_map:
+    // SLAM's parrot1_map -> parrot1_odom diverges badly on this repetitive
+    // forest (3 Hz lidar), which made the follower fly the drone physically out
+    // of the ROI while its map pose still looked fine.
     sweep_frame_ = "parrot1_odom";
     sweep_z_ = goal->roi_origin.pose.position.z;
 
-    const std::string source = goal->roi_origin.header.frame_id;
-    if (source == sweep_frame_ || source == "world" || source.empty())
-    {
-        // "world" is numerically identical to parrot1_odom (the EKF relays the
-        // ground-truth pose), so it also needs no transform.
-        sweep_min_ = goal->roi_min;
-        sweep_max_ = goal->roi_max;
-        return validROIBox(sweep_min_, sweep_max_);
-    }
+    const std::string source = goal->roi_origin.header.frame_id.empty()
+        ? std::string("world") : goal->roi_origin.header.frame_id;
 
-    try
+    // Transform the box's four corners into `target` and keep its axis-aligned
+    // bounds, so a yawed source frame still yields a valid sweep rectangle.
+    // NOTE: no frame is assumed to be interchangeable with any other.  The old
+    // code treated `world` as numerically equal to parrot1_odom (true only while
+    // the EKF fused the odometry POSE) and silently skipped this transform,
+    // which put the whole ROI in the wrong place once the EKF changed.
+    const auto box_in = [&](const std::string & target,
+                            geometry_msgs::msg::Point & min_out,
+                            geometry_msgs::msg::Point & max_out) -> bool
     {
-        const auto tf = tf_buffer_->lookupTransform(sweep_frame_, source, tf2::TimePointZero);
-        // Transform all four corners and re-derive an axis-aligned box, so a
-        // yawed source frame still yields a valid sweep rectangle.
-        const auto to_map = [&](const geometry_msgs::msg::Point & in)
+        if (source == target)
+        {
+            min_out = goal->roi_min;
+            max_out = goal->roi_max;
+            min_out.z = 0.0;
+            max_out.z = 0.0;
+            return true;
+        }
+        geometry_msgs::msg::TransformStamped tf;
+        try
+        {
+            // 3 s, not the default: `world -> parrot1_map` is broadcast once by
+            // rs1_alignment on /tf_static and may not have arrived yet when the
+            // SampleROI goal lands, and failing here aborts the whole phase.
+            tf = tf_buffer_->lookupTransform(
+                target, source, tf2::TimePointZero, std::chrono::seconds(3));
+        }
+        catch (const std::exception &e)
+        {
+            RCLCPP_ERROR(this->get_logger(),
+                "Could not transform the ROI box from %s into %s: %s",
+                source.c_str(), target.c_str(), e.what());
+            return false;
+        }
+        const auto corner_at = [&](double x, double y)
         {
             geometry_msgs::msg::PoseStamped pin, pout;
             pin.header.frame_id = source;
-            pin.pose.position = in;
+            pin.pose.position.x = x;
+            pin.pose.position.y = y;
+            pin.pose.position.z = 0.0;
             pin.pose.orientation.w = 1.0;
             tf2::doTransform(pin, pout, tf);
             return pout.pose.position;
         };
-        const auto a = to_map(goal->roi_min);
-        const auto b = to_map(goal->roi_max);
-        geometry_msgs::msg::Point corner;
-        corner.z = 0.0;
-        corner.x = goal->roi_min.x; corner.y = goal->roi_max.y;
-        const auto c = to_map(corner);
-        corner.x = goal->roi_max.x; corner.y = goal->roi_min.y;
-        const auto d = to_map(corner);
-        sweep_min_.x = std::min({a.x, b.x, c.x, d.x});
-        sweep_min_.y = std::min({a.y, b.y, c.y, d.y});
-        sweep_min_.z = 0.0;
-        sweep_max_.x = std::max({a.x, b.x, c.x, d.x});
-        sweep_max_.y = std::max({a.y, b.y, c.y, d.y});
-        sweep_max_.z = 0.0;
-    }
-    catch (const std::exception &e)
-    {
-        RCLCPP_ERROR(this->get_logger(),
-            "Could not transform the ROI box from %s into parrot1_map: %s", source.c_str(), e.what());
-        return false;
-    }
+        const auto a = corner_at(goal->roi_min.x, goal->roi_min.y);
+        const auto b = corner_at(goal->roi_max.x, goal->roi_min.y);
+        const auto c = corner_at(goal->roi_max.x, goal->roi_max.y);
+        const auto d = corner_at(goal->roi_min.x, goal->roi_max.y);
+        min_out.x = std::min({a.x, b.x, c.x, d.x});
+        min_out.y = std::min({a.y, b.y, c.y, d.y});
+        min_out.z = 0.0;
+        max_out.x = std::max({a.x, b.x, c.x, d.x});
+        max_out.y = std::max({a.y, b.y, c.y, d.y});
+        max_out.z = 0.0;
+        return true;
+    };
 
-    return validROIBox(sweep_min_, sweep_max_);
+    if (!box_in(sweep_frame_, sweep_min_, sweep_max_)) return false;
+    if (!validROIBox(sweep_min_, sweep_max_)) return false;
+
+    // Perception anchors tree positions on the raw Gazebo odometry, i.e. `world`.
+    // mergeTree() therefore needs the ROI in `world` as well; comparing them
+    // against the planning box is only correct while parrot1_odom tracks world.
+    if (!box_in("world", tree_min_, tree_max_))
+    {
+        RCLCPP_WARN(this->get_logger(),
+            "Could not express the ROI box in `world`; filtering trees against the "
+            "planning box instead, which is only correct while parrot1_odom tracks "
+            "the Gazebo `world` frame");
+        tree_min_ = sweep_min_;
+        tree_max_ = sweep_max_;
+    }
+    return true;
 }
 
 rclcpp_action::CancelResponse ParrotMissionExecutorNode::sampleROICancelRequestCb(
@@ -1382,7 +1415,8 @@ void ParrotMissionExecutorNode::beginSweep()
 
     total_waypoints_ = poses.size();
     waypoints_remaining_ = static_cast<int16_t>(std::min<std::size_t>(poses.size(), 32767));
-    consecutive_stalls_ = 0;
+    consecutive_skips_ = 0;
+    skip_anchor_valid_ = false;
     resetSweepProgress();
     detection_motion_anchor_valid_ = false;
     stationary_detections_ = 0;
@@ -1657,14 +1691,15 @@ void ParrotMissionExecutorNode::mergeTree(const rs1_interfaces::msg::TreeLocatio
     const double tx = tree.location.x;
     const double ty = tree.location.y;
 
-    // Drop trees outside the ROI box.  Both the tree locations and
-    // sweep_min_/sweep_max_ are in parrot1_odom.  This discards the inbound
-    // transit's detections (the drone crosses the forest to the corner) and
-    // neighbours just over the box boundary that the camera/lidar catch
-    // mid-lane.
+    // Drop trees outside the ROI box.  The tree positions come from the perception
+    // stack, which anchors them on the raw Gazebo odometry, so they are in
+    // `world` - hence the world copy of the box, not the planning one.  This
+    // discards the inbound transit's detections (the drone crosses the forest to
+    // the corner) and neighbours just over the box boundary that the camera/lidar
+    // catch mid-lane.
     const double margin = roi_tree_margin_;
-    if (tx < sweep_min_.x - margin || tx > sweep_max_.x + margin ||
-        ty < sweep_min_.y - margin || ty > sweep_max_.y + margin)
+    if (tx < tree_min_.x - margin || tx > tree_max_.x + margin ||
+        ty < tree_min_.y - margin || ty > tree_max_.y + margin)
     {
         return;
     }
@@ -1844,7 +1879,7 @@ void ParrotMissionExecutorNode::sweepWaypointResultCb(
         case rclcpp_action::ResultCode::SUCCEEDED:
             ++sweep_index_;
             fallback_hops_ = 0;
-            consecutive_stalls_ = 0;
+            consecutive_skips_ = 0;
             waypoints_remaining_ = static_cast<int16_t>(
                 std::min<std::size_t>(sweep_waypoints_.size() - sweep_index_, 32767));
             publishSamplingFeedback("Sweeping ROI");
@@ -1921,7 +1956,10 @@ std::size_t ParrotMissionExecutorNode::publishTreeMap()
 
     rs1_interfaces::msg::TreeMap msg;
     msg.header.stamp = this->now();
-    msg.header.frame_id = "parrot1_odom";
+    // Coordinates are Gazebo ground truth (perception anchors on /parrot1/odometry),
+    // so the map is in `world`.  It used to be labelled parrot1_odom because the
+    // EKF then relayed the exact Gazebo pose and the two frames coincided.
+    msg.header.frame_id = "world";
     std::size_t dropped = 0;
     msg.trees.reserve(finalized.size());
     for (const auto & merged : finalized)
@@ -2291,7 +2329,16 @@ void ParrotMissionExecutorNode::retrySweepWithExploration(const std::string & re
 
     if (fallback_hops_ >= max_fallback_hops_)
     {
-        abortSampling("ROI sweep failed and exploration retries are exhausted: " + reason);
+        // Exploring towards the waypoint did not make it reachable either (or it
+        // is disabled entirely), so this one is genuinely blocked.  Move on to
+        // the NEXT waypoint straight away: losing one leg of a lane is much
+        // cheaper than losing the rest of the run, which is what aborting
+        // sampling here used to do.
+        skipCurrentWaypoint(
+            max_fallback_hops_ > 0
+                ? "unreachable after " + std::to_string(fallback_hops_) +
+                      " exploration retries: " + reason
+                : reason);
         return;
     }
 
@@ -2408,25 +2455,66 @@ void ParrotMissionExecutorNode::sweepStallWatchdogCb()
     const double idle = (this->now() - last_sweep_progress_time_).seconds();
     if (idle < waypoint_stall_timeout_) return;
 
-    ++consecutive_stalls_;
-    RCLCPP_WARN(this->get_logger(),
-        "No progress toward waypoint %zu/%zu for %.0f s (the Nav2 planner or its "
-        "global costmap is wedged); skipping it (stall %d/%d)",
-        sweep_index_ + 1, sweep_waypoints_.size(), idle,
-        consecutive_stalls_, max_consecutive_stalls_);
+    skipCurrentWaypoint(
+        "no movement for " + std::to_string(static_cast<long>(idle)) +
+        " s (the Nav2 planner or its global costmap is wedged, or the lane is blocked)");
+}
+
+
+void ParrotMissionExecutorNode::skipCurrentWaypoint(const std::string & reason)
+{
+    if (!sample_roi_goal_handle_ || !sample_roi_goal_handle_->is_active() ||
+        sample_roi_goal_handle_->is_canceling())
+    {
+        return;
+    }
+
+    // Count this as a "we are stuck here" skip only when the drone has not really
+    // moved since the previous skip.  Skipping several blocked checkpoints while
+    // making progress down a lane is normal and must not end the run; being unable
+    // to reach ANY waypoint from the same spot means the drone is wedged.
+    geometry_msgs::msg::PoseStamped here;
+    const bool have_pose = currentPose(here);
+    const bool same_spot = have_pose && skip_anchor_valid_ &&
+        std::hypot(
+            here.pose.position.x - skip_anchor_.x,
+            here.pose.position.y - skip_anchor_.y) < 2.0;
+    consecutive_skips_ = same_spot ? (consecutive_skips_ + 1) : 1;
+    if (have_pose)
+    {
+        skip_anchor_ = here.pose.position;
+        skip_anchor_valid_ = true;
+    }
+
+    if (sweep_index_ < sweep_waypoints_.size())
+    {
+        const auto & wp = sweep_waypoints_[sweep_index_];
+        RCLCPP_WARN(this->get_logger(),
+            "Skipping waypoint %zu/%zu (%.1f, %.1f): %s (skip %d from this spot, "
+            "limit %d)",
+            sweep_index_ + 1, sweep_waypoints_.size(),
+            wp.pose.position.x, wp.pose.position.y,
+            reason.c_str(), consecutive_skips_, max_consecutive_skips_);
+    }
+    else
+    {
+        RCLCPP_WARN(this->get_logger(),
+            "Skipping the current waypoint: %s", reason.c_str());
+    }
 
     // Cancel whatever is in flight before moving on.  This is non-blocking: a
     // wedged planner_server will not answer the cancel, which is exactly why the
     // waypoint is being abandoned.
     stopSweep();
 
-    if (consecutive_stalls_ >= max_consecutive_stalls_)
+    if (consecutive_skips_ >= max_consecutive_skips_)
     {
         abortSampling(
-            "Sweep aborted: Nav2 stopped making progress on " +
-            std::to_string(consecutive_stalls_) + " consecutive waypoints (planner "
-            "server / global costmap wedged). The partial tree map covers only the "
-            "lanes flown so far.");
+            "Sweep aborted: " + std::to_string(consecutive_skips_) +
+            " waypoints in a row could not be reached from the same spot (last "
+            "reason: " + reason +
+            "). The drone cannot get out of that position; the partial tree map "
+            "covers only the lanes flown so far.");
         return;
     }
 

@@ -196,20 +196,14 @@ class RoiSamplingTester(Node):
                 return True
         return False
 
-    def _world_to_map_pose(self, x: float, y: float, z: float, yaw: float):
-        """Transform a world-frame pose into parrot1_map, or None if TF is missing."""
-        deadline = time.time() + 5.0
-        tf = None
-        while time.time() < deadline:
-            rclpy.spin_once(self, timeout_sec=0.1)
-            try:
-                tf = self.tf_buffer.lookup_transform(
-                    "parrot1_map", "world", Time(), RosDuration(seconds=0.5))
-                break
-            except Exception:  # noqa: BLE001
-                continue
-        if tf is None:
-            return None
+    def _pose_in_frame(self, x: float, y: float, z: float, yaw: float,
+                       target: str, source: str = "world"):
+        """Express an (x, y, z, yaw) pose from ``source`` in ``target``, or None.
+
+        No frame here is assumed to be interchangeable with another: with a
+        twist-only EKF ``parrot1_odom`` and ``world`` are different frames, so
+        every conversion goes through TF explicitly.
+        """
         import tf2_geometry_msgs  # noqa: F401
         from tf2_geometry_msgs import do_transform_pose
 
@@ -219,6 +213,20 @@ class RoiSamplingTester(Node):
         src.position.z = z
         src.orientation.z = math.sin(yaw * 0.5)
         src.orientation.w = math.cos(yaw * 0.5)
+        if source == target:
+            return src
+
+        deadline = time.time() + 5.0
+        tf = None
+        while tf is None and time.time() < deadline:
+            rclpy.spin_once(self, timeout_sec=0.1)
+            try:
+                tf = self.tf_buffer.lookup_transform(
+                    target, source, Time(), RosDuration(seconds=0.5))
+            except Exception:  # noqa: BLE001
+                continue
+        if tf is None:
+            return None
         return do_transform_pose(src, tf)
 
     def _wait_for_map_pose(self, target, tol: float = 1.5, timeout: float = 5.0) -> bool:
@@ -240,16 +248,20 @@ class RoiSamplingTester(Node):
     def transform_box(
         self, bounds: Tuple[float, float, float, float], source_frame: str
     ) -> Tuple[str, Point, Point]:
-        """Return the ROI box in the executor's planning frame (parrot1_odom).
+        """Return the ROI box in the frame it was given, plus that frame.
 
-        The sweep no longer plans in parrot1_map: SLAM's map->odom diverges on
-        this repetitive forest and drove the drone physically out of the ROI.
-        parrot1_odom is the EKF output, which fuses the exact Gazebo pose, so it
-        is numerically the same as ``world`` and the raw box needs no transform.
+        The box is NOT relabelled here.  The executor converts it into its
+        planning frame (``parrot1_odom``) itself, and keeps a ``world`` copy for
+        the tree filter, so the numbers must stay in the frame the user supplied.
+        Relabelling worked only while the EKF fused the odometry POSE and
+        ``parrot1_odom`` happened to equal ``world``; with a twist-only EKF the
+        two frames differ by the drone's odometry origin, and re-labelling put
+        the whole ROI in the wrong place.
         """
         x_min, y_min, x_max, y_max = bounds
+        frame = (source_frame or "world").strip()
         return (
-            "parrot1_odom",
+            frame,
             Point(x=x_min, y=y_min, z=0.0),
             Point(x=x_max, y=y_max, z=0.0),
         )
@@ -288,13 +300,14 @@ class RoiSamplingTester(Node):
         step = width / float(max(1, int(math.ceil(width / spacing))))
         return x_min + 0.5 * step, y_min - turn_lead, math.pi * 0.5
 
-    def _measured_map_pose(self, odom_transform):
-        """Express a measured pose in parrot1_map without trusting SLAM's own correction.
+    def _measured_map_pose(self, world_transform):
+        """Express a measured WORLD pose in parrot1_map.
 
-        The EKF fuses the Gazebo ground-truth pose, so ``parrot1_odom`` is
-        numerically the ``world`` frame.  Relabelling the measured odom pose as
-        ``world`` and applying the *static* ``parrot1_map <- world`` registration
-        avoids depending on the (currently suspect) ``map -> odom`` correction.
+        ``world_transform`` must be ``world <- parrot1_base_link`` (Gazebo ground
+        truth), not the odom pose: with a twist-only EKF ``parrot1_odom`` no
+        longer equals ``world``.  Applying the *static* ``parrot1_map <- world``
+        registration avoids depending on the (currently suspect) ``map -> odom``
+        correction.
         """
         tf = self._lookup("parrot1_map", "world")
         if tf is None:
@@ -303,10 +316,10 @@ class RoiSamplingTester(Node):
         from tf2_geometry_msgs import do_transform_pose
 
         src = Pose()
-        src.position.x = odom_transform.translation.x
-        src.position.y = odom_transform.translation.y
-        src.position.z = odom_transform.translation.z
-        src.orientation = odom_transform.rotation
+        src.position.x = world_transform.translation.x
+        src.position.y = world_transform.translation.y
+        src.position.z = world_transform.translation.z
+        src.orientation = world_transform.rotation
         return do_transform_pose(src, tf)
 
     def _publish_initial_pose(self, map_pose) -> None:
@@ -321,23 +334,26 @@ class RoiSamplingTester(Node):
         self.initial_pose_pub.publish(pose)
 
     def check_map_frame(self) -> bool:
-        """Verify the executor's planning frame (parrot1_odom) is live and sane.
+        """Verify the executor's planning frame (parrot1_odom) is live.
 
-        The sweep now plans in parrot1_odom (the EKF's exact ground-truth pose),
-        not parrot1_map, because SLAM's map->odom diverges on this forest and
-        drove the drone physically out of the ROI.  This just confirms the
-        odometry frame chain exists.
+        The sweep plans in parrot1_odom, not parrot1_map, because SLAM's
+        map->odom diverges on this forest and drove the drone physically out of
+        the ROI.  parrot1_odom is the EKF's dead-reckoned frame, so this only
+        confirms the chain exists - the ROI box is converted into it by the
+        executor, which is why no world/odom equality is assumed here.
         """
         odom = self._lookup("parrot1_odom", "parrot1_base_link")
         if odom is None:
             print("FAIL: no parrot1_odom -> parrot1_base_link transform; is the EKF running?")
             return False
         self.get_logger().info(
-            "Sweep frame parrot1_odom ready (ground-truth pose at "
+            "Sweep frame parrot1_odom ready (EKF pose at "
             f"({odom.transform.translation.x:.1f}, {odom.transform.translation.y:.1f}))")
         return True
 
-    def teleport_to_sweep_start(self, args, roi_min: Point, roi_max: Point) -> bool:
+    def teleport_to_sweep_start(
+        self, args, roi_min: Point, roi_max: Point, roi_frame: str = "world"
+    ) -> bool:
         """Teleport to the first swath waypoint and re-sync localisation, in order."""
         start = self._sweep_start(
             (args.roi[0], args.roi[1]), (args.roi[2], args.roi[3]),
@@ -352,16 +368,19 @@ class RoiSamplingTester(Node):
             print(f"WARN: failed to teleport to the sweep start ({start_x:.1f}, {start_y:.1f})")
             return True
 
-        # 1. WAIT for the EKF to reflect the teleport BEFORE touching SLAM.
-        #    slam_toolbox implements /initialpose as map_T_odom = requested - odom.
-        #    Re-initialising while odom still held the pre-teleport pose baked a
-        #    ~90 m translation plus a large yaw into map->odom, so the sweep flew
-        #    the mirrored box: straight out of the ROI, in the opposite direction.
+        # 1. WAIT for the sim to reflect the teleport BEFORE touching SLAM.
+        #    The target is a WORLD pose (set_pose works in the Gazebo world), so
+        #    confirm it on the ground-truth chain.  ``parrot1_odom`` is NOT
+        #    equivalent to world once the EKF is twist-only - it does not follow
+        #    a set_pose teleport at all.
+        #    slam_toolbox implements /initialpose as map_T_odom = requested - odom,
+        #    so re-initialising before the drone has actually moved there bakes
+        #    the jump into map->odom and the sweep flies the mirrored box.
         measured = None
         settled = 0
         deadline = time.time() + 15.0
         while time.time() < deadline:
-            tf = self._lookup("parrot1_odom", "parrot1_base_link")
+            tf = self._lookup("world", "parrot1_base_link")
             if tf is not None:
                 dx = tf.transform.translation.x - start_x
                 dy = tf.transform.translation.y - start_y
@@ -375,8 +394,8 @@ class RoiSamplingTester(Node):
             time.sleep(0.1)
         if settled < 2:
             print(
-                "FAIL: odometry never settled at the teleport target "
-                f"({start_x:.1f}, {start_y:.1f}); is the EKF running?")
+                "FAIL: the drone never reached the teleport target "
+                f"({start_x:.1f}, {start_y:.1f}) in `world`; is the simulation running?")
             return False
 
         # 2. Re-initialise SLAM from the MEASURED pose, not the commanded one, so
@@ -401,15 +420,21 @@ class RoiSamplingTester(Node):
         #    broken frame, so fail here instead of flying off into the trees.
         expected = self._sweep_start(
             (roi_min.x, roi_min.y), (roi_max.x, roi_max.y), float(args.swath_spacing))
+        expected_map = (
+            self._pose_in_frame(expected[0], expected[1], 0.0, expected[2],
+                                "parrot1_map", roi_frame)
+            if expected is not None else None
+        )
         tf = self._lookup("parrot1_map", "parrot1_base_link")
-        if expected is not None and tf is not None:
-            err = math.hypot(tf.transform.translation.x - expected[0],
-                             tf.transform.translation.y - expected[1])
+        if expected_map is not None and tf is not None:
+            err = math.hypot(tf.transform.translation.x - expected_map.position.x,
+                             tf.transform.translation.y - expected_map.position.y)
             if err > 4.0:
                 print(
                     "FAIL: drone map pose "
                     f"({tf.transform.translation.x:.1f}, {tf.transform.translation.y:.1f}) "
-                    f"is {err:.1f} m from the ROI start ({expected[0]:.1f}, {expected[1]:.1f}). "
+                    f"is {err:.1f} m from the ROI start ({expected_map.position.x:.1f}, "
+                    f"{expected_map.position.y:.1f}) in parrot1_map. "
                     "world and parrot1_map are inconsistent - check /mission/alignment "
                     "and map->odom before sweeping.")
                 return False
@@ -433,7 +458,7 @@ class RoiSamplingTester(Node):
                     f"(ready.parrot1 != true; error={err}). Localisation is unhealthy - "
                     "restart the stack and verify odom~=truth before sweeping.")
                 return 2
-            if not self.teleport_to_sweep_start(args, roi_min, roi_max):
+            if not self.teleport_to_sweep_start(args, roi_min, roi_max, frame):
                 return 2
         elif not self.check_map_frame():
             return 2
