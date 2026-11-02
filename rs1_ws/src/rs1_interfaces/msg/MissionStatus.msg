@@ -9,3 +9,5 @@ string parrot_stage
 string husky_stage
 string message
 bool cleanup_complete
+# auto (Autonomous), husky1 (husky teleop), parrot1 (parrot teleop), or hold (stop)
+string control_mode

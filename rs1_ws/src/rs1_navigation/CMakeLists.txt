@@ -11,6 +11,7 @@ find_package(rclcpp REQUIRED)
 find_package(action_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(rs1_interfaces REQUIRED)
 
 # Include the 'include' directory
 include_directories(include)
@@ -20,11 +21,21 @@ add_executable(terrain_following
   src/terrain_following_node.cpp
 )
 
+add_executable(velocity_selector
+  src/velocity_selector.cpp
+  src/velocity_selector_node.cpp
+)
+
+# Declare version required by std::clamp =
+target_compile_features(velocity_selector PRIVATE cxx_std_17)
+
 ament_target_dependencies(terrain_following rclcpp action_msgs geometry_msgs sensor_msgs)
+ament_target_dependencies(velocity_selector rclcpp geometry_msgs rs1_interfaces)
 
 # Install cpp executables
 install(TARGETS
   terrain_following
+  velocity_selector
   DESTINATION lib/${PROJECT_NAME}
 )
 
