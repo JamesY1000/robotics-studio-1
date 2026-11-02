@@ -170,6 +170,32 @@ world→base broadcaster has been removed. Everything else (image size, threshol
 class names) lives in `config/yolo.yaml`; the launch file only exposes the
 backend selection and the model paths.
 
+## Interactive mapping (manual flight)
+
+`scripts/map_tree_locations.py` builds a tree map by hand when you do not want to
+run a full mission. Fly the Parrot with `teleop_twist_keyboard` in one terminal
+and leave this script in another; each snapshot calls `/yolo/detect` and
+`/yolo/process_tree_locations`, merges the result into a persistent map (a tree
+seen again from another angle is merged, not duplicated) and publishes it on
+`/tree_locations/map`.
+
+```bash
+# terminal 1 - spread the trees into the world
+ros2 launch rs1_sim rs1_sim.launch.py husky:=false rviz:=false slam:=false nav2:=false
+# terminal 2 - perception services
+ros2 launch rs1_perception tree_identification.launch.py
+# terminal 3 - watch the map
+rviz2 -d $(ros2 pkg prefix rs1_perception)/share/rs1_perception/config/tree_locations.rviz
+# terminal 4 - fly
+ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -r cmd_vel:=/parrot1/cmd_vel -p speed:=0.3 -p turn:=0.5
+# terminal 5 - snapshot trees while still flying
+ros2 run rs1_perception map_tree_locations.py
+```
+
+Keys in that terminal: `p` snapshot, `c` clear, `s` save to CSV, `l` list,
+`g` toggle the grey true-tree markers, `h` help, `q` quit (saves). The tool needs
+an interactive terminal, so run it with `ros2 run` rather than a launch file.
+
 ## Testing the inference backend
 
 ### Quick check - no simulation needed
