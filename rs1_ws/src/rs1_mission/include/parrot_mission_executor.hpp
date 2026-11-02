@@ -148,6 +148,15 @@ private:
     // silently.  Abort sampling with a clear message instead.
     void scanCb(const sensor_msgs::msg::LaserScan & msg);
     void lidarWatchdogCb();
+    // Per-waypoint stall watchdog.  Nav2 runs planner_server and the global
+    // costmap in ONE process with a single-threaded executor, so a very large
+    // SLAM-grown costmap can block a single compute_path_to_pose.  The
+    // NavigateToPose goal then never returns and the sweep hangs forever (a
+    // 640 s hang at waypoint 9/14 on the 80x100 m ROI).  bt_navigator keeps
+    // publishing feedback while that happens, so "feedback arrived" proves
+    // nothing - only a shrinking distance_remaining does.
+    void sweepStallWatchdogCb();
+    void resetSweepProgress();
     void publishSamplingFeedback(const std::string & stage);
     bool currentPose(geometry_msgs::msg::PoseStamped & pose) const;
 
@@ -316,6 +325,15 @@ private:
     rclcpp::Time latest_scan_time_;
     rclcpp::TimerBase::SharedPtr lidar_watchdog_timer_;
     double scan_outage_timeout_{30.0};
+    // Waypoint stall watchdog state
+    rclcpp::TimerBase::SharedPtr sweep_stall_timer_;
+    rclcpp::Time last_sweep_progress_time_;
+    geometry_msgs::msg::Point sweep_progress_anchor_;
+    bool sweep_progress_anchor_valid_{false};
+    double waypoint_stall_timeout_{60.0};
+    double waypoint_progress_epsilon_{1.0};
+    int consecutive_stalls_{0};
+    int max_consecutive_stalls_{3};
     bool detection_request_pending_{false};
     std::vector<MergedTree> tree_map_;
     std::size_t total_waypoints_{0};
@@ -356,7 +374,6 @@ private:
     double camera_hfov_{2.0944};
     double swath_overlap_{0.2};
     double min_swath_spacing_{2.0};
-    bool start_double_pass_{true};
     double merge_distance_{4.0};
     double final_merge_distance_{5.5};
     double roi_tree_margin_{0.0};

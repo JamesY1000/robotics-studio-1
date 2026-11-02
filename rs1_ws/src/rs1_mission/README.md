@@ -1,6 +1,14 @@
 
 ## Testing the Boustrophedon Sweep
 
+Before launching, make sure no previous run is still holding the DDS shared-memory
+ports (a surviving `simulation_session`/`robot_state_publisher`/`ign gazebo` wedges
+the next run's Nav2 lifecycle and starves the EKF/lidar streams):
+
+``` bash
+./kill_stack.sh --check   # must report "clean"; if not, run ./kill_stack.sh first
+```
+
 Terminal 1:
 
 ``` bash
@@ -51,9 +59,13 @@ unknown costmap), the executor falls back to the weighted frontier explorer
 (`ExploreToPose`, the same exploration used in phase 1) targeted at the *next*
 waypoint, so the costmap grows along the lane it is about to fly, then resumes
 from where it left off. Terrain following follows the sweep because it watches
-the `navigate_to_pose` action status, so the search-clearance descent the
-executor requests via `/parrot1/set_clearance` takes effect while the sweep is
-executing.
+the `navigate_to_pose` action status (as well as `navigate_through_poses`), so
+the search-clearance descent the executor requests via `/parrot1/set_clearance`
+takes effect while the sweep is executing.
+
+The sweep is **Nav2-only**: there is no internal velocity follower any more.
+Every lane and waypoint is a Nav2 `NavigateToPose` goal, and altitude comes solely
+from the terrain-following node.
 
 ### Sweep start: fly in from the nearest corner (default)
 
@@ -67,8 +79,8 @@ Sweeping from the ROI corner nearest (90.0, -48.0): 23.4 m transit to the first 
 Entered the ROI; starting the sweep lanes
 ```
 
-The inbound leg is not treated as "leaving the ROI" (`roi_enter_margin`); only the
-leg itself is time-bounded (`roi_transit_timeout`, 120 s). It also flies at
+The inbound leg is not treated as "leaving the ROI" (`roi_enter_margin`), and it
+is bounded by Nav2's own goal/progress timeouts. It also flies at
 `transit_clearance` and only descends to `search_clearance` once it is inside the
 box, so the whole inbound leg is not flown at canopy height:
 
@@ -94,11 +106,14 @@ The sweep plans and controls in **`parrot1_odom`** (`sweep_frame_`), NOT in the 
 map. That matters because `parrot1_odom` is the EKF output, which fuses the exact
 Gazebo pose, so it equals `world` numerically. A bad `world <-> parrot1_map`
 registration therefore cannot make the drone chase waypoints in the wrong place -
-but a corrupt EKF pose still can. `test_roi_sampling.py` verifies `parrot1_map`
-still agrees with the (ground-truth) odometry frame before sampling (`--teleport`
-additionally re-initialises SLAM **after** odometry has settled and checks the
-drone sits on the ROI start). It exits 2 with `parrot1_map is N m away from the
-odometry frame` on failure.
+but a corrupt EKF pose still can. Two guards catch that:
+
+* `test_roi_sampling.py` verifies `parrot1_map` still agrees with the (ground-truth)
+  odometry frame before sampling (`--teleport` additionally re-initialises SLAM
+  **after** odometry has settled and checks the drone sits on the ROI start). Both
+  exit 2 with `parrot1_map is N m away from the odometry frame` on failure.
+* Nav2's own goal/progress checker bounds each lane leg, so a leg that cannot be
+  completed is abandoned rather than flown away from the ROI.
 
 #### SLAM is on by default, and it drifts
 
@@ -144,7 +159,7 @@ Teleop Terminal (cmd vel is husky1 and parrot1):
 ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -r cmd_vel:=/husky1/cmd_vel
 ```
 
-## Canopy geometry and sweep altitude
+## When the drone gets stuck in a tree
 
 The oak trees in `v2_forest.sdf` are single static meshes. Their geometry (mesh
 bbox, scaled by 0.0254) is:
@@ -155,11 +170,34 @@ bbox, scaled by 0.0254) is:
 | branches (canopy)    | 1.2 - 6.5 m |
 
 The drone is **kinematic** (`ignition-gazebo-velocity-control-system`), so it can
-never physically jam on a branch. Nav2 drives the sweep through this band: the
-costmaps are built from the level lidar ring (`/parrot1/scan`) and the full point
-cloud (`/parrot1/scan/points`), and each lane is flown one `NavigateToPose` goal
-at a time, so only the lane immediately ahead needs to be plannable. The search
-and transit clearances are both 2.0 m (matching phase 1).
+never physically jam on a branch. With the Nav2 sweep, "stuck in a tree" means the
+planner/controller cannot find a collision-free path because the level scan ring
+(`/parrot1/scan`, the middle ring of the 9-ray lidar at the drone's altitude) sees
+branches on every bearing and the costmap closes around the drone.
+
+The only clear altitudes are **below ~1.2 m** (trunk level, where only widely
+spaced trunks remain) and **above ~6.5 m** (above the canopy). A clearance in
+between - including the default 2.0 m search altitude - is inside the branches;
+that is expected. The sweep relies on Nav2 plus two behaviours:
+
+* **Exploration fallback.** When a `NavigateToPose` leg aborts (the costmap cannot
+  plan through the canopy), the executor hands the *next* waypoint to the frontier
+  explorer (`ExploreToPose`) so the map grows along the lane, then resumes the
+  sweep at the same waypoint.
+* **DWB recovery.** The controller's own `BackUp` / replan cycle in the custom
+  behaviour tree (`navigate_to_pose_custom.xml`) clears the costmap and retreats
+  when the path is blocked.
+
+There is no duck/pop-up ladder, no gap-seeking avoidance and no `cmd_vel` follower
+in the executor any more - all of that was removed when the sweep moved to Nav2,
+and `sweep_controller` is no longer a parameter.
+
+### Sweep speed
+
+Speed comes from Nav2's controller (DWB `max_vel_x` in
+`rs1_navigation/config/parrot/nav2_params_parrot1.yml`), not from the executor.
+The drone is kinematic, so it reaches the commanded speed instantly and there is
+no sim-side acceleration limit.
 
 ## Running With UI
 

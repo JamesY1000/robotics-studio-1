@@ -123,7 +123,10 @@ controller_server:
     general_goal_checker:
       stateful: true
       plugin: nav2_controller::SimpleGoalChecker
-      xy_goal_tolerance: 0.5
+      # Must be at least the planner's `tolerance`: the planner may legally end
+      # the plan up to `tolerance` short of the goal, and a goal checker tighter
+      # than that would never declare success.
+      xy_goal_tolerance: 1.0
       yaw_goal_tolerance: 1.57
     FollowPath:
       plugin: dwb_core::DWBLocalPlanner
@@ -374,10 +377,20 @@ planner_server:
       - GridBased
     GridBased:
       plugin: nav2_smac_planner/SmacPlanner2D
-      tolerance: 0.2
+      # The global costmap is grown by the SLAM static layer (the static layer
+      # resizes it to the incoming map, so it ends up at the SLAM resolution),
+      # i.e. several million cells over the large ROI.  An unbounded search
+      # blocks planner_server for MINUTES - and planner_server owns the global
+      # costmap in the same single-threaded process, so its sensor buffers
+      # starve, the plan never returns and the whole sweep hangs (observed: 636 s
+      # stuck at waypoint 9/14 of the 80x100 m ROI).  Keep every single plan
+      # short; the mission's stall watchdog skips a waypoint that cannot be
+      # reached.  tolerance lets the planner accept a nearby free cell when the
+      # exact goal cell is lethal (it otherwise fails at the lane ends).
+      tolerance: 1.0
       allow_unknown: true
-      max_iterations: 5000000
-      max_planning_time: 10.0 # Let it search for 10s before giving up
+      max_iterations: 100000
+      max_planning_time: 2.0
 smoother_server:
   ros__parameters:
     use_sim_time: true

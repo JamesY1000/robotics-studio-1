@@ -51,7 +51,6 @@ ParrotMissionExecutorNode::ParrotMissionExecutorNode() : Node("parrot_mission_ex
     camera_hfov_ = this->declare_parameter<double>("camera_hfov", 2.0944);
     swath_overlap_ = this->declare_parameter<double>("swath_overlap", 0.2);
     min_swath_spacing_ = this->declare_parameter<double>("min_swath_spacing", 2.0);
-    start_double_pass_ = this->declare_parameter<bool>("start_double_pass", true);
     merge_distance_ = this->declare_parameter<double>("merge_distance", 4.0);
     final_merge_distance_ = this->declare_parameter<double>("final_merge_distance", 5.5);
     roi_tree_margin_ = this->declare_parameter<double>("roi_tree_margin", 0.0);
@@ -99,6 +98,19 @@ ParrotMissionExecutorNode::ParrotMissionExecutorNode() : Node("parrot_mission_ex
         throw std::invalid_argument("scan_outage_timeout must be finite and positive");
     }
 
+    // Waypoint stall watchdog: Nav2's planner_server owns the global costmap and
+    // can block for minutes on a large SLAM-grown costmap, in which case the
+    // NavigateToPose goal never returns.  Skip the waypoint instead of hanging.
+    waypoint_stall_timeout_ =
+        this->declare_parameter<double>("waypoint_stall_timeout", 60.0);
+    waypoint_progress_epsilon_ =
+        this->declare_parameter<double>("waypoint_progress_epsilon", 1.0);
+    if (!std::isfinite(waypoint_stall_timeout_) || waypoint_stall_timeout_ <= 0.0 ||
+        !std::isfinite(waypoint_progress_epsilon_) || waypoint_progress_epsilon_ <= 0.0)
+    {
+        throw std::invalid_argument("waypoint stall parameters must be finite and positive");
+    }
+
     // Create tf buffers and listeners
     tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
     tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_, this, true);
@@ -131,6 +143,9 @@ ParrotMissionExecutorNode::ParrotMissionExecutorNode() : Node("parrot_mission_ex
     lidar_watchdog_timer_ = this->create_wall_timer(
         std::chrono::seconds(1),
         std::bind(&ParrotMissionExecutorNode::lidarWatchdogCb, this));
+    sweep_stall_timer_ = this->create_wall_timer(
+        std::chrono::seconds(1),
+        std::bind(&ParrotMissionExecutorNode::sweepStallWatchdogCb, this));
 
     // Nav2pose client
     navigate_to_pose_client_ = rclcpp_action::create_client<nav2_msgs::action::NavigateToPose>(
@@ -1357,6 +1372,8 @@ void ParrotMissionExecutorNode::beginSweep()
 
     total_waypoints_ = poses.size();
     waypoints_remaining_ = static_cast<int16_t>(std::min<std::size_t>(poses.size(), 32767));
+    consecutive_stalls_ = 0;
+    resetSweepProgress();
 
     publishSamplingFeedback("Sweeping ROI");
 
@@ -1471,13 +1488,10 @@ void ParrotMissionExecutorNode::computeSwaths(
     };
 
     // Emit both endpoints of lane k; consecutive lanes alternate direction.
-    // The extra start double pass flies lane 0 twice, so from lane 1 onwards the
-    // alternation is shifted by one or the drone would cross the box diagonally.
     auto emit_lane = [&](std::size_t k)
     {
-        const std::size_t parity = (start_double_pass_ && k > 0) ? (k - 1) : k;
         const bool toward_high =
-            (parity % 2 == 0) ? start_low_lane : !start_low_lane;
+            (k % 2 == 0) ? start_low_lane : !start_low_lane;
         const double ord = lane_offset(k);
         if (toward_high)
         {
@@ -1495,26 +1509,16 @@ void ParrotMissionExecutorNode::computeSwaths(
     for (std::size_t k = 0; k < swaths; ++k)
     {
         const bool toward_high = emit_lane(k);
-        bool exit_high = toward_high;
-
-        if (start_double_pass_ && k == 0)
-        {
-            // Extra out-and-back over the first lane so trees right at the
-            // sweep start are seen twice instead of once.  Only the return leg
-            // is emitted here; emit_lane already flew the outbound leg.
-            emit(toward_high ? (lane_lo - lead) : (lane_hi + lead), lane_offset(0),
-                 toward_high ? yaw_low : yaw_high);
-            exit_high = !toward_high;
-        }
 
         if (k + 1 < swaths)
         {
             // Rounded U-turn: swing out past the ROI edge in clear air before
-            // lining up on the next lane.
+            // lining up on the next lane.  The drone finishes lane k on the side
+            // it was heading toward, so the bulge goes out that side.
             const double ord_mid = 0.5 * (lane_offset(k) + lane_offset(k + 1));
-            const double lane_out = exit_high ? (lane_hi + lead + bulge)
-                                              : (lane_lo - lead - bulge);
-            emit(lane_out, ord_mid, exit_high ? yaw_high : yaw_low);
+            const double lane_out = toward_high ? (lane_hi + lead + bulge)
+                                                : (lane_lo - lead - bulge);
+            emit(lane_out, ord_mid, toward_high ? yaw_high : yaw_low);
         }
     }
 }
@@ -1725,6 +1729,7 @@ void ParrotMissionExecutorNode::navigateToNextWaypoint()
         sweep_index_ + 1, sweep_waypoints_.size(),
         wp.pose.position.x, wp.pose.position.y);
 
+    resetSweepProgress();
     try
     {
         action_goal_pending_ = true;
@@ -1735,6 +1740,12 @@ void ParrotMissionExecutorNode::navigateToNextWaypoint()
         action_goal_pending_ = false;
         abortSampling(std::string("Could not send the sweep waypoint goal: ") + e.what());
     }
+}
+
+void ParrotMissionExecutorNode::resetSweepProgress()
+{
+    sweep_progress_anchor_valid_ = false;
+    last_sweep_progress_time_ = this->now();
 }
 
 void ParrotMissionExecutorNode::sweepWaypointResponseCb(
@@ -1772,6 +1783,7 @@ void ParrotMissionExecutorNode::sweepWaypointResultCb(
         case rclcpp_action::ResultCode::SUCCEEDED:
             ++sweep_index_;
             fallback_hops_ = 0;
+            consecutive_stalls_ = 0;
             waypoints_remaining_ = static_cast<int16_t>(
                 std::min<std::size_t>(sweep_waypoints_.size() - sweep_index_, 32767));
             publishSamplingFeedback("Sweeping ROI");
@@ -2030,6 +2042,19 @@ void ParrotMissionExecutorNode::exploreToSweepTarget()
 
     if (!explore_to_pose_client_->action_server_is_ready())
     {
+        // Mid-sweep: keep the lane plan and carry on from the current waypoint.
+        // beginSweep() recomputes the swaths from the nearest corner, which
+        // re-flies every lane already covered (observed on the 80x100 m ROI: it
+        // threw away 8/14 waypoints of progress).
+        if (sweep_index_ < sweep_waypoints_.size())
+        {
+            RCLCPP_WARN(this->get_logger(),
+                "ExploreToPose server unavailable; resuming the sweep at waypoint %zu/%zu "
+                "instead of re-planning the whole box",
+                sweep_index_ + 1, sweep_waypoints_.size());
+            navigateToNextWaypoint();
+            return;
+        }
         RCLCPP_WARN(this->get_logger(),
             "ExploreToPose server unavailable; attempting the sweep without exploration");
         beginSweep();
@@ -2274,6 +2299,79 @@ void ParrotMissionExecutorNode::lidarWatchdogCb()
             " s. The GPU lidar (or its ros_gz bridge) has died; tree anchoring "
             "and Nav2 obstacle avoidance are impossible.");
     }
+}
+
+
+void ParrotMissionExecutorNode::sweepStallWatchdogCb()
+{
+    // Only guard the per-waypoint Nav2 sweep while a waypoint goal is in flight.
+    // The exploration fallback has its own lifecycle and must not be cancelled
+    // from here.
+    if (!sample_roi_goal_handle_ || !sample_roi_goal_handle_->is_active() ||
+        sample_roi_goal_handle_->is_canceling())
+    {
+        return;
+    }
+    if (exploring_for_sweep_ || !sweep_nav_goal_handle_) return;
+    if (last_sweep_progress_time_.nanoseconds() == 0) return;
+
+    // Progress is measured from the drone's own pose, which is independent of
+    // whatever Nav2 reports.  Nav2's feedback is useless here: bt_navigator
+    // keeps ticking and publishing it while the planner is blocked, and
+    // distance_remaining is filled in by the BT, so it can be absent entirely.
+    geometry_msgs::msg::PoseStamped pose;
+    if (!currentPose(pose)) return;
+
+    if (!sweep_progress_anchor_valid_)
+    {
+        // First tick for this waypoint: start the clock.
+        sweep_progress_anchor_ = pose.pose.position;
+        sweep_progress_anchor_valid_ = true;
+        last_sweep_progress_time_ = this->now();
+        return;
+    }
+
+    const double moved = std::hypot(
+        pose.pose.position.x - sweep_progress_anchor_.x,
+        pose.pose.position.y - sweep_progress_anchor_.y);
+    if (moved >= waypoint_progress_epsilon_)
+    {
+        sweep_progress_anchor_ = pose.pose.position;
+        last_sweep_progress_time_ = this->now();
+        return;
+    }
+
+    const double idle = (this->now() - last_sweep_progress_time_).seconds();
+    if (idle < waypoint_stall_timeout_) return;
+
+    ++consecutive_stalls_;
+    RCLCPP_WARN(this->get_logger(),
+        "No progress toward waypoint %zu/%zu for %.0f s (the Nav2 planner or its "
+        "global costmap is wedged); skipping it (stall %d/%d)",
+        sweep_index_ + 1, sweep_waypoints_.size(), idle,
+        consecutive_stalls_, max_consecutive_stalls_);
+
+    // Cancel whatever is in flight before moving on.  This is non-blocking: a
+    // wedged planner_server will not answer the cancel, which is exactly why the
+    // waypoint is being abandoned.
+    stopSweep();
+
+    if (consecutive_stalls_ >= max_consecutive_stalls_)
+    {
+        abortSampling(
+            "Sweep aborted: Nav2 stopped making progress on " +
+            std::to_string(consecutive_stalls_) + " consecutive waypoints (planner "
+            "server / global costmap wedged). The partial tree map covers only the "
+            "lanes flown so far.");
+        return;
+    }
+
+    ++sweep_index_;
+    fallback_hops_ = 0;
+    waypoints_remaining_ = static_cast<int16_t>(
+        std::min<std::size_t>(sweep_waypoints_.size() - sweep_index_, 32767));
+    publishSamplingFeedback("Sweeping ROI");
+    navigateToNextWaypoint();
 }
 
 
