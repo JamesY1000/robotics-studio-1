@@ -1,0 +1,22 @@
+# Goal: sweep an axis-aligned ROI box and detect/locate every tree inside it.
+# The box (roi_min/roi_max) is expressed in the frame of roi_origin, which is
+# the map frame the executor plans in (parrot1_map).
+geometry_msgs/PoseStamped roi_origin
+geometry_msgs/Point roi_min
+geometry_msgs/Point roi_max
+# Clearance above the sensed surface during the sweep (m).
+float32 search_clearance
+# Clearance restored once the sweep finishes (m).
+float32 transit_clearance
+# Swath spacing in metres; <= 0 selects an automatic spacing.
+float32 swath_spacing
+---
+# Result
+string message
+uint32 tree_count
+---
+# Feedback
+string stage
+# Fraction of the sweep completed, 0.0 - 1.0.
+float32 progress
+uint32 trees_found

@@ -35,6 +35,12 @@ def start(context):
         args.update({f"{robot}_{axis}": str(placements[robot][axis])
                      for axis in ("x", "y", "z", "yaw")})
     roi = placements.get("roi", placements["husky"])
+    roi_box = placements.get("roi_box")
+    roi_args = {"roi_x": str(roi["x"]), "roi_y": str(roi["y"]), "roi_z": str(roi["z"]),
+                "roi_frame": "world", "session_id": plan["session_id"],
+                "log_level": args["log_level"]}
+    if roi_box is not None:
+        roi_args.update({f"roi_{axis}": str(roi_box[axis]) for axis in ("x_min", "x_max", "y_min", "y_max")})
 
     def include(package, file, arguments):
         return GroupAction(scoped=True, actions=[IncludeLaunchDescription(
@@ -57,11 +63,7 @@ def start(context):
         )),
         guard,
         include("rs1_sim", "robot_bringup.launch.py", args),
-        include("rs1_mission", "rs1_mission.launch.py", {
-            "roi_x": str(roi["x"]), "roi_y": str(roi["y"]), "roi_z": str(roi["z"]),
-            "roi_frame": "world", "session_id": plan["session_id"],
-            "log_level": args["log_level"],
-        }),
+        include("rs1_mission", "rs1_mission.launch.py", roi_args),
     ]
 
 

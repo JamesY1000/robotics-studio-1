@@ -31,7 +31,7 @@ class Adapter:
     def foreign_nodes(self): return list(self.foreign)
     def close(self): self.closed = True
     async def call(self, kind): self.calls.append(kind)
-    async def configure_roi(self, roi): self.calls.append(("roi", roi))
+    async def configure_roi(self, roi, roi_box=None): self.calls.append(("roi", roi))
 
     def ready(self, session):
         self.data.update(
@@ -77,7 +77,7 @@ def spawn_plan(plan, terrain):
     # Deploy keeps the world's existing station at its fixed location, unlike
     # managed mode's fixture which relocates that station beside the start.
     for x, y in ((85, -45), (80, -45), (70, -40), (0, 0)):
-        candidate = SpawnPlan(**{**plan.model_dump(exclude={"roi", "station_offset"}),
+        candidate = SpawnPlan(**{**plan.model_dump(exclude={"roi", "roi_second", "station_offset"}),
                                  "start": XY(x=x, y=y)})
         try:
             terrain.spawn_placements(candidate)

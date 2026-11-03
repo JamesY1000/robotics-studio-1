@@ -6,10 +6,21 @@ tree_location_node:
     lidar_topic: "/parrot1/scan"
 
     # Frames
-    world_frame: "world"
+    # world_frame is the frame the tree locations are computed in.  Use
+    # parrot1_odom (NOT world): the EKF fuses the exact Gazebo pose, so
+    # parrot1_odom == world numerically, whereas ``world`` resolves through
+    # SLAM's parrot1_map -> parrot1_odom which diverges badly on this forest and
+    # biases every centroid by tens of metres.
+    world_frame: "parrot1_odom"
     base_link_frame: "parrot1_base_link"
     lidar_frame: "parrot1_base_scan"
     depth_optical_frame: "parrot1_camera_depth_optical_frame"
+    # Anchor sensor poses on the raw Gazebo odometry (ground truth) instead of
+    # the TF tree.  The EKF's odom->base_link orientation corrupts after set_pose
+    # teleports, and SLAM's map->odom diverges on this forest.  Set false to use
+    # the localisation TF (world_frame <- sensor).
+    use_truth_odometry: true
+    odometry_topic: "/parrot1/odometry"
 
     # Camera intrinsics fallback (derived from image size + hfov)
     hfov: 2.0944
@@ -19,6 +30,7 @@ tree_location_node:
     max_depth: 40.0
     depth_patch: 5
     min_box_pixels: 4
+    trunk_lower_fraction: 0.35  # sample the lower trunk band; oak crowns can skew the centroid
 
     # False-positive filtering (drop boxes that show no tree)
     rgb_image_topic: "/parrot1/camera/image"
@@ -26,9 +38,84 @@ tree_location_node:
     min_dark_fraction: 0.25
     require_foliage_check: true
 
+    # Trunk check (drop boxes whose lower band has no trunk; e.g. only the
+    # canopy is in frame when the tree is off-screen)
+    require_trunk_check: true
+    trunk_depth_gap: 0.5          # m; trunk must be this much closer than background
+    trunk_min_width_frac: 0.05    # min trunk width as a fraction of box width
+    trunk_max_width_frac: 0.6     # max trunk width as a fraction of box width
+
     # Lidar confirmation
-    lidar_angle_tolerance: 0.03
+    lidar_angle_tolerance: 0.10    # rad (~5.7 deg); seed on the canopy centroid
     lidar_range_min: 0.2
     lidar_range_max: 40.0
-    max_range_difference: 3.0
     require_lidar_confirmation: true
+
+    # Lidar trunk echo cluster (a trunk = short contiguous run of near beams)
+    lidar_cluster_depth_gap: 0.3   # m; beams closer than front+gap belong to the trunk
+    lidar_cluster_min_beams: 2     # minimum contiguous beams for a valid trunk
+    lidar_cluster_max_width_m: 3.0 # wider than this is canopy/background, not a trunk
+
+    # FULL 3D POINT CLOUD fallback for the trunk check.
+    # ``lidar_topic`` above is a single LaserScan = the MIDDLE ring of the 9-ray
+    # lidar, level with the drone, so it only finds a trunk while the drone flies
+    # at trunk height.  A duck passes UNDER the trunk and a pop-up goes OVER it,
+    # which used to kill every detection during a recovery.  The same sensor also
+    # publishes all 9 rings as a PointCloud2 (+/-15 deg vertical fan), which
+    # always crosses the trunk at ANY altitude.  This is a FALLBACK ONLY: it runs
+    # when the level ring found nothing.  Making it the preferred path drops
+    # precision badly (~1.00 -> 0.69) because at cruise altitude it accepts
+    # branch sheets that the single level ring correctly rejects.
+    use_pointcloud: true
+    pointcloud_topic: "/parrot1/scan/points"
+    cloud_max_age_s: 2.0           # s; older than this and the cloud is treated as missing
+    cloud_angle_tolerance: 0.09    # rad; azimuth sector allowed around the YOLO bearing
+    cloud_depth_gap: 0.6           # m; points within this of the front surface are the trunk
+    cloud_min_points: 6            # fewer points than this is noise
+    cloud_level_bin_m: 0.5         # m; height bin used by the vertical-column test
+    cloud_min_levels: 2            # z levels needed before the column test applies
+    cloud_column_max_spread_m: 0.5 # max std-dev of the per-level lateral centres
+    cloud_min_column_span_m: 1.0   # m; a trunk spans height, a branch sheet does not
+    cloud_width_percentile: 85.0   # robust lateral-width percentile
+
+    # ONE LIDAR SUBSCRIPTION.  The gpu_lidar fans 25 rings over +/-45 deg, so the
+    # horizontal centre ring sits at elevation 0 - which is exactly what
+    # /parrot1/scan publishes.  With ``ring_from_cloud`` the node carves that
+    # slice back out of the cloud it has already decoded, so the ring test, the
+    # trunk-column test and the bush guard all read the SAME points and the
+    # LaserScan subscription is not created at all.  This does NOT re-introduce
+    # the "cloud preferred" regression described above: the primary decision is
+    # still made by the single-level ring logic, only its SOURCE changes.
+    # Set false to go back to subscribing to /parrot1/scan (node restart needed).
+    ring_from_cloud: true
+    ring_bins: 360                 # azimuth bins; matches the ring's 1 deg spacing
+    ring_elevation_tolerance: 0.0327  # rad; half of the 3.75 deg vertical ring spacing
+
+    # BUSH GUARD (needs the full cloud).  The detector has no bush class and no
+    # negative examples, so a bush is boxed as an OAK_TREE.  Measured geometry
+    # (rs1_sim/models): bush_2 is 2.5 m wide and 1.5 m tall, bush_3 is 2.7 m wide
+    # and 2.1 m tall, whereas an oak trunk is 0.1-0.8 m and a pine cone base
+    # 1.1-1.5 m.  Two tests on the cloud separate them:
+    #   1. "no narrow column anywhere" - a bush is wide at EVERY height.
+    #   2. "trunk much nearer than the surface above it" - a trunk continues up
+    #      into its own canopy; a bush has only distant geometry above it.
+    trunk_max_width_m: 1.8       # m; narrowest cross-section must be under this
+    bush_sector_rad: 0.35        # rad (~20 deg); WIDE, so a whole bush face fits
+    bush_lateral_gap_m: 0.3      # m; lateral break between separate objects
+    canopy_probe_depth_m: 1.2    # m; how far behind the front the object extends
+    canopy_gap_m: 0.5            # m; vertical gap above the object before looking up
+    trunk_canopy_max_gap_m: 2.5  # m; trunk this much nearer than what is above -> bush
+
+    # Per-frame dedup: two locations this close (m) in one response are the
+    # same tree seen twice -> keep the highest-confidence one.
+    frame_dedup_distance: 1.0
+
+    # Verbose per-detection diagnostics (temporary troubleshooting).
+    debug: false
+
+    # Lidar trunk validation for OAKS (species itself still comes from YOLO +
+    # the merger's per-type vote). A visible oak trunk measures ~0.1-0.6 m wide
+    # at the lidar height; a wider echo means branches/foliage only, so the
+    # detection is dropped rather than placing a centroid on the branches.
+    # Pines are cones and are allowed wide.
+    oak_trunk_max_width_m: 0.8

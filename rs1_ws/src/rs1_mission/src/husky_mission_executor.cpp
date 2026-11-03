@@ -6,7 +6,6 @@
 
 // CURRENTLY NOT IN SCOPE:
 // 2.
-// Receives tree map
 // Selects tree sampling strategy
 // Drives to each tree and take dbh measurements
 // Drive from ROI back to base
@@ -19,6 +18,7 @@
 #include <chrono>
 #include <cmath>
 #include <exception>
+#include <fstream>
 #include <functional>
 #include <stdexcept>
 #include <string>
@@ -54,6 +54,13 @@ HuskyMissionExecutorNode::HuskyMissionExecutorNode() : Node("husky_mission_execu
 
     navigate_through_poses_client_ = rclcpp_action::create_client<nav2_msgs::action::NavigateThroughPoses>(
         this, "/husky1/navigate_through_poses");
+
+    // Tree database built from the parrot's latched tree map
+    tree_database_file_ = this->declare_parameter<std::string>(
+        "tree_database_file", "/tmp/rs1_tree_database.csv");
+    tree_map_subscription_ = this->create_subscription<rs1_interfaces::msg::TreeMap>(
+        "/parrot1/tree_map", rclcpp::QoS(1).reliable().transient_local(),
+        std::bind(&HuskyMissionExecutorNode::treeMapCb, this, std::placeholders::_1));
     global_costmap_subscription_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
         "/husky1/global_costmap/costmap", rclcpp::QoS(1).transient_local().reliable(),
         std::bind(&HuskyMissionExecutorNode::globalCostmapCb, this, std::placeholders::_1));
@@ -96,6 +103,32 @@ HuskyMissionExecutorNode::HuskyMissionExecutorNode() : Node("husky_mission_execu
     );
 
     RCLCPP_INFO(this->get_logger(), "Husky mission executor initialised to IDLE");
+}
+
+void HuskyMissionExecutorNode::treeMapCb(const rs1_interfaces::msg::TreeMap::SharedPtr msg)
+{
+    if (!msg) return;
+
+    std::ofstream file(tree_database_file_, std::ios::trunc);
+    if (!file.is_open())
+    {
+        RCLCPP_ERROR(this->get_logger(), "Could not open tree database file: %s", tree_database_file_.c_str());
+        return;
+    }
+
+    file << "tree_type,x,y,z,observations\n";
+    for (const auto &tree : msg->trees)
+    {
+        file << tree.tree_type << ','
+             << tree.location.x << ','
+             << tree.location.y << ','
+             << tree.location.z << ','
+             << tree.observations << '\n';
+    }
+    file.close();
+
+    RCLCPP_INFO(this->get_logger(), "Stored %zu tree(s) in %s",
+        msg->trees.size(), tree_database_file_.c_str());
 }
 
 rclcpp_action::GoalResponse HuskyMissionExecutorNode::traverseToROIGoalRequestCb(

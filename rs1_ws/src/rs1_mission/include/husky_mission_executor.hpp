@@ -21,6 +21,7 @@
 #include "rclcpp_action/rclcpp_action.hpp"
 
 #include "rs1_interfaces/action/traverse_to_roi.hpp"
+#include "rs1_interfaces/msg/tree_map.hpp"
 #include "rs1_interfaces/srv/set_ground_path.hpp"
 #include "rs1_interfaces/srv/get_current_pose.hpp"
 
@@ -62,6 +63,9 @@ private:
         const std::shared_ptr<rs1_interfaces::srv::SetGroundPath::Request> request,
         std::shared_ptr<rs1_interfaces::srv::SetGroundPath::Response> response
     );
+
+    // Store the tree map published by the parrot into the database file
+    void treeMapCb(const rs1_interfaces::msg::TreeMap::SharedPtr msg);
 
     // Navigate short chunks of parrot's route
     void traverseToROI();
@@ -109,6 +113,10 @@ private:
     // GetCurrentPose and SetGroundPath service servers
     rclcpp::Service<rs1_interfaces::srv::GetCurrentPose>::SharedPtr get_current_pose_service_;
     rclcpp::Service<rs1_interfaces::srv::SetGroundPath>::SharedPtr set_ground_path_service_;
+
+    // Tree map database received from the parrot
+    rclcpp::Subscription<rs1_interfaces::msg::TreeMap>::SharedPtr tree_map_subscription_;
+    std::string tree_database_file_;
 
     // Keep parrot's path in husky frame ready for waypoint generation
     nav_msgs::msg::Path ground_path_;

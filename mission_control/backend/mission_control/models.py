@@ -55,6 +55,9 @@ class Plan(StrictModel):
     calibration_id: str = Field(default="forest-edges-v1", pattern=r"^[a-zA-Z0-9-]{1,64}$")
     start: XY
     roi: XY
+    # Second (opposite) corner of the axis-aligned ROI box. When omitted the
+    # coordinator falls back to a square around roi.
+    roi_second: XY | None = None
     station_offset: XY = Field(default_factory=lambda: XY(x=0, y=5))
     parrot_clearance: float = Field(default=4.0, ge=2, le=15)
 
@@ -67,6 +70,27 @@ class UploadCalibration(StrictModel):
 class ExternalStart(StrictModel):
     # Omit ROI to use the coordinator's existing launch/parameter configuration.
     roi: XY | None = None
+    # Opposite corner of the ROI box; roi is the first-placed (entry) corner.
+    roi_second: XY | None = None
+
+    @model_validator(mode="after")
+    def roi_pair(self):
+        if self.roi is None and self.roi_second is not None:
+            raise ValueError("roi_second requires roi")
+        if self.roi is not None and self.roi_second is not None and (
+            self.roi.x == self.roi_second.x or self.roi.y == self.roi_second.y
+        ):
+            raise ValueError("ROI box must have a positive width and height")
+        return self
+
+
+def roi_bounds(roi: XY, roi_second: XY | None, default_half: float = 5.0) -> tuple[XY, XY]:
+    """Return the (min, max) corners of the axis-aligned ROI box."""
+    if roi_second is None:
+        return (XY(x=roi.x - default_half, y=roi.y - default_half),
+                XY(x=roi.x + default_half, y=roi.y + default_half))
+    return (XY(x=min(roi.x, roi_second.x), y=min(roi.y, roi_second.y)),
+            XY(x=max(roi.x, roi_second.x), y=max(roi.y, roi_second.y)))
 
 
 class SpawnPlan(StrictModel):

@@ -537,14 +537,16 @@ the saved plan, placements, preparation state and whether an ROI was selected.
 `POST /api/deployment/stop` with `{}` stops that deployment after mission cleanup
 and removes its models; it never stops the operator's world.
 
-In deploy and external modes, `POST /api/mission/start` accepts a world ROI:
+In deploy and external modes, `POST /api/mission/start` accepts a world ROI box
+(`roi` is the first-placed corner the robots traverse to, `roi_second` the
+opposite corner of the axis-aligned sweep region):
 
 ```json
-{"roi": {"x": 88, "y": -48}}
+{"roi": {"x": 88, "y": -48}, "roi_second": {"x": 62, "y": -88}}
 ```
 
-The backend checks the selected point against the existing forest terrain and
-sets the idle coordinator's world ROI parameters atomically before requesting
+The backend checks the box against the existing forest terrain and sets the idle
+coordinator's world ROI and ROI-box parameters atomically before requesting
 start. In external mode, sending `{}` uses the coordinator's configured target.
 Deploy mode requires an explicit ROI for its first mission. Placement fields
 are not accepted in either mode. The simulation and mission process instances are

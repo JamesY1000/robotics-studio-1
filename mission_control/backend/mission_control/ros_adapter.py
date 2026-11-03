@@ -117,7 +117,10 @@ class RosAdapter:
                           for key in ("instance_id", "state", "control_mode", "manual_input", "input_revision"))
             self.data["mission"]["control_revision"] = previous.get("control_revision", 0) + int(changed)
             self.data["mission"]["roi"] = {"frame_id": msg.roi.header.frame_id,
-                "x": msg.roi.pose.position.x, "y": msg.roi.pose.position.y, "z": msg.roi.pose.position.z}
+                "x": msg.roi.pose.position.x, "y": msg.roi.pose.position.y, "z": msg.roi.pose.position.z,
+                "min": {"x": msg.roi_min.x, "y": msg.roi_min.y},
+                "max": {"x": msg.roi_max.x, "y": msg.roi_max.y},
+                "progress": msg.roi_progress}
             self.data["mission_at"] = time.monotonic()
 
     def on_joy(self, msg):
@@ -213,7 +216,7 @@ class RosAdapter:
                 msg.linear.z = command.z * 0.3
         self.manual_publishers[robot].publish(msg)
 
-    async def configure_roi(self, roi):
+    async def configure_roi(self, roi, roi_box=None):
         from rclpy.parameter import Parameter
         from rcl_interfaces.srv import SetParametersAtomically
         if not self.parameters.service_is_ready():
@@ -222,6 +225,13 @@ class RosAdapter:
             Parameter("roi_frame", value="world"),
             *[Parameter(f"roi_{axis}", value=float(roi[axis])) for axis in ("x", "y", "z")],
         ]
+        if roi_box is not None:
+            values.extend([
+                Parameter("roi_x_min", value=float(roi_box["x_min"])),
+                Parameter("roi_x_max", value=float(roi_box["x_max"])),
+                Parameter("roi_y_min", value=float(roi_box["y_min"])),
+                Parameter("roi_y_max", value=float(roi_box["y_max"])),
+            ])
         future = self.parameters.call_async(SetParametersAtomically.Request(
             parameters=[value.to_parameter_msg() for value in values]))
         deadline = time.monotonic() + 10

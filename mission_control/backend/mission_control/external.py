@@ -2,7 +2,7 @@
 import copy
 import time
 
-from .models import ExternalStart
+from .models import ExternalStart, roi_bounds
 from .ros_adapter import RequestUncertain
 from .session import Conflict, SessionManager
 
@@ -137,7 +137,14 @@ class ExternalSessionManager(SessionManager):
             if plan.roi is not None:
                 self.terrain.check_point("ROI", plan.roi, 0.5)
                 roi = {**plan.roi.model_dump(), "z": self.terrain.height(plan.roi.x, plan.roi.y)}
-                await self.adapter.configure_roi(roi)
+                roi_box = None
+                if plan.roi_second is not None:
+                    roi_min, roi_max = roi_bounds(plan.roi, plan.roi_second)
+                    for corner in (roi_min, roi_max):
+                        self.terrain.check_bounds("ROI box", corner, 0.5)
+                    roi_box = {"x_min": roi_min.x, "x_max": roi_max.x,
+                               "y_min": roi_min.y, "y_max": roi_max.y}
+                await self.adapter.configure_roi(roi, roi_box)
             current = self.adapter.snapshot()
             if identity != (current.get("mission", {}).get("instance_id"), current.get("alignment", {}).get("instance_id")):
                 raise Conflict("ROS nodes restarted while configuring the target. Review the current ROI before starting.")
