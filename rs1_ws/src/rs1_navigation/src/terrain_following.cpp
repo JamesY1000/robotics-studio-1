@@ -79,8 +79,36 @@ TerrainFollowingNode::TerrainFollowingNode() : Node("terrain_following_node"),
     std::bind(&TerrainFollowingNode::controlLoop, this)
   );
 
+  // The parrot mission executor changes the held clearance through this service:
+  // transit clearance for the inbound leg, search clearance for the sweep lanes.
+  // The node lives in the parrot1 namespace, so this is /parrot1/set_clearance.
+  set_clearance_service_ = this->create_service<rs1_interfaces::srv::SetClearance>(
+    "set_clearance",
+    std::bind(&TerrainFollowingNode::setClearanceCb, this, std::placeholders::_1, std::placeholders::_2));
+
 
   RCLCPP_INFO(get_logger(), "Terrain following node initialised in hover (target %.2f m, loop %.1f Hz)", offset_height_, control_rate_hz_);
+}
+
+void TerrainFollowingNode::setClearanceCb(
+  const std::shared_ptr<rs1_interfaces::srv::SetClearance::Request> request,
+  std::shared_ptr<rs1_interfaces::srv::SetClearance::Response> response)
+{
+  if (!request || !std::isfinite(request->clearance) || request->clearance <= 0.0)
+  {
+    response->success = false;
+    response->message = "clearance must be a finite positive number of metres";
+    return;
+  }
+
+  response->previous_clearance = static_cast<float>(offset_height_);
+  offset_height_ = request->clearance;
+  response->success = true;
+  response->message = "clearance updated";
+
+  RCLCPP_INFO(get_logger(), "Clearance changed %.2f -> %.2f m",
+      static_cast<double>(response->previous_clearance),
+      static_cast<double>(offset_height_));
 }
 
 void TerrainFollowingNode::scanCb(const sensor_msgs::msg::LaserScan &msg)

@@ -21,12 +21,15 @@ export function spawnRequest(
 export function missionRequest(
   mode: State["mode"] | undefined,
   roi: XY | null,
+  roiSecond: XY | null,
   roiEdited: boolean,
   plan: Plan | null,
-): Plan | { roi?: XY } | null {
-  if (mode === "deploy") return roi ? { roi: { x: roi.x, y: roi.y } } : null;
+): Plan | { roi?: XY; roi_second?: XY } | null {
+  const roiBox = (roi: XY): { roi: XY; roi_second?: XY } =>
+    roiSecond ? { roi, roi_second: roiSecond } : { roi };
+  if (mode === "deploy") return roi ? roiBox(roi) : null;
   if (mode === "external")
-    return roiEdited && roi ? { roi: { x: roi.x, y: roi.y } } : {};
+    return roiEdited && roi ? roiBox(roi) : {};
   return plan;
 }
 

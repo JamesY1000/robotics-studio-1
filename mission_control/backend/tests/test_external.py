@@ -21,6 +21,9 @@ class Adapter:
             "mission": {"session_id": "manual", "instance_id": "coordinator-1", "state": "ready",
                 "roi": {"x": 88, "y": -48, "z": 0, "frame_id": "world"}, "cleanup_complete": True}}
 
+        self.data["safety"] = {"fresh": True, "service_ready": True, "instance_id": "test_safety",
+                               "revision": 0, "husky_stopped": False, "parrot_stopped": False}
+
     def snapshot(self): return copy.deepcopy(self.data)
     def close(self): self.closed = True
     async def configure_roi(self, roi, roi_box=None): self.calls.append(("roi", roi))

@@ -1,5 +1,8 @@
 # Goal: the target ROI pose this robot must reach
 geometry_msgs/PoseStamped target_roi
+# Husky can resume the route accepted for this mission after manual assistance
+string route_id
+bool resume_route
 ---
 # Result: explanation of the outcome
 string message

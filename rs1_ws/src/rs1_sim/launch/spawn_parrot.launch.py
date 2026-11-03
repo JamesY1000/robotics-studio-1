@@ -1,7 +1,10 @@
+import math
+
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, OpaqueFunction, TimerAction
 from launch.substitutions import (
     Command,
+    EnvironmentVariable,
     FindExecutable,
     LaunchConfiguration,
     PathJoinSubstitution,
@@ -35,6 +38,10 @@ def start_robot(context):
     spawn_delay = value("parrot_spawn_delay")
     log_level = value("log_level")
 
+    camera_hz = float(value("camera_hz"))
+    if not math.isfinite(camera_hz) or camera_hz <= 0:
+        raise ValueError("camera_hz must be finite and positive")
+
     description_path = PathJoinSubstitution(
         [
             FindPackageShare("rs1_description"),
@@ -61,6 +68,8 @@ def start_robot(context):
                 FRAME_PREFIX,
                 " gz_model_name:=",
                 GZ_MODEL_NAME,
+                " camera_hz:=",
+                str(camera_hz),
             ]
         ),
         value_type=str,
@@ -83,6 +92,20 @@ def start_robot(context):
             ("/tf", "tf"),
             ("/tf_static", "tf_static"),
         ],
+    )
+
+    # image_transport provides raw RGB for perception and JPEG for camera panels.
+    gz_image = f"model/{GZ_MODEL_NAME}/camera/image"
+    image_bridge = Node(
+        package="ros_gz_image", executable="image_bridge", name="image_bridge",
+        namespace=ROBOT_NAMESPACE, output="screen", arguments=[gz_image],
+        remappings=[(gz_image, "camera/image"),
+                    (gz_image + "/compressed", "camera/image/compressed")],
+        parameters=[{
+            "use_sim_time": use_sim_time,
+            f"model.{GZ_MODEL_NAME}.camera.image.enable_pub_plugins": [
+                "image_transport/raw", "image_transport/compressed"],
+        }],
     )
 
     gazebo_bridge = Node(
@@ -146,6 +169,7 @@ def start_robot(context):
         *([SetUseSimTime(True)] if use_sim_time else []),
         robot_state_publisher,
         gazebo_bridge,
+        image_bridge,
         velocity_selector,
         (RosTimer if use_sim_time else TimerAction)(
             period=float(spawn_delay),
@@ -157,6 +181,8 @@ def start_robot(context):
 def generate_launch_description():
     return LaunchDescription(
         [
+            DeclareLaunchArgument("camera_hz", default_value=EnvironmentVariable("RS1_CAMERA_HZ", default_value="6"),
+                                  description="RGB-D camera frames per simulation second."),
             DeclareLaunchArgument("world", default_value="v2_forest"),
             DeclareLaunchArgument("use_sim_time", default_value="True"),
             DeclareLaunchArgument("log_level", default_value="warn",

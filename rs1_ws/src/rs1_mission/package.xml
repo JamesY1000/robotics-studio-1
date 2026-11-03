@@ -24,9 +24,11 @@
   <depend>nav_msgs</depend>
 
   <exec_depend>rs1_alignment</exec_depend>
+  <exec_depend>rs1_perception</exec_depend>
   <exec_depend>rs1_sim</exec_depend>
   <exec_depend>rs1_navigation</exec_depend>
   <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>rclpy</exec_depend>
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>
 

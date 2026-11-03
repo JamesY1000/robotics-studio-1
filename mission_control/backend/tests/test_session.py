@@ -9,13 +9,16 @@ class Adapter:
     def __init__(self):
         self.calls = []
         self.data = {"available": True, "robots": {}, "checks": {}, "alignment": {}, "mission": {}}
+        self.data["safety"] = {"fresh": True, "service_ready": True, "instance_id": "test_safety",
+                               "revision": 0, "husky_stopped": False, "parrot_stopped": False}
+
     def snapshot(self): return copy.deepcopy(self.data)
     def foreign_nodes(self): return []
     def close(self): pass
     async def call(self, kind): self.calls.append(kind)
     def ready(self, session):
         self.data.update(robots={r: {"fresh": True, "x": 10, "y": 20, "stamp": 5} for r in ("husky1", "parrot1")},
-            checks={"nav": True}, alignment={"session_id": session, "ready": {"husky1": True, "parrot1": True}},
+            checks={"nav": True, "clock": True}, alignment={"registered": ["husky1", "parrot1"], "session_id": session, "ready": {"husky1": True, "parrot1": True}},
             mission={"session_id": session, "state": "ready"})
 
 
@@ -40,10 +43,20 @@ def test_duplicate_gate_reconnect_cancel_reset(terrain, plan, tmp_path):
         await asyncio.sleep(.3)
         assert m.adapter.calls == []
         m.adapter.ready(str(plan.session_id))
+        m.adapter.data["safety"]["husky_stopped"] = True
+        await asyncio.sleep(.3)
+        assert m.state["phase"] == "preparing" and m.adapter.calls == []
+        assert "stop reset" in m.state["message"]
+        m.adapter.data["safety"]["husky_stopped"] = False
         await asyncio.sleep(.3)
         assert m.adapter.calls == ["start"]
         m.sample_trails()
         assert len(m.state["trails"]["husky1"]) == 1
+        m.adapter.data["checks"]["mission_status"] = True
+        for phase in ("sampling", "manual_assistance", "sampling"):
+            m.adapter.data["mission"].update(state=phase, message=phase)
+            await asyncio.sleep(.3)
+            assert m.state["phase"] == phase
         await m.cancel()
         assert m.state["phase"] == "cancellation_requested"
         assert m.adapter.calls == ["start", "cancel"]

@@ -19,6 +19,7 @@ find_package(rs1_interfaces REQUIRED)
 
 install(
   PROGRAMS
+    scripts/measure_dbh.py
     scripts/level_husky_cloud.py
     scripts/ground_relative_scan_cloud.py
     tree_identification/yolo_node.py
@@ -30,6 +31,8 @@ install(
   DESTINATION lib/${PROJECT_NAME}
 )
 
+install(FILES scripts/dbh_3d_detector.py DESTINATION lib/${PROJECT_NAME})
+
 install(
   DIRECTORY config launch models requirements
   DESTINATION share/${PROJECT_NAME}
@@ -37,6 +40,7 @@ install(
 
 if(BUILD_TESTING)
   find_package(ament_cmake_pytest REQUIRED)
+  ament_add_pytest_test(measure_dbh test/test_measure_dbh.py TIMEOUT 90)
   ament_add_pytest_test(level_husky_cloud scripts/test_level_husky_cloud.py)
   ament_add_pytest_test(tree_location_regression_test test/test_tree_location_processing.py)
   find_package(ament_lint_auto REQUIRED)

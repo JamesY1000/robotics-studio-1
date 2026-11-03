@@ -63,6 +63,7 @@
         "/parrot1/plan": { "visible": true, "color": "#fbbf24" },
         "/parrot1/local_plan": { "visible": true, "color": "#fde68a" },
         "/parrot1/explore/frontiers": { "visible": true },
+        "/parrot1/tree_map_markers": { "visible": true },
         "/mission/roi_marker": { "visible": true },
         "/husky1/local_costmap/costmap": { "visible": false },
         "/husky1/global_costmap/costmap": { "visible": false },
@@ -111,14 +112,14 @@
     "Image!rs1-husky": {
       "lichtblickPanelTitle": "Husky · RGB camera",
       "imageMode": {
-        "imageTopic": "/husky1/camera/image",
+        "imageTopic": "/husky1/camera/image/compressed",
         "synchronize": false
       }
     },
     "Image!rs1-parrot": {
       "lichtblickPanelTitle": "Parrot · RGB camera",
       "imageMode": {
-        "imageTopic": "/parrot1/camera/image",
+        "imageTopic": "/parrot1/camera/image/compressed",
         "synchronize": false
       }
     },

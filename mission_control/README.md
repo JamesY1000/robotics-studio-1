@@ -1,10 +1,12 @@
 # RS1 Mission Control
 
 A local React/TypeScript dashboard and FastAPI service for the existing ROS 2
-Humble / Ignition Gazebo Fortress stack. The first mission phase is traversal to
-a point ROI: Parrot explores and hands a ground path to Husky. Sampling and
-return-home are not implemented. The UI does not fabricate sensor data, battery
-levels, biomass results or completion percentages.
+Humble / Ignition Gazebo Fortress stack. Parrot explores and hands a ground path
+to Husky, then starts its boustrophedon tree sweep while Husky travels to the ROI.
+After both finish, Husky samples the mapped trees' DBHs, with manual assistance
+and Resume available when needed. The map shows a sampled AGB estimate from
+confirmed measurements. Both robots then return to their start positions. The UI does not fabricate
+sensor data, battery levels or completion percentages.
 
 The recommended demo uses **two terminals**: `rs1_sim.launch.py ui:=true` loads
 the world, and `dashboard.launch.py mode:=deploy` provides click-to-spawn,
@@ -14,6 +16,14 @@ Deployed robot and mission nodes
 survive a dashboard restart. Normal simulation launch and the dashboard's
 `external` mode remain available for manual debugging; `managed` retains the
 all-in-one backend-owned launch. See [launch commands and ownership](LAUNCHING.md).
+
+The ROI's AGB label uses confirmed Husky DBHs and configured species heights and
+wood densities. It shows partial coverage until all mapped trees contribute;
+unfinished second views and unmeasured trees are excluded. Totals refresh when
+the measurement action returns (including manual-assistance pauses), and remain
+available after dashboard reconnection. They are scoped to the current mission
+and tree map. See [the model assumptions and ROS topics](../rs1_ws/src/rs1_mission/README.md#sampled-above-ground-biomass-agb)
+before interpreting these demo estimates as physical biomass.
 
 ## Install and run
 
@@ -149,14 +159,18 @@ dependencies.
 1. Start the two terminals above. The dashboard verifies a fresh `ui:=true`
    world before allowing deployment. Choose its registered terrain image.
 2. Click **Robot start** on a clearing, or enter coordinates. Both robots share
-   X/Y. Review the terrain-derived spawn heights and Parrot sensor clearance.
+   X/Y. Review the terrain-derived spawn heights.
 3. Select **Spawn robots**. Robot models, bridges, localisation, navigation,
    alignment and mission nodes start inside the already-running Gazebo world.
    Robot placement and image selection are now locked.
-4. Once the robots are ready, select an explicit **Point ROI** and then
+4. Once the robots are ready, click **Reset both stops** in the software E-stop panel,
+   select an explicit **ROI box** and then
    **Start Mission**. A placeholder coordinator target never starts a mission
    automatically. Watch estimated robot poses and readiness in **Robots & status**.
-5. **Cancel Mission** requests cancellation; it is not an emergency stop.
+5. **Cancel mission & return home** stops the survey, preserves confirmed DBHs
+   and pending second views, then returns both robots to their saved starts.
+   Manual assistance and Resume remain available on the way home. Use the
+   separate software E-stop when you need movement to stop immediately.
 6. After cancellation/completion and executor cleanup, or while the coordinator
    is idle, **Stop robots** stops the deployed ROS nodes and removes their Gazebo
    models. The world and ground station stay running. Before deploying again for
@@ -187,6 +201,42 @@ deployment. Keep that journal while its deployment is active. Plans and ROS logs
 are saved under the deployment's backend data directory in `sessions/<id>/`,
 including `plan.json` and `ros.log`. The default data directory is
 `.mission-control/deploy`.
+
+## Software E-stop
+
+The panel is available on every dashboard tab and stays visible while scrolling.
+**Stop Husky**, **Stop Parrot** and **E-STOP BOTH ROBOTS** latch the selected stops.
+Any stop pauses the coordinated mission, cancels its current actions and holds both
+robots. The saved phase, DBHs and pending second views are retained.
+
+Both stops start latched when the world or safety node starts. Once the coordinator
+is ready, use **Reset both stops**, then **Start Mission**. During a mission, use
+**Reset both stops** followed by **Resume autonomous mission**, or select manual
+assistance. Reset waits for the coordinator to acknowledge the stop and finish
+cancelling its actions; it never sends Resume. A new Stop invalidates older Reset
+requests, including requests from another browser. Controller driving requires a
+fresh release and press of L1.
+
+`rs1_safety/emergency_stop` runs with the world, independent of the dashboard. It
+provides `/safety/stop` (`rs1_interfaces/srv/SafetyStop`) and publishes a retained
+20 Hz `/safety/state` heartbeat. The existing velocity selectors enforce each
+robot's latch before publishing `cmd_vel_controlled`, including Parrot's vertical
+commands. No extra velocity relay or bridge remapping is needed. Missing safety
+state blocks motion; a heartbeat gap of 0.5 seconds causes a running selector to
+send zeros on its next 50 ms tick and the coordinator to pause. This timeout uses
+wall time even when Gazebo is paused. Reset requires a live coordinator in hold
+with matching safety identity/revision and completed action cleanup, so standalone
+navigation must also launch the mission coordinator before reset.
+
+The HTTP endpoint is `POST /api/safety/stop` with `robot` (`husky1`, `parrot1`, `all`)
+and boolean `stopped`. Reset also includes the displayed `expected_instance_id`
+and `expected_revision`. Stop is independent of the mission command lock. A timed
+out request has an unknown outcome; check the live state instead of assuming it
+worked. Closing the browser does not clear the latches.
+
+This is a simulation software stop, not a hardware E-stop. It does not cut motor
+power or land Parrot, and cannot guarantee a stop if the selector, bridge,
+simulator or host itself fails. Use hardware safety controls for physical robots.
 
 ## Manual assistance, keyboard and PS4 control
 
@@ -342,17 +392,21 @@ ros2 launch rs1_dashboard dashboard.launch.py mode:=external
 
 1. Wait for the running simulation and mission coordinator to appear. The
    dashboard reports alignment, localization and navigation readiness.
-2. Select a point ROI on the registered forest image, drag its marker, or edit
-   the coordinates. The initial target comes from the mission coordinator when
-   configured in the world frame. Only `v2_forest` and explicitly registered
-   images of that world are currently supported by the dashboard.
+2. Select an ROI box on the registered forest image, drag it or its corner
+   handle, or edit the coordinates. The square's bottom-left corner is the
+   entry point both robots traverse to; the opposite corner fixes the side
+   length. The initial target comes from the mission coordinator when configured
+   in the world frame. Only `v2_forest` and explicitly registered images of
+   that world are currently supported by the dashboard.
 3. Select **Start Mission**. An edited ROI is validated and applied atomically
    to the idle coordinator before `/mission/start`. An untouched target preserves
    the coordinator's configured frame and Z. The dashboard does
    not launch or respawn simulation or mission nodes. Follow live poses and
    **Robots & status**.
-4. **Cancel Mission** requests cancellation and waits for executor results. It
-   is not an emergency stop.
+4. **Cancel mission & return home** waits for current actions to stop, preserves
+   survey progress and returns both robots home. It ends as `cancelled` after both
+   arrive; normal phase 3 ends as `complete`. Repeated Cancel requests do not
+   interrupt the return. Manual assistance and Resume still work during it.
 5. **Clear trails** clears dashboard trails and events only. Simulation, TF
    registration and mission state stay in their owning terminals.
 
@@ -382,14 +436,18 @@ owns both through the saved-plan launch pipeline:
 1. Select **Forest overhead**, or upload an explicitly calibrated image in
    **Settings**. Only the existing `v2_forest` world is supported initially.
 2. Select **Robot start**, then click a clearing. One point sets both robots' XY.
-3. Select **Point ROI**, then click the traversal target. Drag markers or edit
-   numeric fields. The station initially follows a `(0, +5)` m offset from start.
+3. Select **ROI box**, then click the traversal target's bottom-left corner. Drag
+   the box, its corner handle, or edit numeric fields. The station initially
+   follows a `(0, +5)` m offset from start.
 4. Review terrain validation and spawn heights. Use pan, zoom and fit controls.
 5. Select **Start Mission**. The backend saves the plan, generates a world copy,
-   launches the simulation, registers both maps, checks navigation, and calls
+   launches the simulation, registers both maps and checks navigation. Click
+   **Reset both stops** when enabled; preparation waits for this before calling
    `/mission/start`. Follow details in **Robots & status**.
-6. **Cancel Mission** requests cancellation and waits for executor results. It is
-   not an emergency stop. Cancelling preparation shuts down the owned launch.
+6. **Cancel mission & return home** stops the survey and returns both robots home,
+   keeping confirmed measurements and manual assistance available. It is not an
+   emergency stop. **Cancel preparation** shuts down the owned launch before a
+   mission has started.
 7. **New session** stops the owned simulation and resets TF buffers, alignment,
    mission state and trails before accepting another plan. Reset is also required
    after a map reset, respawn, completion or failure. Saved logs remain available.
@@ -538,11 +596,11 @@ the saved plan, placements, preparation state and whether an ROI was selected.
 and removes its models; it never stops the operator's world.
 
 In deploy and external modes, `POST /api/mission/start` accepts a world ROI box
-(`roi` is the first-placed corner the robots traverse to, `roi_second` the
-opposite corner of the axis-aligned sweep region):
+(`roi` is the bottom-left corner the robots traverse to, `roi_second` the
+opposite corner of the axis-aligned square sweep region):
 
 ```json
-{"roi": {"x": 88, "y": -48}, "roi_second": {"x": 62, "y": -88}}
+{"roi": {"x": 88, "y": -48}, "roi_second": {"x": 98, "y": -58}}
 ```
 
 The backend checks the box against the existing forest terrain and sets the idle
@@ -591,11 +649,13 @@ reported without re-registering the robot or replacing its estimated pose.
 
 The coordinator publishes typed `rs1_interfaces/msg/MissionStatus` on
 `/mission/status` with session ID, process instance ID, configured ROI, state,
-robot stages, message and cleanup flag.
+robot stages, message, cleanup flag and a `returning_home` flag that stays set
+through assistance during the home journey.
 Final outcomes remain available instead of immediately returning to IDLE. The
-backend tracks preparation and cancellation. In managed mode, loss of required
-runtime interfaces for 8 s stops its owned simulation and records a failure;
-cancellation requires executor completion within 30 s. Processes are stopped
+backend tracks preparation and cancellation. Managed mode requires the
+coordinator to acknowledge Cancel within 30 s, then keeps the stack running
+through return navigation and manual assistance. Return-home action timeouts
+request assistance rather than ending the session. Processes are stopped
 only through the process group created by the backend (SIGINT, then bounded
 TERM/KILL escalation). External mode reports ROS status and request failures
 without terminating the operator's processes. Deploy mode uses the same mission
@@ -690,7 +750,8 @@ Stopping the world must stop the detached robot stack through
 its world guard. These are verification instructions; recorded run results belong
 in `VALIDATION.md`.
 
-Deferred: polygon ROI, live sensor viewers, tree sampling, return-home,
-biomass/results, arbitrary worlds, automatic image registration and full 3D
-localization. Simulation setup and ROS transport are separate backend modules
+Deferred: polygon ROI, live sensor viewers,
+detailed per-tree biomass results, arbitrary worlds, automatic image registration
+and full 3D localization. Simulation setup and ROS transport are separate
+backend modules
 so future hardware adapters do not require changing map interaction code.

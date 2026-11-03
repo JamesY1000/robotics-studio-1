@@ -7,12 +7,17 @@ open a separate RViz window for each enabled robot, and include each robot's
 localisation, SLAM, and Nav2 launch files. It also owns the shared world/map
 alignment and global TF aggregation node by default.
 
+Both robots start software-stopped. Start the mission coordinator, then use
+**Reset both stops** in Mission Control before starting or driving. Stop state is
+enforced by the existing velocity selectors; the bridge still reads
+`cmd_vel_controlled`. See [software stop behaviour](../../../mission_control/README.md#software-e-stop).
+
 ## Package responsibilities
 
 | Launch file | Responsibility |
 | --- | --- |
 | `rs1_sim.launch.py` | Main entry point. Starts the complete simulation by default; `ui:=true` starts the world, clock bridge and world-session marker, with optional RViz. |
-| `gz_world.launch.py` | Starts Gazebo with a selected world and bridges the Gazebo `/clock` topic to ROS 2. |
+| `gz_world.launch.py` | Starts Gazebo, bridges `/clock` to ROS 2 and starts the world-owned software stop authority. |
 | `robot_bringup.launch.py` | Spawns the robots and starts their supporting ROS nodes in an existing world. Shared by normal simulation and dashboard deployment. |
 | `rviz.launch.py` | Opens the existing Husky/Parrot RViz displays independently of robot spawning. |
 | `spawn_husky.launch.py` | Publishes the Husky description and TF, starts its Gazebo bridge, and creates the `husky1` model. |
@@ -130,6 +135,7 @@ These are the public arguments for `rs1_sim.launch.py`.
 | `rviz` | Boolean | `True` normally; `False` with `ui:=true` | Opens one RViz window for each enabled robot, including before deployment in UI mode. |
 | `slam` | Boolean | `True` | Starts SLAM Toolbox for each enabled robot. |
 | `nav2` | Boolean | `True` | Starts Nav2 for each enabled robot. Nav2 currently requires `slam:=true`. |
+| `camera_hz` | Positive number | `RS1_CAMERA_HZ` or `6` | RGB-D frames per simulated second on both robots. For dashboard deployment, set `RS1_CAMERA_HZ` in the dashboard process environment before spawning. |
 | `husky_x` | Number (metres) | `90.0` | Husky starting x coordinate. |
 | `husky_y` | Number (metres) | `-48.0` | Husky starting y coordinate. |
 | `husky_z` | Number (metres) | `6.0` | Husky starting z coordinate. |
@@ -284,7 +290,8 @@ following relative ROS topic names beneath its robot namespace:
 | `cmd_vel` | ROS to Gazebo | Robot velocity command. |
 | `scan` | Gazebo to ROS | 2D laser scan. |
 | `scan/points` | Gazebo to ROS | Lidar point cloud. |
-| `camera/image` | Gazebo to ROS | RGB camera image. |
+| `camera/image` | Gazebo to ROS | Raw RGB for perception. |
+| `camera/image/compressed` | Gazebo to ROS | JPEG for RViz and Lichtblick camera displays. |
 | `camera/depth/image` | Gazebo to ROS | Depth image. |
 | `camera/depth/points` | Gazebo to ROS | Depth point cloud. |
 

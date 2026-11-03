@@ -50,7 +50,8 @@ def start_telemetry(context):
                                          "^/mission/.*$", "^/simulation/session$",
                                          "^/teleop/(joy|cmd_vel_controller)$", "^/yolo/debug_image$",
                                          "^/tree_locations/(markers|map)$"],
-                     "use_sim_time": False,
+                     # Keep Lichtblick's clock aligned with simulation-stamped TF.
+                     "use_sim_time": True,
                  }]),
         ]
     return actions

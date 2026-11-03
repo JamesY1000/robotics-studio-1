@@ -45,7 +45,7 @@ class DeploySessionManager(ExternalSessionManager):
 
     def foreign_nodes(self):
         nodes = {"/" + name.lstrip("/") for name in super().foreign_nodes()}
-        allowed = {"/simulation_session", "/ros_gz_bridge_clock"}
+        allowed = {"/simulation_session", "/ros_gz_bridge_clock", "/emergency_stop"}
         # Combined RViz runs at the root; separate windows use robot namespaces.
         # Only exempt a generated TF listener when RViz is present in that same
         # namespace, so unrelated listeners and robot stacks still block spawn.
@@ -126,7 +126,7 @@ class DeploySessionManager(ExternalSessionManager):
         if not self.lock.locked() and self.deployment and not self.deployment.get("roi_selected"):
             mission = self.adapter.snapshot().get("mission", {})
             if (mission.get("session_id") == self.deployment["session_id"]
-                    and mission.get("state") in ("executing", "manual_assistance", "cancellation_requested", *TERMINAL)):
+                    and mission.get("state") in ("executing", "sampling", "returning", "manual_assistance", "cancellation_requested", *TERMINAL)):
                 # Recover a Start acknowledgement lost during a backend restart.
                 self.deployment["roi_selected"] = True
                 self.runtime.save(self.deployment)
@@ -138,7 +138,7 @@ class DeploySessionManager(ExternalSessionManager):
                     and ros.get("mission", {}).get("session_id") == record["session_id"]
                     and ros.get("alignment", {}).get("session_id") == record["session_id"]
                     and set(record.get("entity_ids", {})) == {"husky1", "parrot1"}
-                    and not self.missing(ros)):
+                    and not self.missing(ros, require_safety=False)):
                 record["phase"] = "deployed"
                 self.runtime.save(record)
         super().sample_trails()
@@ -297,7 +297,7 @@ class DeploySessionManager(ExternalSessionManager):
                 raise Conflict("Wait for a single world session before cleaning up this deployment; restart the world if it has stopped")
             mission = ros.get("mission", {})
             same_world = ros["world"].get("instance_id") == record["world_instance_id"]
-            if same_world and (self.command or mission.get("state") in ("executing", "manual_assistance", "cancellation_requested") or (
+            if same_world and (self.command or mission.get("state") in ("executing", "manual_assistance", "sampling", "returning", "cancellation_requested") or (
                     mission.get("state") in TERMINAL and not mission.get("cleanup_complete"))):
                 raise Conflict("Cancel the mission and wait for cleanup before stopping robots")
             if record.get("phase") == "deployed" and self.runtime.alive(record) and same_world and not ros.get("checks", {}).get("mission_status"):

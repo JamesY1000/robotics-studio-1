@@ -1,0 +1,13 @@
+# On resume, send back the same map and the DBHs we already have
+TreeSurvey survey
+# After manual driving, check this spot before asking Nav2 to move
+bool resume_from_current_pose
+---
+TreeMeasurement[] measurements
+PendingTreeMeasurement[] pending_views
+string message
+---
+uint32 tree_index
+uint32 measured_count
+uint32 total_count
+string stage

@@ -19,6 +19,8 @@ def generate_launch_description():
         LaunchConfiguration("max_fallback_hops"), value_type=int)
     waypoint_stall_timeout = ParameterValue(
         LaunchConfiguration("waypoint_stall_timeout"), value_type=float)
+    waypoint_close_enough = ParameterValue(
+        LaunchConfiguration("waypoint_close_enough"), value_type=float)
 
     launch_arguments = [
         DeclareLaunchArgument("use_sim_time", default_value="True"),
@@ -28,6 +30,8 @@ def generate_launch_description():
         DeclareLaunchArgument("max_fallback_hops", default_value="1"),
         # Seconds with no movement before the current waypoint is skipped.
         DeclareLaunchArgument("waypoint_stall_timeout", default_value="60.0"),
+        # Blocked waypoint buffer
+        DeclareLaunchArgument("waypoint_close_enough", default_value="3.0"),
     ]
 
     parrot_mission_executor = Node(
@@ -40,6 +44,7 @@ def generate_launch_description():
             "use_sim_time": use_sim_time,
             "max_fallback_hops": max_fallback_hops,
             "waypoint_stall_timeout": waypoint_stall_timeout,
+            "waypoint_close_enough": waypoint_close_enough,
         }],
         arguments=["--ros-args", "--log-level", log_level],
     )

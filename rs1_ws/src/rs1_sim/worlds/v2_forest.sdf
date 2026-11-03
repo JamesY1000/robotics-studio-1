@@ -1454,11 +1454,6 @@
       <pose>61.4008 79.6847 0.327282 -0.010836 -0.005128 -1.84004</pose>
     </include>
     <include>
-      <uri>model://bushes/bush_3</uri>
-      <name>generated_bush_002</name>
-      <pose>-83.7064 14.2086 5.48039 -0.008946 0.022664 -0.648459</pose>
-    </include>
-    <include>
       <uri>model://bushes/bush_2</uri>
       <name>generated_bush_003</name>
       <pose>-24.8202 19.1088 3.14174 -0.019465 0.014896 -3.083</pose>
@@ -1475,18 +1470,8 @@
     </include>
     <include>
       <uri>model://bushes/bush_3</uri>
-      <name>generated_bush_006</name>
-      <pose>79.9029 -72.5955 2.95479 -0.016804 -0.023171 -2.37933</pose>
-    </include>
-    <include>
-      <uri>model://bushes/bush_3</uri>
       <name>generated_bush_007</name>
       <pose>-14.384 -66.8386 1.00133 -0.000943 0.008112 -0.209819</pose>
-    </include>
-    <include>
-      <uri>model://bushes/bush_2</uri>
-      <name>generated_bush_008</name>
-      <pose>49.6742 -79.1947 3.50175 -0.014802 0.023743 1.37635</pose>
     </include>
     <include>
       <uri>model://bushes/bush_2</uri>
@@ -1539,11 +1524,6 @@
       <pose>-2.49373 76.4003 2.54185 -0.001551 -0.021566 0.452262</pose>
     </include>
     <include>
-      <uri>model://bushes/bush_3</uri>
-      <name>generated_bush_019</name>
-      <pose>-81.095 7.16923 5.37885 -0.007791 -0.013712 1.88814</pose>
-    </include>
-    <include>
       <uri>model://bushes/bush_2</uri>
       <name>generated_bush_022</name>
       <pose>95.9271 94.2922 3.7399 -0.006726 0.002114 -2.1965</pose>
@@ -1587,16 +1567,6 @@
       <uri>model://bushes/bush_2</uri>
       <name>generated_bush_031</name>
       <pose>15.8737 -63.7068 4.56649 -0.020033 0.005295 -2.17871</pose>
-    </include>
-    <include>
-      <uri>model://bushes/bush_2</uri>
-      <name>generated_bush_032</name>
-      <pose>63.2392 -76.4745 2.90713 -0.003804 0.008336 -2.37603</pose>
-    </include>
-    <include>
-      <uri>model://bushes/bush_3</uri>
-      <name>generated_bush_033</name>
-      <pose>42.4209 58.3527 1.36342 -0.013778 -0.012402 -3.07497</pose>
     </include>
     <include>
       <uri>model://bushes/bush_3</uri>
@@ -1644,29 +1614,9 @@
       <pose>-32.5455 -40.472 0.338973 -0.004738 0.000716 -2.5814</pose>
     </include>
     <include>
-      <uri>model://bushes/bush_2</uri>
-      <name>generated_bush_044</name>
-      <pose>41.5031 50.98 1.66814 0.019292 -0.017892 -0.37614</pose>
-    </include>
-    <include>
-      <uri>model://bushes/bush_2</uri>
-      <name>generated_bush_045</name>
-      <pose>-55.927 -20.5891 4.87932 0.008938 -0.001003 -0.660456</pose>
-    </include>
-    <include>
       <uri>model://bushes/bush_3</uri>
       <name>generated_bush_046</name>
       <pose>60.5487 54.829 3.25305 0.012804 0.000173 1.86631</pose>
-    </include>
-    <include>
-      <uri>model://bushes/bush_2</uri>
-      <name>generated_bush_047</name>
-      <pose>92.4441 71.4241 4.87318 0.015125 0.019039 2.37199</pose>
-    </include>
-    <include>
-      <uri>model://bushes/bush_3</uri>
-      <name>generated_bush_048</name>
-      <pose>-64.1363 87.6802 3.74574 -0.008134 0.006416 -2.26181</pose>
     </include>
     <include>
       <uri>model://bushes/bush_2</uri>
@@ -1704,54 +1654,14 @@
       <pose>-77.9675 -5.00301 5.07075 0.012056 -0.008948 -1.16171</pose>
     </include>
     <include>
-      <uri>model://bushes/bush_3</uri>
-      <name>generated_bush_058</name>
-      <pose>33.108 47.4973 0.653889 -0.009345 0.016227 2.32894</pose>
-    </include>
-    <include>
-      <uri>model://bushes/bush_3</uri>
-      <name>generated_bush_059</name>
-      <pose>-29.5906 75.9328 3.39162 0.017984 -0.012806 -0.625743</pose>
-    </include>
-    <include>
-      <uri>model://bushes/bush_3</uri>
-      <name>generated_bush_060</name>
-      <pose>-52.7596 -19.6842 4.73871 -0.010147 0.016241 -2.31174</pose>
-    </include>
-    <include>
       <uri>model://bushes/bush_2</uri>
       <name>generated_bush_061</name>
       <pose>-44.7633 -30.7996 2.6369 -0.021361 0.012775 -1.49857</pose>
     </include>
     <include>
-      <uri>model://bushes/bush_2</uri>
-      <name>generated_bush_062</name>
-      <pose>-24.3614 88.5187 2.86297 0.011633 -0.002093 1.01198</pose>
-    </include>
-    <include>
-      <uri>model://bushes/bush_3</uri>
-      <name>generated_bush_063</name>
-      <pose>-63.3786 93.921 3.4834 -0.017322 -0.02331 -3.02894</pose>
-    </include>
-    <include>
       <uri>model://bushes/bush_3</uri>
       <name>generated_bush_064</name>
       <pose>-47.2651 -46.6272 2.5356 0.002767 0.023973 0.09026</pose>
-    </include>
-    <include>
-      <uri>model://bushes/bush_3</uri>
-      <name>generated_bush_065</name>
-      <pose>-57.3865 -25.5174 4.20255 0.018551 0.0112 -0.730402</pose>
-    </include>
-    <include>
-      <uri>model://bushes/bush_3</uri>
-      <name>generated_bush_066</name>
-      <pose>75.7546 -83.5503 2.75229 -0.007315 -0.020364 -0.191621</pose>
-    </include>
-    <include>
-      <uri>model://bushes/bush_2</uri>
-      <name>generated_bush_067</name>
-      <pose>82.1647 -61.096 3.38558 0.003437 -0.000758 -3.13394</pose>
     </include>
     <include>
       <uri>model://bushes/bush_2</uri>
@@ -1789,11 +1699,6 @@
       <pose>79.7205 -14.8436 5.12728 -0.018981 0.022987 -1.00162</pose>
     </include>
     <include>
-      <uri>model://bushes/bush_2</uri>
-      <name>generated_bush_077</name>
-      <pose>61.7359 -79.1304 2.90707 0.001405 -0.013989 2.13921</pose>
-    </include>
-    <include>
       <uri>model://bushes/bush_3</uri>
       <name>generated_bush_078</name>
       <pose>13.1733 13.4237 1.77626 0.016759 -0.024101 -3.03072</pose>
@@ -1804,19 +1709,9 @@
       <pose>-36.0576 69.4576 3.83023 -0.015736 -0.024952 0.061983</pose>
     </include>
     <include>
-      <uri>model://bushes/bush_2</uri>
-      <name>generated_bush_081</name>
-      <pose>-3.20452 90.5578 2.68118 0.007798 -0.011162 -1.47235</pose>
-    </include>
-    <include>
       <uri>model://bushes/bush_3</uri>
       <name>generated_bush_082</name>
       <pose>-57.7736 -68.1235 2.57738 0.021347 -0.012813 0.787326</pose>
-    </include>
-    <include>
-      <uri>model://bushes/bush_2</uri>
-      <name>generated_bush_083</name>
-      <pose>5.32539 -67.5591 3.43889 -0.014665 -0.002676 -1.36605</pose>
     </include>
     <include>
       <uri>model://bushes/bush_2</uri>
@@ -1827,16 +1722,6 @@
       <uri>model://bushes/bush_2</uri>
       <name>generated_bush_085</name>
       <pose>90.1331 27.1395 5.06388 -0.022839 0.014679 -0.509181</pose>
-    </include>
-    <include>
-      <uri>model://bushes/bush_2</uri>
-      <name>generated_bush_086</name>
-      <pose>-65.9268 -69.4942 2.62509 0.024409 0.007102 -2.96727</pose>
-    </include>
-    <include>
-      <uri>model://bushes/bush_2</uri>
-      <name>generated_bush_087</name>
-      <pose>55.5184 -80.0483 3.14999 0.00121 0.003037 0.296492</pose>
     </include>
     <include>
       <uri>model://bushes/bush_3</uri>
@@ -1889,11 +1774,6 @@
       <pose>89.0641 6.56025 5.11332 0.023816 0.015576 0.966567</pose>
     </include>
     <include>
-      <uri>model://bushes/bush_2</uri>
-      <name>generated_bush_099</name>
-      <pose>70.6606 -79.7506 2.75872 -0.013316 -0.009598 2.79523</pose>
-    </include>
-    <include>
       <uri>model://bushes/bush_3</uri>
       <name>generated_bush_100</name>
       <pose>-40.566 25.4999 7.21038 -0.008831 -0.002327 0.779345</pose>
@@ -1910,11 +1790,6 @@
     </include>
     <include>
       <uri>model://bushes/bush_3</uri>
-      <name>generated_bush_103</name>
-      <pose>-38.1004 78.4025 3.24947 -0.010763 0.012162 -3.11607</pose>
-    </include>
-    <include>
-      <uri>model://bushes/bush_3</uri>
       <name>generated_bush_104</name>
       <pose>87.3405 -55.7197 3.67101 0.016163 0.01923 -1.55446</pose>
     </include>
@@ -1927,21 +1802,6 @@
       <uri>model://bushes/bush_2</uri>
       <name>generated_bush_106</name>
       <pose>-1.31199 -78.5916 3.07813 0.020426 0.004127 0.920411</pose>
-    </include>
-    <include>
-      <uri>model://bushes/bush_3</uri>
-      <name>generated_bush_107</name>
-      <pose>29.5599 -63.2416 4.80342 0.015562 0.010976 -0.263601</pose>
-    </include>
-    <include>
-      <uri>model://bushes/bush_3</uri>
-      <name>generated_bush_108</name>
-      <pose>32.7135 -62.372 4.62164 0.004571 0.024018 -1.27802</pose>
-    </include>
-    <include>
-      <uri>model://bushes/bush_3</uri>
-      <name>generated_bush_109</name>
-      <pose>-93.7821 1.94494 4.10707 -0.019841 0.012674 2.7682</pose>
     </include>
     <include>
       <uri>model://bushes/bush_3</uri>
@@ -1962,11 +1822,6 @@
       <uri>model://bushes/bush_2</uri>
       <name>generated_bush_113</name>
       <pose>56.7999 -66.2188 3.34382 0.002298 -0.00868 -0.031387</pose>
-    </include>
-    <include>
-      <uri>model://bushes/bush_2</uri>
-      <name>generated_bush_114</name>
-      <pose>-90.3309 3.95952 4.49044 -0.021002 -0.018135 -0.149259</pose>
     </include>
     <include>
       <uri>model://bushes/bush_3</uri>
@@ -2009,11 +1864,6 @@
       <pose>83.1132 -36.0107 4.54119 0.018079 0.019209 1.46849</pose>
     </include>
     <include>
-      <uri>model://bushes/bush_3</uri>
-      <name>generated_bush_123</name>
-      <pose>28.1845 -88.9043 4.24365 0.021592 0.013972 -0.30817</pose>
-    </include>
-    <include>
       <uri>model://bushes/bush_2</uri>
       <name>generated_bush_124</name>
       <pose>70.3492 -35.3876 4.23651 -0.024948 0.009502 1.5852</pose>
@@ -2039,16 +1889,6 @@
       <pose>31.7227 -73.8807 4.61419 -0.000646 0.008097 -1.69007</pose>
     </include>
     <include>
-      <uri>model://bushes/bush_2</uri>
-      <name>generated_bush_129</name>
-      <pose>-61.0011 50.4799 5.18856 0.013394 0.012369 1.75</pose>
-    </include>
-    <include>
-      <uri>model://bushes/bush_2</uri>
-      <name>generated_bush_130</name>
-      <pose>-71.6373 43.9651 5.47202 0.022111 0.008301 -0.411865</pose>
-    </include>
-    <include>
       <uri>model://bushes/bush_3</uri>
       <name>generated_bush_131</name>
       <pose>-1.07693 -69.8931 2.77896 -0.016221 0.017445 -0.00292</pose>
@@ -2065,23 +1905,8 @@
     </include>
     <include>
       <uri>model://bushes/bush_2</uri>
-      <name>generated_bush_134</name>
-      <pose>85.4748 46.1628 5.02232 0.011638 0.019231 -2.76482</pose>
-    </include>
-    <include>
-      <uri>model://bushes/bush_2</uri>
       <name>generated_bush_135</name>
       <pose>71.9512 71.2835 2.56525 0.016951 -0.014337 0.534738</pose>
-    </include>
-    <include>
-      <uri>model://bushes/bush_3</uri>
-      <name>generated_bush_136</name>
-      <pose>-57.2563 76.2837 3.87687 -0.024378 -0.013695 1.84177</pose>
-    </include>
-    <include>
-      <uri>model://bushes/bush_3</uri>
-      <name>generated_bush_137</name>
-      <pose>89.5317 56.8389 4.90724 -0.01971 0.001693 2.27948</pose>
     </include>
     <include>
       <uri>model://bushes/bush_2</uri>
@@ -2105,11 +1930,6 @@
     </include>
     <include>
       <uri>model://bushes/bush_2</uri>
-      <name>generated_bush_142</name>
-      <pose>87.4483 -82.4433 2.88846 -0.002155 -0.008246 -2.26812</pose>
-    </include>
-    <include>
-      <uri>model://bushes/bush_2</uri>
       <name>generated_bush_143</name>
       <pose>44.8972 -73.0174 3.98059 0.021543 -0.015039 -2.76783</pose>
     </include>
@@ -2117,11 +1937,6 @@
       <uri>model://bushes/bush_2</uri>
       <name>generated_bush_144</name>
       <pose>-58.2446 79.8299 3.75414 0.011908 -0.001997 1.8675</pose>
-    </include>
-    <include>
-      <uri>model://bushes/bush_3</uri>
-      <name>generated_bush_145</name>
-      <pose>-60.8437 91.8414 3.41905 -0.005118 0.011513 -2.03919</pose>
     </include>
     <include>
       <uri>model://bushes/bush_2</uri>
@@ -2175,11 +1990,6 @@
     </include>
     <include>
       <uri>model://rocks/rock1</uri>
-      <name>generated_rock_010</name>
-      <pose>86.5838 -79.2154 3.43287 0.138094 0.021182 -1.65965</pose>
-    </include>
-    <include>
-      <uri>model://rocks/rock1</uri>
       <name>generated_rock_011</name>
       <pose>86.9988 -95.6615 3.31025 -0.029346 -0.058406 2.40999</pose>
     </include>
@@ -2202,11 +2012,6 @@
       <uri>model://rocks/rock1</uri>
       <name>generated_rock_020</name>
       <pose>65.4607 76.2278 1.88618 0.016704 -0.126829 1.16328</pose>
-    </include>
-    <include>
-      <uri>model://rocks/rock1</uri>
-      <name>generated_rock_021</name>
-      <pose>70.1534 47.3981 6.40935 0.126876 0.102122 -0.565727</pose>
     </include>
     <include>
       <uri>model://rocks/rock1</uri>
@@ -2290,11 +2095,6 @@
     </include>
     <include>
       <uri>model://rocks/rock1</uri>
-      <name>generated_rock_039</name>
-      <pose>70.809 50.2992 5.79474 -0.106551 -0.076342 1.81286</pose>
-    </include>
-    <include>
-      <uri>model://rocks/rock1</uri>
       <name>generated_rock_040</name>
       <pose>51.7894 60.1514 2.94787 -0.00873 0.026674 2.20229</pose>
     </include>
@@ -2302,16 +2102,6 @@
       <uri>model://rocks/rock1</uri>
       <name>generated_rock_041</name>
       <pose>21.9125 93.0483 1.10335 0.078101 -0.028234 2.0172</pose>
-    </include>
-    <include>
-      <uri>model://rocks/rock1</uri>
-      <name>generated_rock_042</name>
-      <pose>-70.5304 -45.7637 3.41426 -0.11823 -0.043532 0.651229</pose>
-    </include>
-    <include>
-      <uri>model://rocks/rock1</uri>
-      <name>generated_rock_044</name>
-      <pose>72.8686 46.2497 6.53507 0.128764 -0.136447 0.602561</pose>
     </include>
     <include>
       <uri>model://rocks/rock1</uri>
@@ -2365,11 +2155,6 @@
     </include>
     <include>
       <uri>model://rocks/rock1</uri>
-      <name>generated_rock_058</name>
-      <pose>-69.0578 66.1499 5.18879 0.094084 -0.114173 0.78379</pose>
-    </include>
-    <include>
-      <uri>model://rocks/rock1</uri>
       <name>generated_rock_059</name>
       <pose>80.3287 43.1022 6.20448 -0.0135 0.117906 2.49873</pose>
     </include>
@@ -2382,11 +2167,6 @@
       <uri>model://rocks/rock1</uri>
       <name>generated_rock_061</name>
       <pose>44.2743 -48.0541 3.85224 -0.087002 -0.085018 -1.32808</pose>
-    </include>
-    <include>
-      <uri>model://rocks/rock1</uri>
-      <name>generated_rock_065</name>
-      <pose>-72.4707 -47.6526 3.43045 -0.065158 0.020483 -0.662788</pose>
     </include>
     <include>
       <uri>model://rocks/rock1</uri>
@@ -2407,16 +2187,6 @@
       <uri>model://rocks/rock1</uri>
       <name>generated_rock_070</name>
       <pose>-18.7461 7.27593 1.95646 0.082444 -0.020749 -2.65244</pose>
-    </include>
-    <include>
-      <uri>model://rocks/rock1</uri>
-      <name>generated_rock_071</name>
-      <pose>-80.381 41.5258 6.18336 -0.063648 -0.011396 1.52714</pose>
-    </include>
-    <include>
-      <uri>model://rocks/rock1</uri>
-      <name>generated_rock_072</name>
-      <pose>-66.1717 52.502 5.5754 -0.104636 0.040482 0.3581</pose>
     </include>
     <include>
       <uri>model://rocks/rock1</uri>
@@ -2465,11 +2235,6 @@
     </include>
     <include>
       <uri>model://rocks/rock1</uri>
-      <name>generated_rock_085</name>
-      <pose>84.8861 -3.99217 5.7392 0.105404 0.100878 -0.904769</pose>
-    </include>
-    <include>
-      <uri>model://rocks/rock1</uri>
       <name>generated_rock_086</name>
       <pose>4.11084 -85.5764 4.65155 0.089153 -0.080031 1.49366</pose>
     </include>
@@ -2477,11 +2242,6 @@
       <uri>model://rocks/rock1</uri>
       <name>generated_rock_087</name>
       <pose>-67.7214 -42.501 3.66395 0.013749 -0.090039 -1.6823</pose>
-    </include>
-    <include>
-      <uri>model://rocks/rock1</uri>
-      <name>generated_rock_088</name>
-      <pose>71.056 -59.8109 3.86389 -0.024896 -0.096744 -0.66742</pose>
     </include>
     <include>
       <uri>model://rocks/rock1</uri>

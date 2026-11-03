@@ -1,16 +1,5 @@
-// This guy should handle the execution of mission commands for just the parrot alone:
-// For now it's just:
-// Fly from base to ROI
-// Produce a traversable route for Husky
-
-// CURRENTLY NOT IN SCOPE:
-// 2.
-// Descends below canopy
-// Detects and maps trees
-// Generates and sends tree map back to mission control or straight to husky?
-// Fly from ROI back to base
-
-// Note** - information generated between robots is shared directly
+// Parrot flies to the ROI, hands Husky a ground path and sweeps for trees
+// Once Husky finishes measuring, Parrot returns to its saved start position
 
 
 #include "parrot_mission_executor.hpp"
@@ -126,6 +115,18 @@ ParrotMissionExecutorNode::ParrotMissionExecutorNode() : Node("parrot_mission_ex
         throw std::invalid_argument("waypoint stall parameters must be finite and positive");
     }
 
+    // For blocked waypoints (too close to obstacle/tree)
+    waypoint_close_enough_m_ =
+        this->declare_parameter<double>("waypoint_close_enough", 3.0);
+    waypoint_close_enough_dwell_ =
+        this->declare_parameter<double>("waypoint_close_enough_dwell", 3.0);
+    if (!std::isfinite(waypoint_close_enough_m_) || waypoint_close_enough_m_ <= 0.0 ||
+        !std::isfinite(waypoint_close_enough_dwell_) || waypoint_close_enough_dwell_ <= 0.0)
+    {
+        throw std::invalid_argument(
+            "waypoint_close_enough and waypoint_close_enough_dwell must be finite and positive");
+    }
+
     // Create tf buffers and listeners
     tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
     tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_, this, true);
@@ -149,6 +150,9 @@ ParrotMissionExecutorNode::ParrotMissionExecutorNode() : Node("parrot_mission_ex
 
     tree_map_pub_ = this->create_publisher<rs1_interfaces::msg::TreeMap>(
         "/parrot1/tree_map", rclcpp::QoS(1).reliable().transient_local());
+
+    tree_marker_pub_ = this->create_publisher<visualization_msgs::msg::Marker>(
+        "/parrot1/tree_map_markers", rclcpp::QoS(1).reliable().transient_local());
 
     // Lidar outage watchdog: track the freshest scan and abort the sweep if it
     // stops arriving (the GPU lidar or its bridge can die mid-flight).
@@ -204,6 +208,10 @@ ParrotMissionExecutorNode::ParrotMissionExecutorNode() : Node("parrot_mission_ex
     &ParrotMissionExecutorNode::exploreToPoseResultCb, this, std::placeholders::_1);
 
     // TraverseToROI server
+    home_execution_ = std::make_unique<ReturnHomeExecution>(*this, tf_buffer_, "parrot1",
+        [this]() { return parrot_state_ == ParrotState::IDLE; },
+        [this](bool busy) { parrot_state_ = busy ? ParrotState::RETURNING_HOME : ParrotState::IDLE; });
+
     traverse_to_roi_server_ = rclcpp_action::create_server<rs1_interfaces::action::TraverseToROI>(
     this,
     "/parrot1/traverse_to_roi",
@@ -1244,9 +1252,7 @@ bool ParrotMissionExecutorNode::prepareSweepBox()
     if (!box_in(sweep_frame_, sweep_min_, sweep_max_)) return false;
     if (!validROIBox(sweep_min_, sweep_max_)) return false;
 
-    // Perception anchors tree positions on the raw Gazebo odometry, i.e. `world`.
-    // mergeTree() therefore needs the ROI in `world` as well; comparing them
-    // against the planning box is only correct while parrot1_odom tracks world.
+    // Perception reports tree positions in the registered world frame.
     if (!box_in("world", tree_min_, tree_max_))
     {
         RCLCPP_WARN(this->get_logger(),
@@ -1285,6 +1291,10 @@ void ParrotMissionExecutorNode::sampleROI()
     const auto mission_goal = sample_roi_goal_handle_;
     if (!mission_goal || !mission_goal->is_active() || mission_goal->is_canceling()) return;
 
+    tree_map_.clear();
+    last_tree_map_ = rs1_interfaces::msg::TreeMap{};
+    publishTreeMarkers({});
+
     // Normalise the box into the executor's planning frame (parrot1_map) so
     // Nav2 and the explorer both accept it, whatever frame the caller used.
     if (!prepareSweepBox())
@@ -1293,7 +1303,6 @@ void ParrotMissionExecutorNode::sampleROI()
         return;
     }
 
-    tree_map_.clear();
     total_waypoints_ = 0;
     waypoints_remaining_ = 0;
     exploring_for_sweep_ = false;
@@ -1682,7 +1691,14 @@ void ParrotMissionExecutorNode::processResponseCb(
         return;
     }
 
-    for (const auto &tree : response->tree_data) mergeTree(tree);
+    if (!response->tree_data.empty())
+    {
+        for (const auto &tree : response->tree_data) mergeTree(tree);
+        std::vector<rs1_interfaces::msg::TreeLocation> candidates;
+        candidates.reserve(tree_map_.size());
+        for (const auto & merged : tree_map_) candidates.push_back(merged.locationMessage());
+        publishTreeMarkers(candidates);
+    }
     publishSamplingFeedback("Sweeping ROI");
 }
 
@@ -1691,12 +1707,7 @@ void ParrotMissionExecutorNode::mergeTree(const rs1_interfaces::msg::TreeLocatio
     const double tx = tree.location.x;
     const double ty = tree.location.y;
 
-    // Drop trees outside the ROI box.  The tree positions come from the perception
-    // stack, which anchors them on the raw Gazebo odometry, so they are in
-    // `world` - hence the world copy of the box, not the planning one.  This
-    // discards the inbound transit's detections (the drone crosses the forest to
-    // the corner) and neighbours just over the box boundary that the camera/lidar
-    // catch mid-lane.
+    // Compare estimated trunk positions with the ROI bounds in world coordinates.
     const double margin = roi_tree_margin_;
     if (tx < tree_min_.x - margin || tx > tree_max_.x + margin ||
         ty < tree_min_.y - margin || ty > tree_max_.y + margin)
@@ -1754,10 +1765,70 @@ void ParrotMissionExecutorNode::publishSamplingFeedback(const std::string & stag
     sample_roi_goal_handle_->publish_feedback(feedback);
 }
 
+bool ParrotMissionExecutorNode::withinCloseEnough(double & distance) const
+{
+    if (sweep_index_ >= sweep_waypoints_.size()) return false;
+
+    geometry_msgs::msg::PoseStamped here;
+    if (!currentPose(here)) return false;
+
+    const auto & wp = sweep_waypoints_[sweep_index_];
+    distance = std::hypot(
+        here.pose.position.x - wp.pose.position.x,
+        here.pose.position.y - wp.pose.position.y);
+    return std::isfinite(distance) && distance <= waypoint_close_enough_m_;
+}
+
+bool ParrotMissionExecutorNode::acceptWaypointIfCloseEnough(const std::string & reason)
+{
+    double distance = 0.0;
+    if (!withinCloseEnough(distance)) return false;
+
+    const auto & wp = sweep_waypoints_[sweep_index_];
+    RCLCPP_INFO(this->get_logger(),
+        "Waypoint %zu/%zu (%.1f, %.1f) accepted as reached: %.2f m away "
+        "(close-enough %.2f m; %s)",
+        sweep_index_ + 1, sweep_waypoints_.size(),
+        wp.pose.position.x, wp.pose.position.y,
+        distance, waypoint_close_enough_m_, reason.c_str());
+
+    // Any goal still in flight is moot now; release it before the next leg.
+    stopSweep();
+
+    ++sweep_index_;
+    fallback_hops_ = 0;
+    // Reaching a waypoint is progress, not a skip: never let it trip the
+    // "wedged in one spot" abort.
+    consecutive_skips_ = 0;
+    waypoints_remaining_ = static_cast<int16_t>(
+        std::min<std::size_t>(sweep_waypoints_.size() - sweep_index_, 32767));
+    publishSamplingFeedback("Sweeping ROI");
+    return true;
+}
+
 void ParrotMissionExecutorNode::navigateToNextWaypoint()
 {
     const auto mission_goal = sample_roi_goal_handle_;
     if (!mission_goal || !mission_goal->is_active() || mission_goal->is_canceling()) return;
+
+    // Skip past any waypoints the drone is close enough to
+    while (sweep_index_ < sweep_waypoints_.size())
+    {
+        double distance = 0.0;
+        if (!withinCloseEnough(distance)) break;
+
+        const auto & near = sweep_waypoints_[sweep_index_];
+        RCLCPP_INFO(this->get_logger(),
+            "Waypoint %zu/%zu (%.1f, %.1f) already within %.2f m (close-enough %.2f m); continuing",
+            sweep_index_ + 1, sweep_waypoints_.size(),
+            near.pose.position.x, near.pose.position.y,
+            distance, waypoint_close_enough_m_);
+        ++sweep_index_;
+        fallback_hops_ = 0;
+        consecutive_skips_ = 0;
+        waypoints_remaining_ = static_cast<int16_t>(
+            std::min<std::size_t>(sweep_waypoints_.size() - sweep_index_, 32767));
+    }
 
     if (sweep_index_ >= sweep_waypoints_.size())
     {
@@ -1888,6 +1959,13 @@ void ParrotMissionExecutorNode::sweepWaypointResultCb(
             break;
 
         case rclcpp_action::ResultCode::ABORTED:
+            // Continue to next waypoint if it is too close to an object
+            if (acceptWaypointIfCloseEnough("Nav2 aborted the leg"))
+            {
+                maybeDescendOnEntry();
+                navigateToNextWaypoint();
+                break;
+            }
             retrySweepWithExploration("sweep waypoint aborted by Nav2");
             break;
 
@@ -1896,6 +1974,12 @@ void ParrotMissionExecutorNode::sweepWaypointResultCb(
             break;
 
         default:
+            if (acceptWaypointIfCloseEnough("unexpected Nav2 result"))
+            {
+                maybeDescendOnEntry();
+                navigateToNextWaypoint();
+                break;
+            }
             retrySweepWithExploration("unexpected result code");
             break;
     }
@@ -1913,6 +1997,7 @@ void ParrotMissionExecutorNode::finishSampling()
 
     auto result = std::make_shared<rs1_interfaces::action::SampleROI::Result>();
     result->tree_count = static_cast<uint32_t>(published);
+    result->tree_map = last_tree_map_;
     result->message = "ROI sweep complete; tree map published for Husky";
     if (sample_roi_goal_handle_) sample_roi_goal_handle_->succeed(result);
     RCLCPP_INFO(this->get_logger(), "%s", result->message.c_str());
@@ -1956,9 +2041,6 @@ std::size_t ParrotMissionExecutorNode::publishTreeMap()
 
     rs1_interfaces::msg::TreeMap msg;
     msg.header.stamp = this->now();
-    // Coordinates are Gazebo ground truth (perception anchors on /parrot1/odometry),
-    // so the map is in `world`.  It used to be labelled parrot1_odom because the
-    // EKF then relayed the exact Gazebo pose and the two frames coincided.
     msg.header.frame_id = "world";
     std::size_t dropped = 0;
     msg.trees.reserve(finalized.size());
@@ -1971,20 +2053,42 @@ std::size_t ParrotMissionExecutorNode::publishTreeMap()
             ++dropped;
             continue;
         }
-        rs1_interfaces::msg::TreeLocation tree;
-        tree.tree_type = merged.tree_type;
-        tree.location.x = merged.x;
-        tree.location.y = merged.y;
-        tree.location.z = merged.z;
-        tree.observations = merged.observations;
-        msg.trees.push_back(tree);
+        msg.trees.push_back(merged.locationMessage());
     }
 
+    publishTreeMarkers(msg.trees);
+    last_tree_map_ = msg;
     if (tree_map_pub_) tree_map_pub_->publish(msg);
     RCLCPP_INFO(this->get_logger(),
         "Published tree map with %zu tree(s) (%zu dropped below %d observation(s))",
         msg.trees.size(), dropped, min_observations_);
     return msg.trees.size();
+}
+
+void ParrotMissionExecutorNode::publishTreeMarkers(
+    const std::vector<rs1_interfaces::msg::TreeLocation> & trees)
+{
+    using Marker = visualization_msgs::msg::Marker;
+    Marker marker;
+    marker.header.frame_id = "world";
+    marker.ns = "sweep_trees";
+    // One persistent list replaces the previous snapshot, including after final dedup.
+    marker.type = Marker::SPHERE_LIST;
+    marker.action = trees.empty() ? Marker::DELETE : Marker::ADD;
+    marker.pose.orientation.w = 1.0;
+    marker.scale.x = marker.scale.y = marker.scale.z = 1.0;
+    marker.color.a = 1.0;
+    for (const auto & tree : trees)
+    {
+        marker.points.push_back(tree.location);
+        std_msgs::msg::ColorRGBA color;
+        color.a = 1.0;
+        if (tree.tree_type == "PINE_TREE") color.g = 1.0;
+        else if (tree.tree_type == "OAK_TREE") { color.r = 1.0; color.g = 0.5; }
+        else { color.r = 1.0; color.b = 1.0; }
+        marker.colors.push_back(color);
+    }
+    tree_marker_pub_->publish(marker);
 }
 
 void ParrotMissionExecutorNode::stopDetection()
@@ -2066,6 +2170,7 @@ void ParrotMissionExecutorNode::abortSampling(const std::string & message)
     auto result = std::make_shared<rs1_interfaces::action::SampleROI::Result>();
     result->message = message;
     result->tree_count = static_cast<uint32_t>(tree_map_.size());
+    result->tree_map = last_tree_map_;
     sample_roi_goal_handle_->abort(result);
     RCLCPP_ERROR(this->get_logger(), "%s", message.c_str());
     returnToIdle();
@@ -2118,9 +2223,13 @@ void ParrotMissionExecutorNode::finishCancelledSampling()
     stopDetection();
     restoreTransitClearance();
 
+    // Publish whatever was found so the Husky still receives partial data.
+    if (!tree_map_.empty()) publishTreeMap();
+
     auto result = std::make_shared<rs1_interfaces::action::SampleROI::Result>();
     result->message = "Parrot ROI sampling was canceled";
     result->tree_count = static_cast<uint32_t>(tree_map_.size());
+    result->tree_map = last_tree_map_;
     sample_roi_goal_handle_->canceled(result);
     RCLCPP_INFO(this->get_logger(), "%s", result->message.c_str());
     returnToIdle();
@@ -2453,6 +2562,16 @@ void ParrotMissionExecutorNode::sweepStallWatchdogCb()
     }
 
     const double idle = (this->now() - last_sweep_progress_time_).seconds();
+
+    // If it is close to waypoint but can't reach
+    if (idle >= waypoint_close_enough_dwell_ &&
+        acceptWaypointIfCloseEnough(
+            "parked near the aimpoint for " + std::to_string(static_cast<long>(idle)) + " s"))
+    {
+        navigateToNextWaypoint();
+        return;
+    }
+
     if (idle < waypoint_stall_timeout_) return;
 
     skipCurrentWaypoint(

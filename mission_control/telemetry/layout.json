@@ -1,383 +1,5 @@
 {
   "configById": {
-    "3D!rs1-world": {
-      "lichtblickPanelTitle": "World · Husky cyan / Parrot amber",
-      "followTf": "world",
-      "followMode": "follow-pose",
-      "cameraState": {
-        "perspective": true,
-        "distance": 47.846736661241245,
-        "phi": 70.56917292534813,
-        "thetaOffset": -177.69121689475566,
-        "targetOffset": [
-          40.436532500275305,
-          -57.94719853107968,
-          -2.3614866610266444e-16
-        ],
-        "target": [
-          0,
-          0,
-          0
-        ],
-        "targetOrientation": [
-          0,
-          0,
-          0,
-          1
-        ],
-        "fovy": 45,
-        "near": 0.1,
-        "far": 5000
-      },
-      "scene": {
-        "transforms": {
-          "showLabel": false,
-          "axisScale": 0.3
-        }
-      },
-      "transforms": {
-        "frame:world": {
-          "visible": true
-        },
-        "frame:husky1_base_link": {
-          "visible": true
-        },
-        "frame:parrot1_base_link": {
-          "visible": true
-        }
-      },
-      "topics": {
-        "/husky1/map": {
-          "visible": false,
-          "frameLocked": true,
-          "colorMode": "custom",
-          "minColor": "#2dd4bf20",
-          "maxColor": "#2dd4bfff",
-          "unknownColor": "#00000000"
-        },
-        "/parrot1/map": {
-          "visible": true,
-          "frameLocked": true,
-          "colorMode": "custom",
-          "minColor": "#fbbf2420",
-          "maxColor": "#fbbf24ff",
-          "unknownColor": "#00000000"
-        },
-        "/husky1/scan_filtered": {
-          "visible": false,
-          "colorField": "intensity",
-          "colorMode": "flat",
-          "colorMap": "turbo",
-          "flatColor": "#c60000ff"
-        },
-        "/husky1/scan": {
-          "visible": true,
-          "colorField": "intensity",
-          "colorMode": "flat",
-          "colorMap": "turbo",
-          "flatColor": "#07ff3eff"
-        },
-        "/parrot1/scan": {
-          "visible": true,
-          "colorField": "intensity",
-          "colorMode": "flat",
-          "colorMap": "turbo",
-          "flatColor": "#2be253ff"
-        },
-        "/parrot1/downwards_scan": {
-          "visible": false,
-          "colorField": "intensity",
-          "colorMode": "colormap",
-          "colorMap": "turbo"
-        },
-        "/husky1/local_costmap/published_footprint": {
-          "visible": true,
-          "lineWidth": 0.05,
-          "color": "#2dd4bf"
-        },
-        "/parrot1/local_costmap/published_footprint": {
-          "visible": true,
-          "lineWidth": 0.05,
-          "color": "#fbbf24"
-        },
-        "/husky1/plan": {
-          "visible": true,
-          "color": "#2dd4bf"
-        },
-        "/husky1/local_plan": {
-          "visible": true,
-          "color": "#99f6e4"
-        },
-        "/parrot1/plan": {
-          "visible": true,
-          "color": "#fbbf24"
-        },
-        "/parrot1/local_plan": {
-          "visible": true,
-          "color": "#fde68a"
-        },
-        "/parrot1/explore/frontiers": {
-          "visible": true
-        },
-        "/mission/roi_marker": {
-          "visible": true
-        },
-        "/husky1/local_costmap/costmap": {
-          "visible": false
-        },
-        "/husky1/global_costmap/costmap": {
-          "visible": true
-        },
-        "/parrot1/local_costmap/costmap": {
-          "visible": true
-        },
-        "/parrot1/global_costmap/costmap": {
-          "visible": true
-        },
-        "/husky1/scan/points": {
-          "visible": true,
-          "colorField": "intensity",
-          "colorMode": "flat",
-          "colorMap": "turbo",
-          "flatColor": "#e70ee4ff"
-        },
-        "/parrot1/scan/points": {
-          "visible": true,
-          "colorField": "intensity",
-          "colorMode": "flat",
-          "colorMap": "turbo",
-          "flatColor": "#c4d919ff"
-        },
-        "/husky1/ground_points": {
-          "visible": false,
-          "colorField": "z",
-          "colorMode": "colormap",
-          "colorMap": "turbo"
-        },
-        "/husky1/obstacle_points": {
-          "visible": false,
-          "colorField": "z",
-          "colorMode": "colormap",
-          "colorMap": "turbo"
-        },
-        "/husky1/navigation_points": {
-          "visible": false,
-          "colorField": "z",
-          "colorMode": "colormap",
-          "colorMap": "turbo"
-        },
-        "/husky1/camera/depth/points": {
-          "visible": true,
-          "colorField": "rgb",
-          "colorMode": "flat",
-          "colorMap": "turbo",
-          "flatColor": "#d91addff"
-        },
-        "/parrot1/camera/depth/points": {
-          "visible": true,
-          "colorField": "rgb",
-          "colorMode": "flat",
-          "colorMap": "turbo",
-          "flatColor": "#23d6b0ff"
-        },
-        "/tree_locations/markers": {
-          "visible": false
-        },
-        "/tree_locations/map": {
-          "visible": false
-        },
-        "/husky1/camera/depth/image": {
-          "visible": false
-        },
-        "/husky1/camera/image": {
-          "visible": false
-        },
-        "/husky1/cost_cloud": {
-          "visible": false
-        },
-        "/husky1/goal_pose": {
-          "visible": true
-        },
-        "/husky1/marker": {
-          "visible": true
-        },
-        "/husky1/pose": {
-          "visible": true
-        },
-        "/parrot1/camera/image": {
-          "visible": false
-        },
-        "/parrot1/cost_cloud": {
-          "visible": false
-        },
-        "/parrot1/global_costmap/clearing_endpoints": {
-          "visible": false,
-          "colorField": "z",
-          "colorMode": "colormap",
-          "colorMap": "turbo"
-        },
-        "/parrot1/goal_pose": {
-          "visible": true
-        },
-        "/parrot1/marker": {
-          "visible": false
-        },
-        "/parrot1/pose": {
-          "visible": true
-        },
-        "/parrot1/set_pose": {
-          "visible": false
-        },
-        "/husky1/global_costmap/published_footprint": {
-          "visible": true
-        },
-        "/parrot1/global_costmap/published_footprint": {
-          "visible": true
-        },
-        "/husky1/received_global_plan": {
-          "visible": false
-        },
-        "/husky1/segmentation_input": {
-          "visible": true,
-          "colorField": "z",
-          "colorMode": "colormap",
-          "colorMap": "turbo"
-        },
-        "/husky1/slam_toolbox/graph_visualization": {
-          "visible": false
-        }
-      },
-      "layers": {
-        "rs1-husky-model": {
-          "instanceId": "rs1-husky-model",
-          "layerId": "foxglove.Urdf",
-          "label": "Husky robot model",
-          "sourceType": "topic",
-          "topic": "/husky1/robot_description",
-          "framePrefix": "",
-          "displayMode": "visual",
-          "fallbackColor": "#2dd4bf",
-          "visible": true,
-          "frameLocked": true,
-          "order": 1
-        },
-        "rs1-parrot-model": {
-          "instanceId": "rs1-parrot-model",
-          "layerId": "foxglove.Urdf",
-          "label": "Parrot robot model",
-          "sourceType": "topic",
-          "topic": "/parrot1/robot_description",
-          "framePrefix": "",
-          "displayMode": "visual",
-          "fallbackColor": "#fbbf24",
-          "visible": true,
-          "frameLocked": true,
-          "order": 2
-        }
-      },
-      "imageMode": {},
-      "publish": {
-        "type": "point",
-        "poseTopic": "/move_base_simple/goal",
-        "pointTopic": "/clicked_point",
-        "poseEstimateTopic": "/initialpose",
-        "poseEstimateXDeviation": 0.5,
-        "poseEstimateYDeviation": 0.5,
-        "poseEstimateThetaDeviation": 0.26179939
-      }
-    },
-    "Image!rs1-husky": {
-      "lichtblickPanelTitle": "Husky · RGB camera",
-      "imageMode": {
-        "imageTopic": "/husky1/camera/image",
-        "synchronize": false
-      },
-      "cameraState": {
-        "distance": 20,
-        "perspective": true,
-        "phi": 60,
-        "target": [
-          0,
-          0,
-          0
-        ],
-        "targetOffset": [
-          0,
-          0,
-          0
-        ],
-        "targetOrientation": [
-          0,
-          0,
-          0,
-          1
-        ],
-        "thetaOffset": 45,
-        "fovy": 45,
-        "near": 0.5,
-        "far": 5000
-      },
-      "followMode": "follow-pose",
-      "scene": {},
-      "transforms": {},
-      "topics": {},
-      "layers": {},
-      "publish": {
-        "type": "point",
-        "poseTopic": "/move_base_simple/goal",
-        "pointTopic": "/clicked_point",
-        "poseEstimateTopic": "/initialpose",
-        "poseEstimateXDeviation": 0.5,
-        "poseEstimateYDeviation": 0.5,
-        "poseEstimateThetaDeviation": 0.26179939
-      }
-    },
-    "Image!rs1-parrot": {
-      "lichtblickPanelTitle": "Parrot · RGB camera",
-      "imageMode": {
-        "imageTopic": "/parrot1/camera/image",
-        "synchronize": false
-      },
-      "cameraState": {
-        "distance": 20,
-        "perspective": true,
-        "phi": 60,
-        "target": [
-          0,
-          0,
-          0
-        ],
-        "targetOffset": [
-          0,
-          0,
-          0
-        ],
-        "targetOrientation": [
-          0,
-          0,
-          0,
-          1
-        ],
-        "thetaOffset": 45,
-        "fovy": 45,
-        "near": 0.5,
-        "far": 5000
-      },
-      "followMode": "follow-pose",
-      "scene": {},
-      "transforms": {},
-      "topics": {},
-      "layers": {},
-      "publish": {
-        "type": "point",
-        "poseTopic": "/move_base_simple/goal",
-        "pointTopic": "/clicked_point",
-        "poseEstimateTopic": "/initialpose",
-        "poseEstimateXDeviation": 0.5,
-        "poseEstimateYDeviation": 0.5,
-        "poseEstimateThetaDeviation": 0.26179939
-      }
-    },
     "Plot!rs1-clearance": {
       "lichtblickPanelTitle": "Parrot · downward centre ray",
       "paths": [
@@ -446,6 +68,13 @@
       "expansion": "all",
       "fontSize": 12
     },
+    "RosOut!rs1-logs": {
+      "lichtblickPanelTitle": "ROS logs · all nodes",
+      "topicToRender": "/rosout",
+      "searchTerms": [],
+      "minLogLevel": 1,
+      "nameFilter": {}
+    },
     "RawMessages!rs1-exploration": {
       "lichtblickPanelTitle": "Parrot · exploration status",
       "topicPath": "/parrot1/explore/status",
@@ -456,15 +85,436 @@
       "expansion": "all",
       "fontSize": 12
     },
-    "RosOut!rs1-logs": {
-      "lichtblickPanelTitle": "ROS logs · all nodes",
-      "topicToRender": "/rosout",
-      "searchTerms": [],
-      "minLogLevel": 1,
-      "nameFilter": {}
+    "3D!rs1-world": {
+      "lichtblickPanelTitle": "World · Husky cyan / Parrot amber",
+      "followTf": "world",
+      "followMode": "follow-pose",
+      "cameraState": {
+        "perspective": false,
+        "distance": 336.0124130724195,
+        "phi": 26.403650806829226,
+        "thetaOffset": 92.2567173964425,
+        "targetOffset": [
+          -73.67060759926295,
+          49.25091343741269,
+          7.73271058427214e-15
+        ],
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "targetOrientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "fovy": 45,
+        "near": 0.1,
+        "far": 5000
+      },
+      "scene": {
+        "transforms": {
+          "showLabel": false,
+          "axisScale": 0.3
+        }
+      },
+      "transforms": {
+        "frame:world": {
+          "visible": true
+        },
+        "frame:husky1_base_link": {
+          "visible": true
+        },
+        "frame:parrot1_base_link": {
+          "visible": true
+        },
+        "frame:husky1_map": {
+          "visible": true
+        }
+      },
+      "topics": {
+        "/husky1/map": {
+          "visible": false,
+          "frameLocked": true,
+          "colorMode": "custom",
+          "minColor": "#2dd4bf20",
+          "maxColor": "#2dd4bfff",
+          "unknownColor": "#00000000"
+        },
+        "/parrot1/map": {
+          "visible": true,
+          "frameLocked": true,
+          "colorMode": "custom",
+          "minColor": "#fbbf2420",
+          "maxColor": "#3265abff",
+          "unknownColor": "#00000000"
+        },
+        "/husky1/scan_filtered": {
+          "visible": false,
+          "colorField": "intensity",
+          "colorMode": "flat",
+          "colorMap": "turbo",
+          "flatColor": "#c60000ff"
+        },
+        "/husky1/scan": {
+          "visible": true,
+          "colorField": "intensity",
+          "colorMode": "flat",
+          "colorMap": "turbo",
+          "flatColor": "#07ff3eff"
+        },
+        "/parrot1/scan": {
+          "visible": true,
+          "colorField": "intensity",
+          "colorMode": "flat",
+          "colorMap": "turbo",
+          "flatColor": "#2be253ff"
+        },
+        "/parrot1/downwards_scan": {
+          "visible": false,
+          "colorField": "intensity",
+          "colorMode": "colormap",
+          "colorMap": "turbo"
+        },
+        "/husky1/local_costmap/published_footprint": {
+          "visible": false,
+          "lineWidth": 0.05,
+          "color": "#2dd4bf"
+        },
+        "/parrot1/local_costmap/published_footprint": {
+          "visible": false,
+          "lineWidth": 0.05,
+          "color": "#fbbf24"
+        },
+        "/husky1/plan": {
+          "visible": false,
+          "color": "#2dd4bf"
+        },
+        "/husky1/local_plan": {
+          "visible": false,
+          "color": "#99f6e4"
+        },
+        "/parrot1/plan": {
+          "visible": true,
+          "color": "#fbbf24"
+        },
+        "/parrot1/local_plan": {
+          "visible": true,
+          "color": "#fde68a"
+        },
+        "/parrot1/explore/frontiers": {
+          "visible": true
+        },
+        "/mission/roi_marker": {
+          "visible": true
+        },
+        "/husky1/local_costmap/costmap": {
+          "visible": false
+        },
+        "/husky1/global_costmap/costmap": {
+          "visible": false
+        },
+        "/parrot1/local_costmap/costmap": {
+          "visible": true
+        },
+        "/parrot1/global_costmap/costmap": {
+          "visible": true
+        },
+        "/husky1/scan/points": {
+          "visible": true,
+          "colorField": "intensity",
+          "colorMode": "flat",
+          "colorMap": "turbo",
+          "flatColor": "#e70ee4ff"
+        },
+        "/parrot1/scan/points": {
+          "visible": true,
+          "colorField": "intensity",
+          "colorMode": "flat",
+          "colorMap": "turbo",
+          "flatColor": "#c4d919ff"
+        },
+        "/husky1/ground_points": {
+          "visible": false,
+          "colorField": "z",
+          "colorMode": "colormap",
+          "colorMap": "turbo"
+        },
+        "/husky1/obstacle_points": {
+          "visible": false,
+          "colorField": "z",
+          "colorMode": "colormap",
+          "colorMap": "turbo"
+        },
+        "/husky1/navigation_points": {
+          "visible": false,
+          "colorField": "z",
+          "colorMode": "colormap",
+          "colorMap": "turbo"
+        },
+        "/husky1/camera/depth/points": {
+          "visible": false,
+          "colorField": "rgb",
+          "colorMode": "flat",
+          "colorMap": "turbo",
+          "flatColor": "#d91addff"
+        },
+        "/parrot1/camera/depth/points": {
+          "visible": false,
+          "colorField": "rgb",
+          "colorMode": "flat",
+          "colorMap": "turbo",
+          "flatColor": "#23d6b0ff"
+        },
+        "/tree_locations/markers": {
+          "visible": false
+        },
+        "/tree_locations/map": {
+          "visible": false
+        },
+        "/husky1/camera/depth/image": {
+          "visible": false
+        },
+        "/husky1/camera/image": {
+          "visible": false
+        },
+        "/husky1/cost_cloud": {
+          "visible": false
+        },
+        "/husky1/goal_pose": {
+          "visible": true
+        },
+        "/husky1/marker": {
+          "visible": false
+        },
+        "/husky1/pose": {
+          "visible": true
+        },
+        "/parrot1/camera/image": {
+          "visible": false
+        },
+        "/parrot1/cost_cloud": {
+          "visible": false
+        },
+        "/parrot1/global_costmap/clearing_endpoints": {
+          "visible": false,
+          "colorField": "z",
+          "colorMode": "colormap",
+          "colorMap": "turbo"
+        },
+        "/parrot1/goal_pose": {
+          "visible": true
+        },
+        "/parrot1/marker": {
+          "visible": false
+        },
+        "/parrot1/pose": {
+          "visible": true
+        },
+        "/parrot1/set_pose": {
+          "visible": false
+        },
+        "/husky1/global_costmap/published_footprint": {
+          "visible": false
+        },
+        "/parrot1/global_costmap/published_footprint": {
+          "visible": false
+        },
+        "/husky1/received_global_plan": {
+          "visible": false
+        },
+        "/husky1/segmentation_input": {
+          "visible": true,
+          "colorField": "z",
+          "colorMode": "colormap",
+          "colorMap": "turbo"
+        },
+        "/husky1/slam_toolbox/graph_visualization": {
+          "visible": false
+        },
+        "/yolo/debug_image": {
+          "visible": false
+        }
+      },
+      "layers": {
+        "rs1-husky-model": {
+          "instanceId": "rs1-husky-model",
+          "layerId": "foxglove.Urdf",
+          "label": "Husky robot model",
+          "sourceType": "topic",
+          "topic": "/husky1/robot_description",
+          "framePrefix": "",
+          "displayMode": "visual",
+          "fallbackColor": "#2dd4bf",
+          "visible": true,
+          "frameLocked": true,
+          "order": 1
+        },
+        "rs1-parrot-model": {
+          "instanceId": "rs1-parrot-model",
+          "layerId": "foxglove.Urdf",
+          "label": "Parrot robot model",
+          "sourceType": "topic",
+          "topic": "/parrot1/robot_description",
+          "framePrefix": "",
+          "displayMode": "visual",
+          "fallbackColor": "#fbbf24",
+          "visible": true,
+          "frameLocked": true,
+          "order": 2
+        }
+      },
+      "imageMode": {},
+      "publish": {
+        "type": "point",
+        "poseTopic": "/move_base_simple/goal",
+        "pointTopic": "/clicked_point",
+        "poseEstimateTopic": "/initialpose",
+        "poseEstimateXDeviation": 0.5,
+        "poseEstimateYDeviation": 0.5,
+        "poseEstimateThetaDeviation": 0.26179939
+      }
+    },
+    "Image!rs1-husky": {
+      "lichtblickPanelTitle": "Husky · RGB camera",
+      "imageMode": {
+        "imageTopic": "/husky1/camera/image/compressed",
+        "synchronize": false
+      },
+      "cameraState": {
+        "distance": 20,
+        "perspective": true,
+        "phi": 60,
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "targetOffset": [
+          0,
+          0,
+          0
+        ],
+        "targetOrientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "thetaOffset": 45,
+        "fovy": 45,
+        "near": 0.5,
+        "far": 5000
+      },
+      "followMode": "follow-pose",
+      "scene": {},
+      "transforms": {},
+      "topics": {},
+      "layers": {},
+      "publish": {
+        "type": "point",
+        "poseTopic": "/move_base_simple/goal",
+        "pointTopic": "/clicked_point",
+        "poseEstimateTopic": "/initialpose",
+        "poseEstimateXDeviation": 0.5,
+        "poseEstimateYDeviation": 0.5,
+        "poseEstimateThetaDeviation": 0.26179939
+      }
+    },
+    "Image!rs1-parrot": {
+      "lichtblickPanelTitle": "Parrot · RGB camera",
+      "imageMode": {
+        "imageTopic": "/parrot1/camera/image/compressed",
+        "synchronize": false
+      },
+      "cameraState": {
+        "distance": 20,
+        "perspective": true,
+        "phi": 60,
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "targetOffset": [
+          0,
+          0,
+          0
+        ],
+        "targetOrientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "thetaOffset": 45,
+        "fovy": 45,
+        "near": 0.5,
+        "far": 5000
+      },
+      "followMode": "follow-pose",
+      "scene": {},
+      "transforms": {},
+      "topics": {},
+      "layers": {},
+      "publish": {
+        "type": "point",
+        "poseTopic": "/move_base_simple/goal",
+        "pointTopic": "/clicked_point",
+        "poseEstimateTopic": "/initialpose",
+        "poseEstimateXDeviation": 0.5,
+        "poseEstimateYDeviation": 0.5,
+        "poseEstimateThetaDeviation": 0.26179939
+      }
+    },
+    "Image!3f09a54": {
+      "cameraState": {
+        "distance": 20,
+        "perspective": true,
+        "phi": 60,
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "targetOffset": [
+          0,
+          0,
+          0
+        ],
+        "targetOrientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "thetaOffset": 45,
+        "fovy": 45,
+        "near": 0.5,
+        "far": 5000
+      },
+      "followMode": "follow-pose",
+      "scene": {},
+      "transforms": {},
+      "topics": {},
+      "layers": {},
+      "publish": {
+        "type": "point",
+        "poseTopic": "/move_base_simple/goal",
+        "pointTopic": "/clicked_point",
+        "poseEstimateTopic": "/initialpose",
+        "poseEstimateXDeviation": 0.5,
+        "poseEstimateYDeviation": 0.5,
+        "poseEstimateThetaDeviation": 0.26179939
+      },
+      "imageMode": {
+        "imageTopic": "/yolo/debug_image"
+      }
     },
     "Tab!rs1-monitoring": {
-      "activeTabIdx": 0,
+      "activeTabIdx": 1,
       "tabs": [
         {
           "title": "Mission & commands",
@@ -498,16 +548,20 @@
   },
   "layout": {
     "direction": "column",
-    "splitPercentage": 63,
+    "splitPercentage": 74.0893782692813,
     "first": {
       "direction": "row",
       "splitPercentage": 66,
       "first": "3D!rs1-world",
       "second": {
         "direction": "column",
-        "splitPercentage": 50,
+        "splitPercentage": 33.41185370503033,
         "first": "Image!rs1-husky",
-        "second": "Image!rs1-parrot"
+        "second": {
+          "first": "Image!rs1-parrot",
+          "second": "Image!3f09a54",
+          "direction": "column"
+        }
       }
     },
     "second": "Tab!rs1-monitoring"

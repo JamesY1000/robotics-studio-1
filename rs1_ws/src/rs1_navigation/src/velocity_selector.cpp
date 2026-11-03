@@ -70,6 +70,10 @@ VelocitySelectorNode::VelocitySelectorNode() : Node("velocity_selector_node")
         std::bind(&VelocitySelectorNode::statusCb, this, std::placeholders::_1)
     );
 
+    safety_sub_ = create_subscription<rs1_interfaces::msg::SafetyState>(
+        "/safety/state", rclcpp::QoS(1).reliable().transient_local(),
+        std::bind(&VelocitySelectorNode::safetyCb, this, std::placeholders::_1));
+
     // Create independent wall timer for this node
     timer_ = create_wall_timer(
         std::chrono::milliseconds(50), // Hardcode to 20 Hz for now
@@ -109,7 +113,7 @@ void VelocitySelectorNode::joyCb(const sensor_msgs::msg::Joy &msg)
 {
     if (age(joy_received_) >= command_timeout_) resetController();
     joy_received_ = std::chrono::steady_clock::now();
-    if (!statusFresh() || mode_ != robot_ || manual_input_ != "controller") return;
+    if (!safetyClear() || !statusFresh() || mode_ != robot_ || manual_input_ != "controller") return;
 
     if (msg.buttons.size() <= static_cast<size_t>(controller_enable_button_))
     {
@@ -138,7 +142,9 @@ void VelocitySelectorNode::statusCb(const rs1_interfaces::msg::MissionStatus &ms
     // Get current mode from status.state and status.control_mode
     if (!msg.instance_id.empty())
     {
-        if (msg.state == "executing" && msg.control_mode == "auto")
+        // All three phases use autonomous navigation, including the Parrot sweep
+        if ((msg.state == "executing" || msg.state == "sampling" || msg.state == "returning") &&
+            msg.control_mode == "auto")
         {
             next_mode = "auto"; // Set velocity selector to autonomous (nav2) if mission status is "auto"
         }
@@ -178,7 +184,7 @@ void VelocitySelectorNode::receiveCommand(const geometry_msgs::msg::Twist &input
     // Commands cannot select their own command mode
     // Only the chosen input can drive the selected robot, even if both keep publishing
     const std::string selected_source = mode_ == "auto" ? "auto" : mode_ == robot_ ? manual_input_ : "";
-    if (!statusFresh() || source != selected_source)
+    if (!safetyClear() || !statusFresh() || source != selected_source)
     {
         return;
     }
@@ -234,6 +240,25 @@ bool VelocitySelectorNode::statusFresh() const
     return fresh_status;
 }
 
+bool VelocitySelectorNode::safetyClear() const
+{
+    return !safety_.instance_id.empty() && age(safety_received_) < 0.5 &&
+        !(robot_ == HUSKY_NAME ? safety_.husky_stopped : safety_.parrot_stopped);
+}
+
+void VelocitySelectorNode::safetyCb(const rs1_interfaces::msg::SafetyState &msg)
+{
+    const bool changed = !safetyClear() || msg.instance_id != safety_.instance_id ||
+        msg.revision != safety_.revision;
+    safety_ = msg;
+    safety_received_ = std::chrono::steady_clock::now();
+    if (changed || !safetyClear())
+    {
+        resetController();
+        clearCommand();
+    }
+}
+
 void VelocitySelectorNode::clearCommand()
 {
     // Create and publish an empty twist msg
@@ -246,7 +271,7 @@ void VelocitySelectorNode::clearCommand()
 void VelocitySelectorNode::publishCommand()
 {
     // Stop on driver or converter loss and require a fresh L1 press before moving again
-    if (!statusFresh() || age(joy_received_) >= command_timeout_ ||
+    if (!safetyClear() || !statusFresh() || age(joy_received_) >= command_timeout_ ||
         (manual_input_ == "controller" && command_received_ && age(command_time_) >= command_timeout_))
     {
         resetController();
@@ -256,7 +281,7 @@ void VelocitySelectorNode::publishCommand()
         mode_ == "auto" || mode_ == robot_;
 
     // if mode is neither, or commands are not being received or are stale, empty commands will be sent
-    if (!selected || !statusFresh() || !command_received_ || age(command_time_) >= command_timeout_ ||
+    if (!safetyClear() || !selected || !statusFresh() || !command_received_ || age(command_time_) >= command_timeout_ ||
         (mode_ == robot_ && manual_input_ == "controller" && !controller_enabled_))
     {
         clearCommand();

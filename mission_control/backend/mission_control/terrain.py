@@ -110,8 +110,17 @@ class Terrain:
         world = tree.getroot().find("world")
         stations = [item for item in world.findall("include")
                     if item.findtext("uri") == "model://ground_station"]
-        if len(stations) != 1:
-            raise ValueError("Expected exactly one ground station in source world")
+        if len(stations) > 1:
+            raise ValueError("Multiple ground stations in source world")
+        if stations:
+            station = stations[0]
+        else:
+            # Managed sessions place their own station when the base world has none
+            station = ET.SubElement(world, "include")
+            ET.SubElement(station, "uri").text = "model://ground_station"
+        pose = station.find("pose")
+        if pose is None:
+            pose = ET.SubElement(station, "pose")
         p = placements["station"]
-        stations[0].find("pose").text = f"{p['x']} {p['y']} {p['z']} 0 0 0"
+        pose.text = f"{p['x']} {p['y']} {p['z']} 0 0 0"
         tree.write(destination, encoding="utf-8", xml_declaration=True)

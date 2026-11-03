@@ -27,6 +27,9 @@ class Adapter:
             "robots": {}, "alignment": {}, "mission": {},
         }
 
+        self.data["safety"] = {"fresh": True, "service_ready": True, "instance_id": "test_safety",
+                               "revision": 0, "husky_stopped": False, "parrot_stopped": False}
+
     def snapshot(self): return copy.deepcopy(self.data)
     def foreign_nodes(self): return list(self.foreign)
     def close(self): self.closed = True
@@ -187,7 +190,7 @@ def test_spawn_allows_configured_rviz_windows_before_robots(terrain, spawn_plan,
         displays = ["/rviz2", "/transform_listener_impl_5eba148b86c0"] if combined else [
             f"/{robot}/{node}" for robot in ("husky1", "parrot1") for node in (
                 "rviz2", "rviz_navigation_dialog_action_client", "transform_listener_impl_5fbe11c26840")]
-        adapter.foreign = ["/simulation_session", "/ros_gz_bridge_clock"] + displays
+        adapter.foreign = ["/simulation_session", "/ros_gz_bridge_clock", "/emergency_stop"] + displays
         assert manager.snapshot()["deployment"]["can_spawn"]
         await manager.spawn(spawn_plan)
         assert len(runtime.launches) == 1
@@ -322,7 +325,13 @@ def test_roi_is_selected_after_spawn_and_start_is_explicit(terrain, plan, spawn_
         manager, runtime, adapter, _ = make_manager(terrain, tmp_path)
         await manager.spawn(spawn_plan)
         adapter.ready(spawn_plan.session_id)
+        adapter.data["safety"]["husky_stopped"] = True
         manager.sample_trails()
+        assert manager.snapshot()["deployment"]["phase"] == "deployed"
+        assert not manager.snapshot()["can_start"]
+        with pytest.raises(Conflict):
+            await manager.start(ExternalStart(roi=plan.roi))
+        adapter.data["safety"]["husky_stopped"] = False
         assert adapter.calls == []
         with pytest.raises(Conflict):
             await manager.start(ExternalStart())
@@ -368,9 +377,10 @@ def test_stop_refuses_active_or_uncertain_mission_then_removes_owned_robots(terr
         manager.remove_entities = remove_entities
         adapter.ready(spawn_plan.session_id)
         manager.sample_trails()
-        adapter.data["mission"].update(state="executing", cleanup_complete=False)
-        with pytest.raises(Conflict):
-            await manager.stop_deployment()
+        for phase in ("executing", "sampling", "returning"):
+            adapter.data["mission"].update(state=phase, cleanup_complete=False)
+            with pytest.raises(Conflict):
+                await manager.stop_deployment()
         adapter.data["mission"].update(state="ready", cleanup_complete=True)
         manager.command = ("start", 0)
         with pytest.raises(Conflict):
@@ -563,7 +573,7 @@ def test_missing_world_heartbeat_does_not_claim_the_world_changed(terrain, spawn
     asyncio.run(scenario())
 
 
-@pytest.mark.parametrize("observed_state", ["executing", "cancellation_requested", "complete", "cancelled", "failed"])
+@pytest.mark.parametrize("observed_state", ["executing", "returning", "cancellation_requested", "complete", "cancelled", "failed"])
 def test_reconnect_recovers_selected_roi_from_matching_mission_without_repeating_start(terrain, spawn_plan,
                                                                                      tmp_path, observed_state):
     async def scenario():

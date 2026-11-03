@@ -3,6 +3,7 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 
 
@@ -13,6 +14,12 @@ def generate_launch_description():
         FindPackageShare("rs1_perception"), "config", "husky_ground_segmentation.yml"])
     return LaunchDescription([
         DeclareLaunchArgument("use_sim_time", default_value="true"),
+        DeclareLaunchArgument(
+            "ground_fallback_radius", default_value="1.5",
+            description="Wider ground search when the nearby fit fails; 0.75 disables the fallback"),
+        DeclareLaunchArgument(
+            "ground_height_bound_enabled", default_value="false",
+            description="Reject clearly overhead returns above a consistent narrow ground strip"),
         Node(
             package="rs1_perception", executable="level_husky_cloud.py",
             namespace="husky1", output="screen",
@@ -30,7 +37,11 @@ def generate_launch_description():
         Node(
             package="rs1_perception", executable="ground_relative_scan_cloud.py",
             namespace="husky1", output="screen",
-            parameters=[{"use_sim_time": use_sim_time}], remappings=tf_remaps),
+            parameters=[{"use_sim_time": use_sim_time,
+                         "ground_fallback_radius": LaunchConfiguration("ground_fallback_radius"),
+                         "ground_height_bound_enabled": ParameterValue(
+                             LaunchConfiguration("ground_height_bound_enabled"), value_type=bool)}],
+            remappings=tf_remaps),
         Node(
             package="pointcloud_to_laserscan", executable="pointcloud_to_laserscan_node",
             namespace="husky1", name="filtered_scan", output="screen",

@@ -11,7 +11,7 @@ from action_msgs.msg import GoalStatus
 from geometry_msgs.msg import PoseStamped, TransformStamped
 from nav_msgs.msg import OccupancyGrid
 from nav2_msgs.action import NavigateThroughPoses
-from rclpy.action import ActionClient, ActionServer
+from rclpy.action import ActionClient, ActionServer, CancelResponse
 from rclpy.duration import Duration
 from rclpy.qos import DurabilityPolicy, QoSProfile
 from rclpy.task import Future
@@ -23,7 +23,7 @@ from tf2_ros import TransformBroadcaster
 @pytest.mark.parametrize('scenario', [
     'fresh', 'recover_before_goal', 'recover_borderline', 'recover_after_abort',
     'recover_after_false_success',
-    'timeout', 'cancel', 'real_failure', 'false_success',
+    'timeout', 'cancel', 'mid_route_resume', 'real_failure', 'false_success',
 ])
 def test_transform_readiness(scenario, tmp_path, monkeypatch):
     # Use a separate ROS domain so these fake goals and transforms cannot
@@ -38,7 +38,7 @@ def test_transform_readiness(scenario, tmp_path, monkeypatch):
         QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL))
     lag = 0.0 if scenario in (
         'fresh', 'recover_after_abort', 'recover_after_false_success',
-        'real_failure', 'false_success') else 1.0
+        'mid_route_resume', 'real_failure', 'false_success') else 1.0
     if scenario == 'recover_borderline':
         # This passes DWB's 0.5s limit, but exceeds the local costmap's 0.3s
         # goal-transform limit. The mission must wait for this case too.
@@ -54,9 +54,16 @@ def test_transform_readiness(scenario, tmp_path, monkeypatch):
         await finished
         return NavigateThroughPoses.Result()
 
+    cancel_calls = 0
+
+    def cancel_navigation(_):
+        nonlocal cancel_calls
+        cancel_calls += 1
+        return CancelResponse.REJECT if cancel_calls == 1 else CancelResponse.ACCEPT
+
     nav_server = ActionServer(
         node, NavigateThroughPoses, '/husky1/navigate_through_poses',
-        execute_callback=execute_navigation)
+        execute_callback=execute_navigation, cancel_callback=cancel_navigation)
     mission = ActionClient(node, TraverseToROI, '/husky1/traverse_to_roi')
     handoff = node.create_client(SetGroundPath, '/husky1/set_ground_path')
 
@@ -129,7 +136,7 @@ def test_transform_readiness(scenario, tmp_path, monkeypatch):
             process = subprocess.Popen([
                 os.environ['HUSKY_EXECUTABLE'], '--ros-args',
                 '-p', 'use_sim_time:=false',
-                '-p', 'waypoint_spacing:=10.0',
+                '-p', 'waypoint_spacing:=' + ('2.0' if scenario == 'mid_route_resume' else '10.0'),
                 '-p', 'max_chunk_retries:=0',
                 '-p', 'waypoint_wait_timeout:=' + str(timeout),
             ], stdout=log, stderr=subprocess.STDOUT)
@@ -141,7 +148,7 @@ def test_transform_readiness(scenario, tmp_path, monkeypatch):
         target.pose.position.x = 6.0
         target.pose.orientation.w = 1.0
         handle = result(mission.send_goal_async(
-            TraverseToROI.Goal(target_roi=target),
+            TraverseToROI.Goal(target_roi=target, route_id='test-route'),
             feedback_callback=lambda msg: feedback.append(msg.feedback.stage)))
         assert handle.accepted
         outcome = handle.get_result_async()
@@ -167,10 +174,34 @@ def test_transform_readiness(scenario, tmp_path, monkeypatch):
             if scenario == 'cancel':
                 assert result(handle.cancel_goal_async()).goals_canceling
                 assert result(outcome).status == GoalStatus.STATUS_CANCELED
-                return
+                stale = TraverseToROI.Goal(target_roi=target, route_id='other-mission', resume_route=True)
+                assert not result(mission.send_goal_async(stale)).accepted
+                retry = TraverseToROI.Goal(target_roi=target, route_id='test-route', resume_route=True)
+                handle = result(mission.send_goal_async(retry))
+                assert handle.accepted
+                outcome = handle.get_result_async()
+                # The remaining route runs without asking Parrot for another handoff
             lag = 0.0
 
         until(lambda: len(goals) == 1)
+        if scenario == 'mid_route_resume':
+            nav_goal, done = goals[0]
+            assert [p.pose.position.x for p in nav_goal.request.poses] == [2., 4., 6.]
+            robot_x = 2.
+            nav_goal.publish_feedback(NavigateThroughPoses.Feedback(number_of_poses_remaining=2))
+            pump(0.2)
+            assert result(handle.cancel_goal_async()).goals_canceling
+            until(lambda: nav_goal.is_cancel_requested)
+            assert cancel_calls == 2
+            nav_goal.canceled()
+            done.set_result(None)
+            assert result(outcome).status == GoalStatus.STATUS_CANCELED
+            retry = TraverseToROI.Goal(target_roi=target, route_id='test-route', resume_route=True)
+            handle = result(mission.send_goal_async(retry))
+            assert handle.accepted
+            outcome = handle.get_result_async()
+            until(lambda: len(goals) == 2)
+            assert [p.pose.position.x for p in goals[1][0].request.poses] == [4., 6.]
         if scenario in ('real_failure', 'false_success'):
             # A claimed success away from the ROI must still fail the
             # executor's independent arrival check, even with fresh TF.

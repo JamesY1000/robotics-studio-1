@@ -12,7 +12,7 @@ from launch_ros.actions import (
 )
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.substitutions import EnvironmentVariable, LaunchConfiguration, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.parameter_descriptions import ParameterValue
 
@@ -68,6 +68,7 @@ def start_robots(context):
         ),
         launch_arguments={
             "world": world,
+            "camera_hz": value("camera_hz"),
             "use_sim_time": use_sim_time,
             "husky_spawn_delay": husky_spawn_delay,
             "husky_x": value("husky_x"),
@@ -92,6 +93,7 @@ def start_robots(context):
         ),
         launch_arguments={
             "world": world,
+            "camera_hz": value("camera_hz"),
             "use_sim_time": use_sim_time,
             "parrot_spawn_delay": parrot_spawn_delay,
             "parrot_x": value("parrot_x"),
@@ -253,6 +255,8 @@ def start_robots(context):
 def generate_launch_description():
     # Launch args
     launch_arguments = [
+        DeclareLaunchArgument("camera_hz", default_value=EnvironmentVariable("RS1_CAMERA_HZ", default_value="6"),
+                              description="RGB-D camera rate for both robots, in simulation Hz."),
         DeclareLaunchArgument(
             "alignment",
             default_value="True",

@@ -16,5 +16,7 @@
 # ---------------------------------------------------------------------------
 
 onnxruntime>=1.18.0
-numpy>=1.23.0
-opencv-python>=4.7.0
+# Humble's binary cv_bridge uses the NumPy 1.x ABI, and Jammy's SciPy (used
+# by Husky's ground filter) requires NumPy <1.25. OpenCV 4.12+ requires NumPy 2.
+numpy>=1.23.0,<1.25
+opencv-python>=4.7.0,<4.12

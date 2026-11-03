@@ -1,5 +1,6 @@
 """Deploy a saved robot setup into an existing world, without starting Gazebo."""
 import json
+import os
 from pathlib import Path
 
 from ament_index_python.packages import get_package_share_directory
@@ -38,9 +39,15 @@ def start(context):
     roi_box = placements.get("roi_box")
     roi_args = {"roi_x": str(roi["x"]), "roi_y": str(roi["y"]), "roi_z": str(roi["z"]),
                 "roi_frame": "world", "session_id": plan["session_id"],
-                "log_level": args["log_level"]}
+                "log_level": args["log_level"],
+                "search_clearance": os.environ.get("MISSION_SEARCH_CLEARANCE", "2.0"),
+                "transit_clearance": os.environ.get("MISSION_TRANSIT_CLEARANCE", "2.0")}
     if roi_box is not None:
         roi_args.update({f"roi_{axis}": str(roi_box[axis]) for axis in ("x_min", "x_max", "y_min", "y_max")})
+    # Keep the actual spawn poses, not the ground station or a later teleoperated position
+    roi_args["home_from_start"] = "false"
+    for robot in ("husky", "parrot"):
+        roi_args[robot + "_home"] = json.dumps([float(placements[robot][axis]) for axis in ("x", "y", "z", "yaw")])
 
     def include(package, file, arguments):
         return GroupAction(scoped=True, actions=[IncludeLaunchDescription(
@@ -64,6 +71,9 @@ def start(context):
         guard,
         include("rs1_sim", "robot_bringup.launch.py", args),
         include("rs1_mission", "rs1_mission.launch.py", roi_args),
+        # Tree identification (YOLO detection + tree location processing) so the
+        # parrot's boustrophedon sweep can run from the dashboard.
+        include("rs1_perception", "tree_identification.launch.py", {}),
     ]
 
 

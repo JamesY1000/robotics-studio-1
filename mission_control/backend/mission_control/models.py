@@ -14,6 +14,13 @@ class XY(StrictModel):
     y: float
 
 
+class SafetyStopRequest(StrictModel):
+    robot: Literal["husky1", "parrot1", "all"]
+    stopped: bool = Field(strict=True)
+    expected_instance_id: str = ""
+    expected_revision: int = Field(default=0, strict=True, ge=0, le=2**64 - 1)
+
+
 class TeleopCommand(StrictModel):
     enabled: bool = Field(default=False, strict=True)
     x: float = Field(default=0, ge=-1, le=1)
@@ -100,3 +107,10 @@ class SpawnPlan(StrictModel):
     calibration_id: str = Field(default="forest-edges-v1", pattern=r"^[a-zA-Z0-9-]{1,64}$")
     start: XY
     parrot_clearance: float = Field(default=4.0, ge=2, le=15)
+
+
+class RoiPreview(StrictModel):
+    """Placement preview for an ROI entry point and its optional box corner."""
+    x: float
+    y: float
+    second: XY | None = None

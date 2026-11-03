@@ -71,8 +71,8 @@ def test_bridge_is_an_observer_in_the_namespace_exempted_by_deployment(repositor
     assert not {"clientPublish", "services", "parameters", "parametersSubscribe"}.intersection(
         parameters["capabilities"])
     assert "connectionGraph" in parameters["capabilities"]
-    # Monitoring must remain responsive while the simulation clock is paused.
-    assert parameters["use_sim_time"] is False
+    # Lichtblick must resolve transforms at simulation time, not wall-clock time.
+    assert parameters["use_sim_time"] is True
     allowed = lambda topic: any(re.fullmatch(pattern, topic) for pattern in parameters["topic_whitelist"])
     for topic in ("/husky1/scan", "/parrot1/map", "/tf", "/tf_static", "/clock", "/mission/status",
                   "/rosout", "/teleop/joy", "/teleop/cmd_vel_controller", "/yolo/debug_image",

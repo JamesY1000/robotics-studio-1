@@ -47,6 +47,10 @@ def test_process_callback_rejects_depth_only_when_lidar_cannot_match():
     node.lidar_angle_tolerance = 0.03
     node.lidar_range_min = 0.2
     node.lidar_range_max = 40.0
+    node.use_truth_odometry = False
+    node.cloud_msg = None
+    node.use_pointcloud = True
+    node.debug = False
     node.world_frame = "world"
     node.lidar_frame = "parrot1_base_scan"
     node.depth_optical_frame = "parrot1_camera_depth_optical_frame"
@@ -65,7 +69,7 @@ def test_process_callback_rejects_depth_only_when_lidar_cannot_match():
         (),
         {"transform": type("Transform", (), {"translation": type("T", (), {"x": 0.0, "y": 0.0, "z": 0.0})(), "rotation": type("Q", (), {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0})()})()},
     )()
-    node._lidar_scan_data = lambda: (np.array([0.0, 0.0]), np.array([0.0]), np.array([10.0]), 0.01745)
+    node._lidar_scan_data = lambda cloud: (np.array([0.0, 0.0]), np.array([0.0]), np.array([10.0]), 0.01745)
     node._lidar_cluster_at = lambda *args, **kwargs: None
 
     depth_msg = type(

@@ -1,0 +1,7 @@
+# Fixed start pose in world, transformed again on each return attempt
+geometry_msgs/PoseStamped home
+---
+string message
+---
+string stage
+float32 distance_remaining

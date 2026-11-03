@@ -57,7 +57,9 @@ def test_telemetry_configuration_and_layout_work_without_ros(monkeypatch, tmp_pa
         layout = client.get(config["layout_url"], headers={"Origin": "http://localhost:8080"})
         assert layout.status_code == 200
         assert layout.headers["access-control-allow-origin"] == "*"
-        assert layout.json()["configById"]
+        panels = layout.json()["configById"]
+        for robot in ("husky", "parrot"):
+            assert panels[f"Image!rs1-{robot}"]["imageMode"]["imageTopic"] == f"/{robot}1/camera/image/compressed"
         state = client.get("/api/state", headers={"Origin": "http://localhost:8080"})
         assert "access-control-allow-origin" not in state.headers
         assert state.json() == before

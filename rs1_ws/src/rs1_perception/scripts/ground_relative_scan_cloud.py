@@ -22,7 +22,9 @@ def points_from_cloud(cloud):
     return points[np.isfinite(points).all(axis=1)]
 
 
-def select_obstacles(ground, obstacles, radius, min_clearance, robot_height):
+def select_obstacles(ground, obstacles, radius, min_clearance, robot_height,
+                     fallback_radius=1.5, *, height_bound_enabled=True,
+                     bound_max_slope=0.7, bound_margin=0.2):
     """Fit small ground patches; keep points whose ground height is uncertain.
 
     Segmentation can leave a few ground fragments labelled as obstacles at grid
@@ -49,7 +51,44 @@ def select_obstacles(ground, obstacles, radius, min_clearance, robot_height):
     if len(ground) < 6:
         return obstacles
 
-    distances, indices = cKDTree(ground[:, :2]).query(
+    ground_tree = cKDTree(ground[:, :2])
+    ground_z, reliable, upper_bound = estimate_ground_height(
+        ground, ground_tree, obstacles, radius, bound_max_slope, bound_margin)
+
+    # Only look farther out where the nearby ground fit failed
+    # Keep a good local fit even if the wider patch describes different terrain
+    missing = np.flatnonzero(~reliable)
+    if fallback_radius > radius and len(missing):
+        fallback_z, fallback_reliable, fallback_bound = estimate_ground_height(
+            ground, ground_tree, obstacles[missing], fallback_radius,
+            bound_max_slope, bound_margin)
+        ground_z[missing] = fallback_z
+        reliable[missing] = fallback_reliable
+        upper_bound[missing] = fallback_bound
+
+    # A thin strip of ground cannot tell us the slope in every direction
+    # Only remove a point if it clears even the highest ground we allow here
+    overhead = height_bound_enabled & (obstacles[:, 2] > upper_bound + robot_height)
+    height = obstacles[:, 2] - ground_z
+    blocking = (height >= min_clearance) & (height <= robot_height)
+    return obstacles[(reliable & blocking) | (~reliable & ~overhead)]
+
+
+def fit_ground_height(ground, ground_tree, obstacles, radius):
+    """Estimate ground height with the same checks at either search radius."""
+    height, reliable, _ = estimate_ground_height(ground, ground_tree, obstacles, radius)
+    return height, reliable
+
+
+def estimate_ground_height(ground, ground_tree, obstacles, radius,
+                           bound_max_slope=0.7, bound_margin=0.2):
+    """Return a plane estimate, its validity and an optional upper height bound
+
+    The bound is only available when horizontal spread is the sole failed check
+    It assumes the unseen terrain rises no faster than bound_max_slope, with an
+    extra bound_margin for uncertainty, and never declares unseen space free
+    """
+    distances, indices = ground_tree.query(
         obstacles[:, :2], k=12, distance_upper_bound=radius)
     valid = np.isfinite(distances)
     # Missing neighbours have index len(ground). Use a harmless index and zero
@@ -72,21 +111,37 @@ def select_obstacles(ground, obstacles, radius, min_clearance, robot_height):
     eigenvalues = np.linalg.eigvalsh(covariance)
     residuals = np.einsum("nki,ni->nk", design, coefficients) - neighbours[:, :, 2]
     error = np.sqrt((weights * residuals**2).sum(axis=1) / safe_totals)
-    reliable = ((valid.sum(axis=1) >= 6) & (eigenvalues[:, 0] > 0.001) &
-                (error < 0.06) & (np.linalg.norm(coefficients[:, :2], axis=1) < 0.7))
+    supported = valid.sum(axis=1) >= 6
+    spread_ok = eigenvalues[:, 0] > 0.001
+    error_ok = error < 0.06
+    slope_ok = np.linalg.norm(coefficients[:, :2], axis=1) < 0.7
+    reliable = supported & spread_ok & error_ok & slope_ok
 
-    # The fitted intercept is ground Z directly under each candidate point.
-    height = obstacles[:, 2] - coefficients[:, 2]
-    blocking = (height >= min_clearance) & (height <= robot_height)
-    return obstacles[~reliable | blocking]
+    # Keep the old checks intact and only handle a consistent but narrow ground strip
+    # Use the highest bound from all neighbours so a low sample cannot clear a point
+    eligible = supported & ~spread_ok & error_ok & slope_ok
+    possible_ground = neighbours[:, :, 2] + bound_max_slope * np.where(valid, distances, 0.0)
+    upper_bound = np.max(np.where(valid, possible_ground, -np.inf), axis=1) + bound_margin
+    upper_bound = np.where(eligible, upper_bound, np.inf)
+
+    # The fitted intercept is ground Z directly under each candidate point
+    return coefficients[:, 2], reliable, upper_bound
 
 
 class GroundRelativeScanCloud(Node):
     def __init__(self):
         super().__init__("ground_relative_scan_cloud")
         self.radius = self.declare_parameter("ground_radius", 0.75).value
+        self.fallback_radius = self.declare_parameter("ground_fallback_radius", 1.5).value
         self.clearance = self.declare_parameter("min_clearance", 0.08).value
         self.height = self.declare_parameter("robot_height", 1.0).value
+        # Keep the tested fallback opt-in until full-mission navigation improves too
+        self.height_bound_enabled = self.declare_parameter("ground_height_bound_enabled", False).value
+        self.bound_max_slope = self.declare_parameter("ground_bound_max_slope", 0.7).value
+        self.bound_margin = self.declare_parameter("ground_bound_margin", 0.2).value
+        if (not np.isfinite(self.bound_max_slope) or self.bound_max_slope < 0.7 or
+                not np.isfinite(self.bound_margin) or self.bound_margin < 0.0):
+            raise ValueError("Ground bound needs a finite slope of at least 0.7 and a nonnegative margin")
         self.publisher = self.create_publisher(PointCloud2, "navigation_points", 10)
         self.ground = message_filters.Subscriber(self, PointCloud2, "ground_points")
         self.obstacles = message_filters.Subscriber(self, PointCloud2, "obstacle_points")
@@ -99,7 +154,11 @@ class GroundRelativeScanCloud(Node):
             self.get_logger().warning("Ground and obstacle frames differ; skipping cloud")
             return
         points = select_obstacles(points_from_cloud(ground), points_from_cloud(obstacles),
-                                  self.radius, self.clearance, self.height)
+                                  self.radius, self.clearance, self.height,
+                                  self.fallback_radius,
+                                  height_bound_enabled=self.height_bound_enabled,
+                                  bound_max_slope=self.bound_max_slope,
+                                  bound_margin=self.bound_margin)
         output = PointCloud2()
         output.header = obstacles.header
         output.height = 1

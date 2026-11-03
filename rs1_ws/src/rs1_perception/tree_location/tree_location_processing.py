@@ -20,6 +20,7 @@ from rclpy.time import Time
 from rclpy.duration import Duration
 
 from geometry_msgs.msg import Point
+from nav_msgs.msg import Odometry
 from rcl_interfaces.msg import SetParametersResult
 from sensor_msgs.msg import Image, LaserScan, PointCloud2
 from tf2_ros import Buffer, TransformListener
@@ -58,21 +59,11 @@ class TreeLocationNode(Node):
         # Topics / frames
         self.declare_parameter("depth_image_topic", "/parrot1/camera/depth/image")
         self.declare_parameter("lidar_topic", "/parrot1/scan")
-        # The frame the tree locations are computed in.  parrot1_odom is the EKF
-        # output, which fuses the exact Gazebo pose, so it is numerically the same
-        # as ``world`` but does NOT pass through SLAM's parrot1_map -> parrot1_odom
-        # (which diverges badly on this forest and was biasing every centroid by
-        # tens of metres).
-        self.declare_parameter("world_frame", "parrot1_odom")
+        self.declare_parameter("world_frame", "world")
         self.declare_parameter("base_link_frame", "parrot1_base_link")
         self.declare_parameter("lidar_frame", "parrot1_base_scan")
         self.declare_parameter("depth_optical_frame", "parrot1_camera_depth_optical_frame")
-        # When true (sim), the sensor poses are anchored on the raw Gazebo
-        # odometry topic rather than the TF tree.  The EKF's odom->base_link
-        # orientation corrupts after set_pose teleports (yaw 180 / roll 105 deg
-        # while truth stays upright), and SLAM's map->odom diverges on this
-        # forest.  Set false to use the localisation TF (world_frame <- sensor).
-        self.declare_parameter("use_truth_odometry", True)
+        self.declare_parameter("use_truth_odometry", False)
         self.declare_parameter("odometry_topic", "/parrot1/odometry")
 
         # Camera intrinsics (fallback when derived from resolution + hfov)
@@ -276,19 +267,10 @@ class TreeLocationNode(Node):
             self._cloud_cb,
             qos_profile_sensor_data,
         )
-        # The Gazebo odometry publisher reports the true world->base_link pose
-        # (the OdometryPublisher publishes world coordinates).  Use it directly
-        # instead of the EKF/SLAM TF: the EKF output orientation corrupts after
-        # set_pose teleports (yaw 180 / roll 105 deg while truth stays upright),
-        # and SLAM's map->odom diverges.  Only the STATIC base_link->sensor TF
-        # is still taken from robot_state_publisher.
-        from nav_msgs.msg import Odometry  # noqa: PLC0415
-        self.create_subscription(
-            Odometry,
-            self.odometry_topic,
-            self._odometry_cb,
-            qos_profile_sensor_data,
-        )
+        if self.use_truth_odometry:
+            self.create_subscription(
+                Odometry, self.odometry_topic, self._odometry_cb, qos_profile_sensor_data
+            )
 
         self.process_srv = self.create_service(
             ProcessTreeLocations, "/yolo/process_tree_locations", self.process_callback
@@ -545,15 +527,9 @@ class TreeLocationNode(Node):
     def _sensor_in_world(self, sensor_frame: str):
         """(origin_xyz, R_world_sensor) for a sensor frame.
 
-        With ``use_truth_odometry`` (sim default) this is
-
-            world_T_sensor = world_T_base (Gazebo truth odometry) * base_T_sensor
-
-        using only the STATIC robot_state_publisher ``base_link -> sensor`` TF,
-        so it is immune to the EKF/SLAM corruption seen after teleports.
-        Otherwise it resolves the full localisation TF
-        ``world_frame <- sensor_frame``.  Returns ``None`` when either
-        ingredient is missing.
+        Use the registered localisation TF chain by default. The optional truth
+        mode composes Gazebo's base pose with the static sensor mounting transform.
+        Return None if the selected pose source is unavailable.
         """
         if not self.use_truth_odometry:
             trafo = self._lookup(self.world_frame, sensor_frame)

@@ -474,6 +474,37 @@ button.cancel:hover:not(:disabled) {
 .roi-dot {
   background: #36785c;
 }
+.tree-dot {
+  background: #2e7d32;
+}
+.gt-dot {
+  background: #e91e63;
+}
+.bush-dot {
+  background: #ff9800;
+}
+.rock-dot {
+  background: #6a1b9a;
+}
+.ground-truth-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  font-size: 10px;
+  color: #78907f;
+  cursor: pointer;
+}
+.ground-truth-toggle input {
+  margin: 0;
+}
+.ground-truth-toggle small {
+  color: #a2ada4;
+}
+.ground-truth-toggle input:disabled + i,
+.ground-truth-toggle:has(input:disabled) {
+  opacity: 0.5;
+}
 .plan-column {
   display: flex;
   flex-direction: column;
@@ -562,24 +593,6 @@ button.cancel:hover:not(:disabled) {
   display: block;
   margin-top: 9px;
   color: #9ba89e;
-}
-.clearance {
-  font-size: 11px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 18px;
-  color: #6f8477;
-}
-.clearance div {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-.clearance input {
-  width: 55px;
-  padding: 6px;
-  font-size: 11px;
 }
 .validation {
   font-size: 10px;
@@ -758,6 +771,27 @@ button.cancel:hover:not(:disabled) {
 .progress-card > small {
   font-size: 9px;
   color: #a2ada4;
+}
+.sweep-progress {
+  margin-top: 10px;
+}
+.sweep-progress-track {
+  height: 6px;
+  border-radius: 3px;
+  background: #eaf0ea;
+  overflow: hidden;
+}
+.sweep-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #568767, #7fae8e);
+  transition: width 0.4s ease;
+}
+.sweep-progress-label {
+  margin-top: 6px;
+  font-size: 10px;
+  color: #78907f;
+  font-weight: 600;
 }
 .page-footer {
   display: flex;
@@ -1092,12 +1126,8 @@ hr {
   .plan-section {
     padding: 0 0 15px;
   }
-  .clearance {
-    margin: 0;
-    grid-column: 1/2;
-  }
   .validation {
-    grid-column: 2/-1;
+    grid-column: 1/-1;
     margin: 0;
   }
   .plan-note {
@@ -1183,7 +1213,6 @@ hr {
     grid-template-columns: 1fr;
   }
   .section-label,
-  .clearance,
   .validation {
     grid-column: auto;
   }
@@ -1341,3 +1370,27 @@ hr {
 .header-actions {
   flex-wrap: wrap;
 }
+
+.safety-panel {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  border: 1px solid #c24d4d;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 18px;
+  background: #fff5f3;
+  color: #602424;
+}
+.safety-panel p { margin: 6px 0; color: #74433d; }
+.safety-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+}
+.safety-buttons > div { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.safety-stop { background: #a82525; color: white; border-color: #a82525; font-weight: 700; }
+.safety-stop:hover:not(:disabled) { background: #801c1c; }
+.safety-help { font-size: 12px; }

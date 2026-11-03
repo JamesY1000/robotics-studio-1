@@ -1,4 +1,5 @@
 import asyncio
+import csv
 import fcntl
 import io
 import json
@@ -21,7 +22,17 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from PIL import Image, UnidentifiedImageError
 
-from .models import ExternalStart, Plan, SpawnPlan, TeleopCommand, UploadCalibration, XY
+from .models import (
+    ExternalStart,
+    Plan,
+    RoiPreview,
+    SpawnPlan,
+    SafetyStopRequest,
+    TeleopCommand,
+    UploadCalibration,
+    XY,
+    roi_bounds,
+)
 from .external import ExternalSessionManager
 from .deploy import DeploySessionManager
 from .deployment_logs import DeploymentLogTail, stream_deployment_logs
@@ -129,7 +140,7 @@ def telemetry_layout():
     # This public, static project layout is fetched by the viewer on another port.
     # Keep CORS limited to this route rather than exposing mission-control APIs.
     return FileResponse(
-        ROOT / "mission_control/telemetry/layout1.json",
+        ROOT / "mission_control/telemetry/layout.json",
         media_type="application/json",
         headers={"Access-Control-Allow-Origin": "*"},
     )
@@ -149,6 +160,38 @@ def presets():
 @app.get("/api/images/{image_id}")
 def image(image_id: str):
     return FileResponse(app.state.manager.image(image_id)["path"])
+
+
+GROUND_TRUTH_TREES = ROOT / "rs1_ws/src/rs1_mission/res/tree_locations.csv"
+GROUND_TRUTH_OBSTACLES = ROOT / "rs1_ws/src/rs1_mission/res/obstacle_locations.csv"
+
+
+def _read_inventory(path: Path, type_field: str):
+    with path.open(newline="", encoding="utf-8") as handle:
+        return [
+            {"name": row["name"], "type": row[type_field],
+             "x": float(row["x"]), "y": float(row["y"]), "z": float(row["z"])}
+            for row in csv.DictReader(handle)
+        ]
+
+
+@app.get("/api/trees/ground_truth")
+def ground_truth_trees():
+    # Static ground-truth tree inventory extracted from the v2_forest world SDF
+    # (name,tree_type,x,y,z,roll,pitch,yaw). Served as-is so the dashboard can
+    # overlay it on the terrain map and compare against detected trees.
+    if not GROUND_TRUTH_TREES.is_file():
+        raise HTTPException(404, "Ground-truth tree inventory is unavailable")
+    return _read_inventory(GROUND_TRUTH_TREES, "tree_type")
+
+
+@app.get("/api/obstacles/ground_truth")
+def ground_truth_obstacles():
+    # Non-tree ground clutter (bushes, rocks) from the same world, so the
+    # dashboard can show what the sweep is flying around.
+    if not GROUND_TRUTH_OBSTACLES.is_file():
+        raise HTTPException(404, "Ground-truth obstacle inventory is unavailable")
+    return _read_inventory(GROUND_TRUTH_OBSTACLES, "obstacle_type")
 
 
 @app.post("/api/images")
@@ -193,11 +236,16 @@ def preview(plan: Plan):
 
 
 @app.post("/api/roi/preview")
-def roi_preview(point: XY):
+def roi_preview(body: RoiPreview):
     # Preview the same terrain checks used at mission start without configuring
     # the coordinator or starting a mission.
     terrain = app.state.manager.terrain
+    point = XY(x=body.x, y=body.y)
     terrain.check_point("ROI", point, 0.5)
+    if body.second is not None:
+        roi_min, roi_max = roi_bounds(point, body.second)
+        for corner in (roi_min, roi_max):
+            terrain.check_bounds("ROI box", corner, 0.5)
     return {**point.model_dump(), "z": terrain.height(point.x, point.y)}
 
 
@@ -273,6 +321,19 @@ def check_manual_control(manager, adapter, robot):
     if mission.get("manual_input") != "keyboard":
         raise Conflict("Select Keyboard input before connecting keyboard control")
     return mission["instance_id"], mission.get("control_revision", 0)
+
+
+@app.post("/api/safety/stop")
+async def safety_stop(request: SafetyStopRequest):
+    adapter = app.state.manager.adapter
+    if not hasattr(adapter, "set_safety_stop"):
+        raise RuntimeError("Software stop service is unavailable; stop state is not confirmed")
+    # Do not wait on the mission lock or browser teleop before dispatching a Stop
+    try:
+        return await adapter.set_safety_stop(request)
+    finally:
+        if request.stopped:
+            await stop_teleop()
 
 
 @app.post("/api/mission/control/{operation}")

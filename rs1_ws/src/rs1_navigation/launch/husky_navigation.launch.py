@@ -58,7 +58,7 @@ def generate_launch_description():
 
     use_respawn_arg = DeclareLaunchArgument(
         "use_respawn",
-        default_value="False",
+        default_value="True",
         description="Respawn Nav2 nodes if they crash.",
     )
 

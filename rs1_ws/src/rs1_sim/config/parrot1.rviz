@@ -327,7 +327,7 @@ Visualization Manager:
             Durability Policy: Volatile
             History Policy: Keep Last
             Reliability Policy: Reliable
-            Value: /parrot1/camera/image
+            Value: /parrot1/camera/image/compressed
           Value: true
         - Alpha: 1
           Autocompute Intensity Bounds: true
@@ -388,6 +388,18 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /mission/roi_marker
+      Value: true
+    - Class: rviz_default_plugins/Marker
+      Enabled: true
+      Name: Sweep Trees
+      Namespaces:
+        {}
+      Topic:
+        Depth: 1
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /parrot1/tree_map_markers
       Value: true
   Enabled: true
   Global Options:

@@ -5,6 +5,7 @@ import time
 from .models import ExternalStart, roi_bounds
 from .ros_adapter import RequestUncertain
 from .session import Conflict, SessionManager
+from .safety import safety_clear
 
 ROBOTS = ("husky1", "parrot1")
 TERMINAL = ("complete", "cancelled", "failed")
@@ -24,8 +25,10 @@ class ExternalSessionManager(SessionManager):
         # ROS is authoritative. Never restore a locally saved mission over it.
         pass
 
-    def missing(self, ros):
+    def missing(self, ros, require_safety=True):
         missing = [name for name, ready in ros.get("checks", {}).items() if not ready]
+        if require_safety and not safety_clear(ros):
+            missing.append("software stop reset / fresh safety heartbeat")
         if not ros.get("available"):
             missing.append("ROS adapter")
         if not ros.get("checks"):
@@ -68,8 +71,9 @@ class ExternalSessionManager(SessionManager):
             kind, _ = self.command
             if kind == "start" and phase == "idle":
                 phase, message = "preparing", "Start requested; waiting for coordinator status."
-            elif kind == "cancel" and (phase not in TERMINAL or not mission.get("cleanup_complete")):
-                phase, message = "cancellation_requested", "Cancellation requested; waiting for executor results."
+            elif kind == "cancel" and not mission.get("returning_home") and (
+                    phase not in TERMINAL or not mission.get("cleanup_complete")):
+                phase, message = "cancellation_requested", "Cancel and return home requested; waiting for the coordinator."
         if ros.get("alignment", {}).get("invalid"):
             message = "Simulation clock reset. Restart the simulation and mission launches to rebuild alignment."
         if self.command_error and self.command:
@@ -113,7 +117,8 @@ class ExternalSessionManager(SessionManager):
         if self.command:
             kind, _ = self.command
             if (kind == "start" and mission.get("state") not in (None, "ready")) or (
-                    kind == "cancel" and mission.get("state") in TERMINAL and mission.get("cleanup_complete")):
+                    kind == "cancel" and (mission.get("returning_home") or (
+                        mission.get("state") in TERMINAL and mission.get("cleanup_complete")))):
                 self.command = None
                 self.command_error = None
         view = self.view(ros)
@@ -170,9 +175,10 @@ class ExternalSessionManager(SessionManager):
             mission = ros.get("mission", {})
             if not ros.get("checks", {}).get("mission_status"):
                 raise Conflict("Mission coordinator is unavailable; use its terminal to inspect the ROS stack.")
-            if mission.get("state") == "cancellation_requested" or (self.command and self.command[0] == "cancel"):
+            if (mission.get("returning_home") or mission.get("state") == "cancellation_requested" or
+                    (self.command and self.command[0] == "cancel")):
                 return self.snapshot()
-            if mission.get("state") not in ("executing", "manual_assistance") and not (
+            if mission.get("state") not in ("executing", "manual_assistance", "sampling", "returning") and not (
                     mission.get("state") == "failed" and not mission.get("cleanup_complete")):
                 raise Conflict("There is no running external mission to cancel")
             self.command = ("cancel", time.monotonic())
