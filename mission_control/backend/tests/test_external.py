@@ -59,6 +59,30 @@ def test_external_gates_and_supports_existing_roi(terrain, tmp_path):
     asyncio.run(scenario())
 
 
+def test_cancel_return_releases_the_command_for_a_second_cancel(terrain, tmp_path):
+    async def scenario():
+        adapter = Adapter()
+        adapter.data["mission"].update(state="executing", cleanup_complete=False)
+        m = ExternalSessionManager(terrain, tmp_path, lambda: adapter)
+        m.sample_trails()
+        await m.cancel()
+        # A status from before Cancel must not end the cancellation early
+        m.sample_trails()
+        assert m.snapshot()["phase"] == "cancellation_requested"
+        adapter.data["mission"].update(state="cancellation_requested", cancel_return=True)
+        m.sample_trails()
+        assert m.snapshot()["phase"] == "cancellation_requested"
+        adapter.data["mission"].update(state="executing", message="Mission cancelled; returning home")
+        m.sample_trails()
+        assert m.snapshot()["phase"] == "executing"
+        assert m.snapshot()["message"] == "Mission cancelled; returning home"
+        await m.cancel()
+        assert adapter.calls == ["cancel", "cancel"]
+        await m.close()
+
+    asyncio.run(scenario())
+
+
 def test_external_reset_and_restart_are_observation_only(terrain, tmp_path):
     async def scenario():
         adapter = Adapter()

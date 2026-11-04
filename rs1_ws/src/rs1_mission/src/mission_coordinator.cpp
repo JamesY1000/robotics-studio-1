@@ -444,9 +444,20 @@ void MissionCoordinatorNode::cancelMissionCb(const std::shared_ptr<std_srvs::srv
         response->message = "Mission already finished; create a new session";
         return;
     }
+    // Cancel always ends with both robots home. The E-stop is what stops them in place.
+    cancel_return_ = true;
+    if (mission_state_ == MissionState::TRAVERSINGTOHOME)
+    {
+        // Already on the way; restarting the leg would only delay the robots
+        message_ = "Mission cancelled; returning home";
+        publishStatus();
+        response->success = true;
+        response->message = "Mission cancelled; robots are already returning home";
+        return;
+    }
     mission_state_ = MissionState::CANCELLING;
     control_mode_ = "hold";
-    message_ = "Cancellation requested; waiting for both executors";
+    message_ = "Cancellation requested; stopping before returning home";
     publishStatus();
 
     // A pending goal will be canceled once its goal handle arrives
@@ -456,7 +467,7 @@ void MissionCoordinatorNode::cancelMissionCb(const std::shared_ptr<std_srvs::srv
     evaluateTransitions();
 
     response->success = true;
-    response->message = "Cancellation requested; waiting for both executors to finish";
+    response->message = "Cancellation requested; robots will return home";
 }
 
 void MissionCoordinatorNode::traverseToROIGoalResponseCb(Robot robot,
@@ -670,7 +681,8 @@ bool MissionCoordinatorNode::startTraversal(MissionState phase, const geometry_m
     mission_state_ = phase;
     executor_target_ = executor_target;
     target_name_ = home ? "home" : "the ROI";
-    message_ = home ? "Returning home" : "Traversing to the ROI";
+    message_ = !home ? "Traversing to the ROI" :
+        cancel_return_ ? "Mission cancelled; returning home" : "Returning home";
     control_mode_ = "auto";
     ++input_revision_;
     parrot_stage_ = "Waiting";
@@ -952,9 +964,10 @@ void MissionCoordinatorNode::evaluateTransitions()
     // Same handoff on the way back; the mission ends once both robots are home
     if (mission_state_ == MissionState::TRAVERSINGTOHOME && parrot_succeded_ && husky_succeded_)
     {
-        mission_state_ = MissionState::COMPLETE;
+        mission_state_ = cancel_return_ ? MissionState::CANCELLED : MissionState::COMPLETE;
         RCLCPP_INFO(this->get_logger(), "Phase 3 complete: both robots returned home");
-        message_ = "Mission complete: both robots returned home";
+        message_ = cancel_return_ ? "Mission cancelled: both robots returned home" :
+            "Mission complete: both robots returned home";
         finalizeMission();
         return;
     }
@@ -962,9 +975,8 @@ void MissionCoordinatorNode::evaluateTransitions()
     // Manual assistance keeps the mission alive even after both old attempts have stopped
     if (mission_state_ == MissionState::CANCELLING && !traversalPending())
     {
-        mission_state_ = MissionState::CANCELLED;
-        message_ = "Cancellation completed; both executors finished";
-        finalizeMission();
+        RCLCPP_INFO(this->get_logger(), "Cancelled goals have stopped; returning home");
+        startTraverseHome();
     }
 }
 
@@ -1182,6 +1194,7 @@ void MissionCoordinatorNode::publishStatus()
         case MissionState::MANUAL_ASSISTANCE: status.state = "manual_assistance"; break;
         default: status.state = "unsupported_phase";
     }
+    status.cancel_return = cancel_return_;
     status.parrot_stage = parrot_stage_;
     status.husky_stage = husky_stage_;
     status.message = message_;

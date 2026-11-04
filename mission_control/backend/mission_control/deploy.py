@@ -297,7 +297,10 @@ class DeploySessionManager(ExternalSessionManager):
                 raise Conflict("Wait for a single world session before cleaning up this deployment; restart the world if it has stopped")
             mission = ros.get("mission", {})
             same_world = ros["world"].get("instance_id") == record["world_instance_id"]
-            if same_world and (self.command or mission.get("state") in ("executing", "manual_assistance", "cancellation_requested") or (
+            # Cancel never ends a mission that cannot get home, so this is the way out of it
+            home_failed = (mission.get("state") == "manual_assistance" and mission.get("cancel_return")
+                           and mission.get("cleanup_complete"))
+            if same_world and not home_failed and (self.command or mission.get("state") in ("executing", "manual_assistance", "cancellation_requested") or (
                     mission.get("state") in TERMINAL and not mission.get("cleanup_complete"))):
                 raise Conflict("Cancel the mission and wait for cleanup before stopping robots")
             if record.get("phase") == "deployed" and self.runtime.alive(record) and same_world and not ros.get("checks", {}).get("mission_status"):

@@ -567,7 +567,13 @@ export default function App() {
     : !locked && !!preview && !!state?.ros.available;
   const canSpawn =
     deploy && !!deployment?.can_spawn && !spawnLocked && !!preview;
-  const canStop = deploy && !!deployment?.plan && !active;
+  const cancelReturn = !!state?.ros.mission?.cancel_return;
+  // Cancel cannot end a mission that fails to get home, so Stop robots must stay reachable
+  const homeFailed =
+    phase === "manual_assistance" &&
+    cancelReturn &&
+    !!state?.ros.mission?.cleanup_complete;
+  const canStop = deploy && !!deployment?.plan && (!active || homeFailed);
   const controlMode = state?.ros.mission?.control_mode;
   const manualRobot =
     controlMode === "husky1" || controlMode === "parrot1" ? controlMode : null;
@@ -708,11 +714,16 @@ export default function App() {
               <button
                 className="cancel"
                 disabled={
-                  busy || !connected || phase === "cancellation_requested"
+                  busy ||
+                  !connected ||
+                  phase === "cancellation_requested" ||
+                  (phase === "executing" && cancelReturn)
                 }
                 onClick={() => act("cancel")}
               >
-                ■ Cancel Mission
+                {phase === "executing" && cancelReturn
+                  ? "Returning Home…"
+                  : "■ Cancel Mission"}
               </button>
             ) : (
               <button
@@ -1072,7 +1083,7 @@ export default function App() {
                   </div>
                 ))}
               </div>
-              <small>Sampling and return-home are future phases.</small>
+              <small>Traverse covers the ROI trip, sampling and return home.</small>
             </section>
           </div>
         </div>
@@ -1262,7 +1273,8 @@ export default function App() {
               )}
               <p className="muted">
                 Cancellation is a mission request, not an emergency stop. Robots
-                traverse to the ROI, sample it, then return home.
+                traverse to the ROI, sample it, then return home. Cancel Mission
+                sends them home early from any point in the mission.
               </p>
             </section>
           </div>

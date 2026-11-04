@@ -207,7 +207,7 @@ class SessionManager:
                     phase = status.get("state")
                     if (ros.get("checks", {}).get("mission_status") and
                             phase in ("executing", "manual_assistance") and
-                            self.state["phase"] != "cancellation_requested" and
+                            (self.state["phase"] != "cancellation_requested" or status.get("cancel_return")) and
                             (phase, status.get("message", phase)) != (self.state["phase"], self.state["message"])):
                         self.transition(phase, status.get("message", phase))
                     if phase in ("complete", "cancelled", "failed") and status.get("cleanup_complete"):
@@ -219,6 +219,9 @@ class SessionManager:
                     cancellation_deadline = cancellation_deadline or time.monotonic()+30
                     if time.monotonic() > cancellation_deadline:
                         raise RuntimeError("Cancellation was not acknowledged by both executors within 30 s. Owned simulation stopped; reset required.")
+                else:
+                    # The home leg after Cancel can outlast this limit; a later Cancel gets its own
+                    cancellation_deadline = None
                 # Keep the stack available for assistance when navigation or localisation becomes unhealthy
                 # The executors report failed attempts and Resume rechecks readiness in the coordinator
                 await asyncio.sleep(0.2)

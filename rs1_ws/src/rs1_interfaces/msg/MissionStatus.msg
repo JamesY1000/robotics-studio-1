@@ -22,3 +22,5 @@ string control_mode
 string manual_input
 # Changes when input or control is reselected so quick switches also clear held input
 uint64 input_revision
+# True once Cancel has been requested; the state stays executing during the home leg
+bool cancel_return

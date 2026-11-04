@@ -111,7 +111,7 @@ class RosAdapter:
             previous = self.data["mission"]
             self.data["mission"] = {key: getattr(msg, key) for key in (
                 "session_id", "instance_id", "state", "parrot_stage", "husky_stage", "message", "cleanup_complete",
-                "control_mode", "manual_input", "input_revision")}
+                "control_mode", "manual_input", "input_revision", "cancel_return")}
             # Invalidate old keyboard connections even if the mode changes back between dashboard polls
             changed = any(previous.get(key) != self.data["mission"][key]
                           for key in ("instance_id", "state", "control_mode", "manual_input", "input_revision"))

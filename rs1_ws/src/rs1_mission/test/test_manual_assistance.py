@@ -152,7 +152,12 @@ def test_assistance_retry_and_cancel(failure, tmp_path, monkeypatch):
         until(lambda: state('manual_assistance', True))
 
         if failure == 'reject':
+            # Cancel sends both robots home before the mission ends
+            counts = {r: len(v) for r, v in goals.items()}
             assert call('cancel').success
+            until(lambda: all(len(goals[r]) == counts[r] + 1 for r in goals))
+            for robot in goals:
+                finish(robot, 'succeed')
             until(lambda: state('cancelled', True))
         else:
             counts = {r: len(v) for r, v in goals.items()}

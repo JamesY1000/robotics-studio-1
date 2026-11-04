@@ -141,6 +141,8 @@ private:
     geometry_msgs::msg::PoseStamped home_pose_;
     // Resume retries home rather than the ROI once phase 3 has begun
     bool returning_home_{false};
+    // Cancel brings the robots home, and that leg ends as cancelled rather than complete
+    bool cancel_return_{false};
     std::string control_mode_{"hold"};
     std::string manual_input_{"keyboard"};
     uint64_t input_revision_{0};

@@ -157,9 +157,11 @@ dependencies.
 4. Once the robots are ready, select an explicit **Point ROI** and then
    **Start Mission**. A placeholder coordinator target never starts a mission
    automatically. Watch estimated robot poses and readiness in **Robots & status**.
-5. **Cancel Mission** requests cancellation; it is not an emergency stop.
+5. **Cancel Mission** stops the current work and sends both robots home from any
+   point in the mission. It is not an emergency stop. If the trip home fails,
+   select Cancel or Resume to retry it.
 6. After cancellation/completion and executor cleanup, or while the coordinator
-   is idle, **Stop robots** stops the deployed ROS nodes and removes their Gazebo
+   is idle, or when a cancelled mission could not get home, **Stop robots** stops the deployed ROS nodes and removes their Gazebo
    models. The world and ground station stay running. Before deploying again for
    a new start or mission, restart terminal 1 with
    `ros2 launch rs1_sim rs1_sim.launch.py ui:=true`. The dashboard can stay open.
@@ -352,8 +354,9 @@ ros2 launch rs1_dashboard dashboard.launch.py mode:=external
    the coordinator's configured frame and Z. The dashboard does
    not launch or respawn simulation or mission nodes. Follow live poses and
    **Robots & status**.
-4. **Cancel Mission** requests cancellation and waits for executor results. It
-   is not an emergency stop.
+4. **Cancel Mission** stops the current work and sends both robots home from any
+   point in the mission. It is not an emergency stop. If the trip home fails,
+   select Cancel or Resume to retry it.
 5. **Clear trails** clears dashboard trails and events only. Simulation, TF
    registration and mission state stay in their owning terminals.
 
@@ -389,8 +392,10 @@ owns both through the saved-plan launch pipeline:
 5. Select **Start Mission**. The backend saves the plan, generates a world copy,
    launches the simulation, registers both maps, checks navigation, and calls
    `/mission/start`. Follow details in **Robots & status**.
-6. **Cancel Mission** requests cancellation and waits for executor results. It is
-   not an emergency stop. Cancelling preparation shuts down the owned launch.
+6. **Cancel Mission** stops the current work and sends both robots home from any
+   point in the mission. It is not an emergency stop. If the trip home fails,
+   select Cancel or Resume to retry it.
+   Cancelling preparation shuts down the owned launch.
 7. **New session** stops the owned simulation and resets TF buffers, alignment,
    mission state and trails before accepting another plan. Reset is also required
    after a map reset, respawn, completion or failure. Saved logs remain available.
@@ -596,7 +601,8 @@ robot stages, message and cleanup flag.
 Final outcomes remain available instead of immediately returning to IDLE. The
 backend tracks preparation and cancellation. In managed mode, loss of required
 runtime interfaces for 8 s stops its owned simulation and records a failure;
-cancellation requires executor completion within 30 s. Processes are stopped
+stopping for Cancel requires executor completion within 30 s; the home leg that
+follows has no such limit. Processes are stopped
 only through the process group created by the backend (SIGINT, then bounded
 TERM/KILL escalation). External mode reports ROS status and request failures
 without terminating the operator's processes. Deploy mode uses the same mission
@@ -691,7 +697,7 @@ Stopping the world must stop the detached robot stack through
 its world guard. These are verification instructions; recorded run results belong
 in `VALIDATION.md`.
 
-Deferred: polygon ROI, live sensor viewers,
+Deferred: polygon ROI, live sensor viewers, Husky tree sampling,
 biomass/results, arbitrary worlds, automatic image registration and full 3D
 localization. Simulation setup and ROS transport are separate backend modules
 so future hardware adapters do not require changing map interaction code.

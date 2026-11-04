@@ -113,7 +113,10 @@ class ExternalSessionManager(SessionManager):
         if self.command:
             kind, _ = self.command
             if (kind == "start" and mission.get("state") not in (None, "ready")) or (
-                    kind == "cancel" and mission.get("state") in TERMINAL and mission.get("cleanup_complete")):
+                    kind == "cancel" and mission.get("state") in TERMINAL and mission.get("cleanup_complete")) or (
+                    # Cancel has finished stopping, so a failed home leg can be retried with Cancel
+                    kind == "cancel" and mission.get("cancel_return")
+                    and mission.get("state") in ("executing", "manual_assistance")):
                 self.command = None
                 self.command_error = None
         view = self.view(ros)

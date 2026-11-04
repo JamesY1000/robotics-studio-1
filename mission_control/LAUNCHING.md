@@ -104,7 +104,7 @@ the **Telemetry** section is available without an extra terminal. In the dashboa
    both corners). `roi` is the entry corner both robots traverse to; the parrot
    then sweeps the box. Spawning does not start a mission or silently use the
    coordinator's initial placeholder target.
-4. Select **Start Mission**. Use **Cancel Mission** to request cancellation.
+4. Select **Start Mission**. Use **Cancel Mission** to send both robots home early.
 5. Once the mission is idle or finished and executor cleanup is complete,
    **Stop robots** stops the deployed robot/mission nodes and removes their
    Gazebo models. The world and ground station remain running. Before deploying

@@ -142,6 +142,58 @@ def test_manual_assistance_remains_active_and_can_be_cancelled(dashboard):
     assert adapter.calls == ["cancel"]
 
 
+def test_managed_cancel_return_outlasts_the_stop_deadline(terrain, plan, tmp_path, monkeypatch):
+    import asyncio
+    from types import SimpleNamespace
+    import mission_control.session as session
+    from test_session import Adapter as ManagedAdapter, Manager
+
+    # This tests process ownership without depending on Gazebo world generation
+    monkeypatch.setattr(terrain, "write_world", lambda *_: None)
+    offset = 0
+    monkeypatch.setattr(session, "time", SimpleNamespace(
+        time=time.time, monotonic=lambda: time.monotonic() + offset))
+
+    async def scenario():
+        nonlocal offset
+        manager = Manager(terrain, tmp_path, ManagedAdapter)
+        try:
+            await manager.start(plan)
+            manager.adapter.ready(str(plan.session_id))
+            await asyncio.sleep(0.3)
+            manager.adapter.data["checks"].update(mission_status=True)
+            manager.adapter.data["mission"].update(state="executing", cleanup_complete=False)
+            await manager.cancel()
+            # A status from before Cancel must not end the cancellation early
+            await asyncio.sleep(0.3)
+            assert manager.state["phase"] == "cancellation_requested"
+            manager.adapter.data["mission"].update(
+                state="executing", cancel_return=True, message="Mission cancelled; returning home")
+            await asyncio.sleep(0.3)
+            assert manager.state["phase"] == "executing"
+            assert manager.state["message"] == "Mission cancelled; returning home"
+            # The trip home is not held to the 30 s limit for stopping
+            offset = 60
+            await asyncio.sleep(0.3)
+            assert manager.state["phase"] == "executing"
+            assert manager.process is not None and not manager.task.done()
+            # Cancel after a failed home leg has a fresh limit of its own
+            manager.adapter.data["mission"].update(state="cancellation_requested")
+            manager.state["phase"] = "manual_assistance"
+            await manager.cancel()
+            await asyncio.sleep(0.3)
+            assert manager.state["phase"] == "cancellation_requested"
+            assert not manager.task.done()
+            manager.adapter.data["mission"].update(state="cancelled", cleanup_complete=True)
+            await asyncio.wait_for(manager.task, 1)
+            assert manager.state["phase"] == "cancelled"
+            assert manager.adapter.calls == ["start", "cancel", "cancel"]
+        finally:
+            await manager.close()
+
+    asyncio.run(scenario())
+
+
 def test_managed_assistance_keeps_stack_running(terrain, plan, tmp_path, monkeypatch):
     import asyncio
     from types import SimpleNamespace

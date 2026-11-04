@@ -563,6 +563,30 @@ def test_missing_world_heartbeat_does_not_claim_the_world_changed(terrain, spawn
     asyncio.run(scenario())
 
 
+def test_stop_robots_is_the_way_out_of_a_cancelled_mission_that_cannot_get_home(terrain, spawn_plan, tmp_path):
+    async def scenario():
+        manager, _, adapter, _ = make_manager(terrain, tmp_path, entities=set())
+        await manager.spawn(spawn_plan)
+        adapter.ready(spawn_plan.session_id)
+        manager.sample_trails()
+        # Ordinary assistance is still a live mission, and must be protected
+        adapter.data["mission"].update(state="manual_assistance", cleanup_complete=True)
+        with pytest.raises(Conflict):
+            await manager.stop_deployment()
+        # So is a cancelled mission whose robots are still stopping
+        adapter.data["mission"].update(cancel_return=True, cleanup_complete=False)
+        with pytest.raises(Conflict):
+            await manager.stop_deployment()
+        adapter.data["mission"].update(state="executing", cleanup_complete=False)
+        with pytest.raises(Conflict):
+            await manager.stop_deployment()
+        adapter.data["mission"].update(state="manual_assistance", cleanup_complete=True)
+        await manager.stop_deployment()
+        assert manager.snapshot()["deployment"]["phase"] != "deployed"
+        await manager.close()
+    asyncio.run(scenario())
+
+
 @pytest.mark.parametrize("observed_state", ["executing", "cancellation_requested", "complete", "cancelled", "failed"])
 def test_reconnect_recovers_selected_roi_from_matching_mission_without_repeating_start(terrain, spawn_plan,
                                                                                      tmp_path, observed_state):

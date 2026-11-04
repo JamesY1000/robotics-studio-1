@@ -62,6 +62,7 @@ export type State = {
       control_mode?: "auto" | "husky1" | "parrot1" | "hold";
       manual_input?: "keyboard" | "controller";
       input_revision?: number;
+      cancel_return?: boolean;
       cleanup_complete?: boolean;
       message?: string;
     };
