@@ -15,13 +15,13 @@ EmergencyStop::EmergencyStop()
 
   // Forward controller commands only while the robot's stop is clear.
   husky_sub_ = create_subscription<geometry_msgs::msg::Twist>(
-    "/husky1/cmd_vel", 10, [this](const geometry_msgs::msg::Twist & msg) {
+    "/husky1/cmd_vel_controlled", 10, [this](const geometry_msgs::msg::Twist & msg) {
       if (!husky_stopped_) {
         husky_pub_->publish(msg);
       }
     });
   parrot_sub_ = create_subscription<geometry_msgs::msg::Twist>(
-    "/parrot1/cmd_vel_combined", 10, [this](const geometry_msgs::msg::Twist & msg) {
+    "/parrot1/cmd_vel_controlled", 10, [this](const geometry_msgs::msg::Twist & msg) {
       if (!parrot_stopped_) {
         parrot_pub_->publish(msg);
       }
