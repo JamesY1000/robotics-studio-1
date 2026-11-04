@@ -1,0 +1,29 @@
+/teleop/joy_node:
+  ros__parameters:
+    # SDL gives the PS4 controller the same button and axis order over USB and Bluetooth
+    deadzone: 0.1
+    autorepeat_rate: 20.0
+    sticky_buttons: false
+    use_sim_time: false
+
+/teleop/teleop_twist_joy_node:
+  ros__parameters:
+    require_enable_button: true
+    enable_button: 9 # Hold L1, matching controller_enable_button in the velocity selectors
+    enable_turbo_button: -1
+    publish_stamped_twist: false
+    use_sim_time: false
+    axis_linear:
+      x: 1 # Left stick up/down
+      y: 0 # Left stick left/right, ignored by Husky
+      z: 3 # Right stick up/down, ignored by Husky
+    scale_linear:
+      x: 0.5
+      y: 0.5
+      z: 0.3
+    axis_angular:
+      yaw: 2 # Right stick left/right
+      pitch: -1
+      roll: -1
+    scale_angular:
+      yaw: 0.7

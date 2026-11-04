@@ -54,11 +54,9 @@ class RosAdapter:
         from lifecycle_msgs.srv import GetState
         from rs1_interfaces.msg import MissionStatus
         from rs1_interfaces.action import TraverseToROI, ExploreToPose
-        from nav2_msgs.action import (
-            NavigateToPose,
-            NavigateThroughPoses,
-            ComputePathToPose,
-        )
+        from nav2_msgs.action import NavigateToPose, NavigateThroughPoses, ComputePathToPose
+        from geometry_msgs.msg import Twist
+        from sensor_msgs.msg import Joy
 
         self.context = Context()
         rclpy.init(context=self.context)
@@ -89,41 +87,28 @@ class RosAdapter:
         self.start_client = self.node.create_client(Trigger, "/mission/start")
         self.cancel_client = self.node.create_client(Trigger, "/mission/cancel")
         self.safety_client = self.node.create_client(SafetyStop, "/safety/stop")
-        self.parameters = self.node.create_client(
-            SetParametersAtomically,
-            "/mission_coordinator_node/set_parameters_atomically",
-        )
-        self.actions = {
-            name: ActionClient(self.node, kind, name)
-            for name, kind in [
-                ("/husky1/traverse_to_roi", TraverseToROI),
-                ("/parrot1/traverse_to_roi", TraverseToROI),
-                ("/husky1/navigate_through_poses", NavigateThroughPoses),
-                ("/parrot1/navigate_to_pose", NavigateToPose),
-                ("/parrot1/compute_path_to_pose", ComputePathToPose),
-                ("/parrot1/explore_to_pose", ExploreToPose),
-            ]
-        }
-        self.lifecycle = {
-            f"/{r}/{n}": self.node.create_client(GetState, f"/{r}/{n}/get_state")
-            for r in ("husky1", "parrot1")
-            for n in ("controller_server", "planner_server", "bt_navigator")
-        }
+        self.command_clients = {"start": self.start_client, "cancel": self.cancel_client}
+        for operation in ("manual_husky", "manual_parrot", "resume", "input_keyboard", "input_controller"):
+            self.command_clients[operation] = self.node.create_client(Trigger, f"/mission/{operation}")
+        self.twist_type = Twist
+        self.manual_publishers = {robot: self.node.create_publisher(Twist, f"/{robot}/cmd_vel_manual", 1)
+                                  for robot in ("husky1", "parrot1")}
+        self.parameters = self.node.create_client(SetParametersAtomically,
+            "/mission_coordinator_node/set_parameters_atomically")
+        self.actions = {name: ActionClient(self.node, kind, name) for name, kind in [
+            ("/husky1/traverse_to_roi", TraverseToROI), ("/parrot1/traverse_to_roi", TraverseToROI),
+            ("/husky1/navigate_through_poses", NavigateThroughPoses),
+            ("/parrot1/navigate_to_pose", NavigateToPose), ("/parrot1/compute_path_to_pose", ComputePathToPose),
+            ("/parrot1/explore_to_pose", ExploreToPose)]}
+        self.lifecycle = {f"/{r}/{n}": self.node.create_client(GetState, f"/{r}/{n}/get_state")
+                          for r in ("husky1", "parrot1") for n in ("controller_server", "planner_server", "bt_navigator")}
         self.lifecycle_values = {}
         self.lifecycle_pending = {}
         latched = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
-        self.node.create_subscription(
-            String, "/mission/alignment", self.on_alignment, latched
-        )
-        self.node.create_subscription(
-            String, "/simulation/session", self.on_world, latched
-        )
-        self.node.create_subscription(
-            MissionStatus, "/mission/status", self.on_mission, latched
-        )
-        self.node.create_subscription(
-            SafetyState, "/safety/state", self.on_safety_state, latched
-        )
+        self.node.create_subscription(String, "/mission/alignment", self.on_alignment, latched)
+        self.node.create_subscription(String, "/simulation/session", self.on_world, latched)
+        self.node.create_subscription(MissionStatus, "/mission/status", self.on_mission, latched)
+        self.node.create_subscription(Joy, "/teleop/joy", self.on_joy, rclpy.qos.qos_profile_sensor_data)
         self.node.create_timer(0.2, self.poll)
         self.node.create_timer(1.0, self.poll_lifecycle, clock=rclpy.clock.Clock())
         self.executor = SingleThreadedExecutor(context=self.context)
@@ -154,33 +139,32 @@ class RosAdapter:
 
     def on_mission(self, msg):
         with self.lock:
-            self.data["mission"] = {
-                key: getattr(msg, key)
-                for key in (
-                    "session_id",
-                    "instance_id",
-                    "state",
-                    "parrot_stage",
-                    "husky_stage",
-                    "message",
-                    "cleanup_complete",
-                )
-            }
-            self.data["mission"]["roi"] = {
-                "frame_id": msg.roi.header.frame_id,
-                "x": msg.roi.pose.position.x,
-                "y": msg.roi.pose.position.y,
-                "z": msg.roi.pose.position.z,
-            }
+            previous = self.data["mission"]
+            self.data["mission"] = {key: getattr(msg, key) for key in (
+                "session_id", "instance_id", "state", "parrot_stage", "husky_stage", "message", "cleanup_complete",
+                "control_mode", "manual_input", "input_revision")}
+            # Invalidate old keyboard connections even if the mode changes back between dashboard polls
+            changed = any(previous.get(key) != self.data["mission"][key]
+                          for key in ("instance_id", "state", "control_mode", "manual_input", "input_revision"))
+            self.data["mission"]["control_revision"] = previous.get("control_revision", 0) + int(changed)
+            self.data["mission"]["roi"] = {"frame_id": msg.roi.header.frame_id,
+                "x": msg.roi.pose.position.x, "y": msg.roi.pose.position.y, "z": msg.roi.pose.position.z,
+                "min": {"x": msg.roi_min.x, "y": msg.roi_min.y},
+                "max": {"x": msg.roi_max.x, "y": msg.roi_max.y},
+                "progress": msg.roi_progress}
             self.data["mission_at"] = time.monotonic()
 
+    def on_joy(self, msg):
+        # Presence is only a dashboard hint - the selectors enforce their own input timeout
+        with self.lock:
+            self.data["controller_at"] = time.monotonic() if len(msg.buttons) > 9 and len(msg.axes) >= 4 else 0
+            
     def on_safety_state(self, msg):
         with self.lock:
             self.data["safety"] = {
                 "available": True,
                 "husky1_stopped": msg.husky_stopped,
-                "parrot1_stopped": msg.parrot_stopped,
-            }
+                "parrot1_stopped": msg.parrot_stopped}
 
     def poll_lifecycle(self):
         from lifecycle_msgs.srv import GetState
@@ -268,7 +252,8 @@ class RosAdapter:
             )
         value["safety"]["service_ready"] = self.safety_client.service_is_ready()
         wall = time.monotonic()
-        value["checks"]["clock"] = wall - self.clock_changed_at < 2
+        value["controller"] = {"connected": wall-value.get("controller_at", 0) < 0.5}
+        value["checks"]["clock"] = wall-self.clock_changed_at < 2
         for robot in value["robots"].values():
             robot["fresh"] = robot["fresh"] and value["checks"]["clock"]
         value["checks"]["mission_status"] = wall - value.get("mission_at", 0) < 3
@@ -276,7 +261,7 @@ class RosAdapter:
         return value
 
     async def call(self, kind):
-        client = self.start_client if kind == "start" else self.cancel_client
+        client = self.command_clients[kind]
         if not client.service_is_ready():
             raise RuntimeError(f"/mission/{kind} is unavailable")
         future = client.call_async(self.trigger_type.Request())
@@ -296,7 +281,18 @@ class RosAdapter:
             raise RuntimeError(result.message)
         return result.message
 
-    async def configure_roi(self, roi):
+    def publish_manual(self, robot, command=None):
+        msg = self.twist_type()
+        if command is not None and command.enabled:
+            # Convert keyboard directions to velocities - the selector also enforces its own limits
+            msg.linear.x = command.x * 0.5
+            msg.angular.z = command.yaw * 0.7
+            if robot == "parrot1":
+                msg.linear.y = command.y * 0.5
+                msg.linear.z = command.z * 0.3
+        self.manual_publishers[robot].publish(msg)
+
+    async def configure_roi(self, roi, roi_box=None):
         from rclpy.parameter import Parameter
         from rcl_interfaces.srv import SetParametersAtomically
 
@@ -309,11 +305,15 @@ class RosAdapter:
                 for axis in ("x", "y", "z")
             ],
         ]
-        future = self.parameters.call_async(
-            SetParametersAtomically.Request(
-                parameters=[value.to_parameter_msg() for value in values]
-            )
-        )
+        if roi_box is not None:
+            values.extend([
+                Parameter("roi_x_min", value=float(roi_box["x_min"])),
+                Parameter("roi_x_max", value=float(roi_box["x_max"])),
+                Parameter("roi_y_min", value=float(roi_box["y_min"])),
+                Parameter("roi_y_max", value=float(roi_box["y_max"])),
+            ])
+        future = self.parameters.call_async(SetParametersAtomically.Request(
+            parameters=[value.to_parameter_msg() for value in values]))
         deadline = time.monotonic() + 10
         while not future.done():
             if time.monotonic() > deadline:

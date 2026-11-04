@@ -100,8 +100,10 @@ the **Telemetry** section is available without an extra terminal. In the dashboa
    Both robots share the selected X/Y; terrain determines their spawn heights.
 2. Select **Spawn robots**. This launches the robot models, bridges,
    localisation, navigation, alignment, coordinator and mission executors.
-3. Wait for readiness, then select an explicit **Point ROI**. Spawning does not
-   start a mission or silently use the coordinator's initial placeholder target.
+3. Wait for readiness, then drag an explicit **ROI box** on the map (or enter
+   both corners). `roi` is the entry corner both robots traverse to; the parrot
+   then sweeps the box. Spawning does not start a mission or silently use the
+   coordinator's initial placeholder target.
 4. Select **Start Mission**. Use **Cancel Mission** to request cancellation.
 5. Once the mission is idle or finished and executor cleanup is complete,
    **Stop robots** stops the deployed robot/mission nodes and removes their
@@ -120,6 +122,23 @@ leaves the deployed ROS processes running. Reopening the dashboard discovers its
 existing deployment rather than spawning duplicates. **Clear trails** clears only
 recorded trails and dashboard events. The running mission and alignment remain
 unchanged. A restarted backend begins recording new trails.
+
+In deploy mode, the dashboard terminal also streams the deployed ROS logs by
+default (`show_logs:=true`). Mission coordinator, both mission executors,
+exploration and terrain-following use `log_level:=info`. Supporting nodes such
+as Nav2, SLAM and EKF use `stack_log_level:=warn` to reduce routine output.
+The simulation terminal continues showing its own world/session logs. These
+are terminal logs, not a full log panel in the browser.
+
+For more supporting-node detail, launch the dashboard with
+`ros2 launch rs1_dashboard dashboard.launch.py mode:=deploy stack_log_level:=info`.
+Use `log_level:=debug` for mission diagnostics, or `stack_log_level:=debug` for
+much noisier supporting-node diagnostics. Severity changes apply when spawning
+a new deployment; reconnecting does not reconfigure already running nodes.
+`show_logs:=false` disables terminal streaming without disabling file logging.
+All deployment output remains in `.mission-control/deploy/sessions/<session_id>/ros.log`
+(under the configured data directory if overridden). After a dashboard restart,
+streaming resumes with new messages rather than replaying the existing history.
 
 The deployment follows the world instance in terminal 1. If that world is
 closed or its status disappears, a ROS-side guard stops the deployed stack after

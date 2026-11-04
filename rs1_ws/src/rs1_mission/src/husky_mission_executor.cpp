@@ -6,7 +6,6 @@
 
 // CURRENTLY NOT IN SCOPE:
 // 2.
-// Receives tree map
 // Selects tree sampling strategy
 // Drives to each tree and take dbh measurements
 // Drive from ROI back to base
@@ -19,6 +18,7 @@
 #include <chrono>
 #include <cmath>
 #include <exception>
+#include <fstream>
 #include <functional>
 #include <stdexcept>
 #include <string>
@@ -54,6 +54,13 @@ HuskyMissionExecutorNode::HuskyMissionExecutorNode() : Node("husky_mission_execu
 
     navigate_through_poses_client_ = rclcpp_action::create_client<nav2_msgs::action::NavigateThroughPoses>(
         this, "/husky1/navigate_through_poses");
+
+    // Tree database built from the parrot's latched tree map
+    tree_database_file_ = this->declare_parameter<std::string>(
+        "tree_database_file", "/tmp/rs1_tree_database.csv");
+    tree_map_subscription_ = this->create_subscription<rs1_interfaces::msg::TreeMap>(
+        "/parrot1/tree_map", rclcpp::QoS(1).reliable().transient_local(),
+        std::bind(&HuskyMissionExecutorNode::treeMapCb, this, std::placeholders::_1));
     global_costmap_subscription_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
         "/husky1/global_costmap/costmap", rclcpp::QoS(1).transient_local().reliable(),
         std::bind(&HuskyMissionExecutorNode::globalCostmapCb, this, std::placeholders::_1));
@@ -96,6 +103,32 @@ HuskyMissionExecutorNode::HuskyMissionExecutorNode() : Node("husky_mission_execu
     );
 
     RCLCPP_INFO(this->get_logger(), "Husky mission executor initialised to IDLE");
+}
+
+void HuskyMissionExecutorNode::treeMapCb(const rs1_interfaces::msg::TreeMap::SharedPtr msg)
+{
+    if (!msg) return;
+
+    std::ofstream file(tree_database_file_, std::ios::trunc);
+    if (!file.is_open())
+    {
+        RCLCPP_ERROR(this->get_logger(), "Could not open tree database file: %s", tree_database_file_.c_str());
+        return;
+    }
+
+    file << "tree_type,x,y,z,observations\n";
+    for (const auto &tree : msg->trees)
+    {
+        file << tree.tree_type << ','
+             << tree.location.x << ','
+             << tree.location.y << ','
+             << tree.location.z << ','
+             << tree.observations << '\n';
+    }
+    file.close();
+
+    RCLCPP_INFO(this->get_logger(), "Stored %zu tree(s) in %s",
+        msg->trees.size(), tree_database_file_.c_str());
 }
 
 rclcpp_action::GoalResponse HuskyMissionExecutorNode::traverseToROIGoalRequestCb(
@@ -241,12 +274,12 @@ void HuskyMissionExecutorNode::traverseToROI()
     RCLCPP_INFO(this->get_logger(), "Waiting for Parrot's ground path to the requested ROI");
 }
 
-geometry_msgs::msg::PoseStamped HuskyMissionExecutorNode::getCurrentPose(const std::string &frame_id)
+geometry_msgs::msg::PoseStamped HuskyMissionExecutorNode::getCurrentPose(const std::string &frame_id, double max_age)
 {
     const auto transform = tf_buffer_->lookupTransform(frame_id, "husky1_base_link", tf2::TimePointZero);
     const rclcpp::Time stamp(transform.header.stamp, this->get_clock()->get_clock_type());
     const double age = (this->now() - stamp).seconds();
-    if (stamp.nanoseconds() == 0 || age < 0.0 || age > 2.0)
+    if (stamp.nanoseconds() == 0 || age < 0.0 || age > max_age)
     {
         throw std::runtime_error("Husky pose transform is uninitialised, stale or future-dated");
     }
@@ -353,11 +386,13 @@ void HuskyMissionExecutorNode::navigateNextChunk()
     geometry_msgs::msg::PoseStamped robot_pose;
     try
     {
-        robot_pose = getCurrentPose("husky1_map");
+        // Nav2 needs a fresher transform than the general pose query service.
+        // Wait here instead of sending a goal that its controller cannot use.
+        robot_pose = getCurrentPose("husky1_map", navigation_pose_max_age_);
     }
     catch (const std::exception &e)
     {
-        waitForWaypoint(std::string("Waiting for Husky pose: ") + e.what());
+        waitForWaypoint(std::string("Waiting for fresh localisation transform: ") + e.what());
         return;
     }
 
@@ -540,6 +575,20 @@ void HuskyMissionExecutorNode::navigateThroughPosesResultCb(
 
 void HuskyMissionExecutorNode::retryChunk(const std::string &reason)
 {
+    // A transform interruption is a readiness problem, not a failed route.
+    // Let the navigation timer wait for fresh data, with the usual bounded
+    // waypoint timeout, without spending one of the navigation retries.
+    try
+    {
+        getCurrentPose("husky1_map", navigation_pose_max_age_);
+    }
+    catch (const std::exception &e)
+    {
+        waypoint_wait_started_ = std::chrono::steady_clock::now();
+        waitForWaypoint(std::string("Waiting for fresh localisation transform: ") + e.what());
+        return;
+    }
+
     if (++chunk_failures_ > max_chunk_retries_)
     {
         abortTraversalToROI(reason + "; no further route progress after chunk retries");

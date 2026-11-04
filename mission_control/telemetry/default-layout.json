@@ -18,8 +18,8 @@
       },
       "scene": {
         "transforms": {
-          "showLabel": true,
-          "axisScale": 2
+          "showLabel": false,
+          "axisScale": 0.3
         }
       },
       "transforms": {
@@ -44,12 +44,68 @@
           "maxColor": "#fbbf24ff",
           "unknownColor": "#00000000"
         },
-        "/husky1/scan": { "visible": true },
+        "/husky1/scan_filtered": { "visible": true },
+        "/husky1/scan": { "visible": false },
         "/parrot1/scan": { "visible": true },
         "/parrot1/downwards_scan": { "visible": true },
-        "/mission/roi_marker": { "visible": true }
+        "/husky1/local_costmap/published_footprint": {
+          "visible": false,
+          "lineWidth": 0.05,
+          "color": "#2dd4bf"
+        },
+        "/parrot1/local_costmap/published_footprint": {
+          "visible": false,
+          "lineWidth": 0.05,
+          "color": "#fbbf24"
+        },
+        "/husky1/plan": { "visible": true, "color": "#2dd4bf" },
+        "/husky1/local_plan": { "visible": true, "color": "#99f6e4" },
+        "/parrot1/plan": { "visible": true, "color": "#fbbf24" },
+        "/parrot1/local_plan": { "visible": true, "color": "#fde68a" },
+        "/parrot1/explore/frontiers": { "visible": true },
+        "/mission/roi_marker": { "visible": true },
+        "/husky1/local_costmap/costmap": { "visible": false },
+        "/husky1/global_costmap/costmap": { "visible": false },
+        "/parrot1/local_costmap/costmap": { "visible": false },
+        "/parrot1/global_costmap/costmap": { "visible": false },
+        "/husky1/scan/points": { "visible": false },
+        "/parrot1/scan/points": { "visible": false },
+        "/husky1/ground_points": { "visible": false },
+        "/husky1/obstacle_points": { "visible": false },
+        "/husky1/navigation_points": { "visible": false },
+        "/husky1/camera/depth/points": { "visible": false },
+        "/parrot1/camera/depth/points": { "visible": false },
+        "/tree_locations/markers": { "visible": false },
+        "/tree_locations/map": { "visible": false }
       },
-      "layers": {},
+      "layers": {
+        "rs1-husky-model": {
+          "instanceId": "rs1-husky-model",
+          "layerId": "foxglove.Urdf",
+          "label": "Husky robot model",
+          "sourceType": "topic",
+          "topic": "/husky1/robot_description",
+          "framePrefix": "",
+          "displayMode": "visual",
+          "fallbackColor": "#2dd4bf",
+          "visible": true,
+          "frameLocked": true,
+          "order": 1
+        },
+        "rs1-parrot-model": {
+          "instanceId": "rs1-parrot-model",
+          "layerId": "foxglove.Urdf",
+          "label": "Parrot robot model",
+          "sourceType": "topic",
+          "topic": "/parrot1/robot_description",
+          "framePrefix": "",
+          "displayMode": "visual",
+          "fallbackColor": "#fbbf24",
+          "visible": true,
+          "frameLocked": true,
+          "order": 2
+        }
+      },
       "imageMode": {}
     },
     "Image!rs1-husky": {
@@ -89,14 +145,28 @@
       "followingViewWidth": 30
     },
     "Plot!rs1-vertical-command": {
-      "lichtblickPanelTitle": "Parrot · commanded vertical velocity",
+      "lichtblickPanelTitle": "Selected commands · sent to Gazebo",
       "paths": [
         {
-          "value": "/parrot1/cmd_vel_combined.linear.z",
+          "value": "/parrot1/cmd_vel_controlled.linear.z",
           "enabled": true,
           "timestampMethod": "receiveTime",
-          "label": "Commanded vz (m/s)",
+          "label": "Parrot vertical (m/s)",
           "color": "#a78bfa"
+        },
+        {
+          "value": "/parrot1/cmd_vel_controlled.linear.x",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "Parrot forward (m/s)",
+          "color": "#fbbf24"
+        },
+        {
+          "value": "/husky1/cmd_vel_controlled.linear.x",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "Husky forward (m/s)",
+          "color": "#2dd4bf"
         }
       ],
       "showXAxisLabels": true,
@@ -119,6 +189,50 @@
       "showFullMessageForDiff": false,
       "expansion": "all",
       "fontSize": 12
+    },
+    "RawMessages!rs1-exploration": {
+      "lichtblickPanelTitle": "Parrot · exploration status",
+      "topicPath": "/parrot1/explore/status",
+      "diffEnabled": false,
+      "diffMethod": "custom",
+      "diffTopicPath": "",
+      "showFullMessageForDiff": false,
+      "expansion": "all",
+      "fontSize": 12
+    },
+    "RosOut!rs1-logs": {
+      "lichtblickPanelTitle": "ROS logs · all nodes",
+      "topicToRender": "/rosout",
+      "searchTerms": [],
+      "minLogLevel": 1,
+      "nameFilter": {}
+    },
+    "Tab!rs1-monitoring": {
+      "activeTabIdx": 0,
+      "tabs": [
+        {
+          "title": "Mission & commands",
+          "layout": {
+            "direction": "row",
+            "splitPercentage": 66,
+            "first": {
+              "direction": "row",
+              "splitPercentage": 50,
+              "first": "Plot!rs1-clearance",
+              "second": "Plot!rs1-vertical-command"
+            },
+            "second": "RawMessages!rs1-mission"
+          }
+        },
+        {
+          "title": "ROS logs",
+          "layout": "RosOut!rs1-logs"
+        },
+        {
+          "title": "Exploration",
+          "layout": "RawMessages!rs1-exploration"
+        }
+      ]
     }
   },
   "globalVariables": {},
@@ -138,16 +252,6 @@
         "second": "Image!rs1-parrot"
       }
     },
-    "second": {
-      "direction": "row",
-      "splitPercentage": 66,
-      "first": {
-        "direction": "row",
-        "splitPercentage": 50,
-        "first": "Plot!rs1-clearance",
-        "second": "Plot!rs1-vertical-command"
-      },
-      "second": "RawMessages!rs1-mission"
-    }
+    "second": "Tab!rs1-monitoring"
   }
 }

@@ -21,6 +21,7 @@
 #include "rclcpp_action/rclcpp_action.hpp"
 
 #include "rs1_interfaces/action/traverse_to_roi.hpp"
+#include "rs1_interfaces/msg/tree_map.hpp"
 #include "rs1_interfaces/srv/set_ground_path.hpp"
 #include "rs1_interfaces/srv/get_current_pose.hpp"
 
@@ -63,6 +64,9 @@ private:
         std::shared_ptr<rs1_interfaces::srv::SetGroundPath::Response> response
     );
 
+    // Store the tree map published by the parrot into the database file
+    void treeMapCb(const rs1_interfaces::msg::TreeMap::SharedPtr msg);
+
     // Navigate short chunks of parrot's route
     void traverseToROI();
     void createGuidancePoses();
@@ -82,7 +86,7 @@ private:
     void waitForWaypoint(const std::string &reason);
 
     // Helpers
-    geometry_msgs::msg::PoseStamped getCurrentPose(const std::string &frame_id);
+    geometry_msgs::msg::PoseStamped getCurrentPose(const std::string &frame_id, double max_age = 2.0);
     int costmapValue(const geometry_msgs::msg::PoseStamped &pose) const;
     bool validTargetPose(const geometry_msgs::msg::PoseStamped &pose) const;
     bool validGroundPath(const nav_msgs::msg::Path &path) const;
@@ -110,6 +114,10 @@ private:
     rclcpp::Service<rs1_interfaces::srv::GetCurrentPose>::SharedPtr get_current_pose_service_;
     rclcpp::Service<rs1_interfaces::srv::SetGroundPath>::SharedPtr set_ground_path_service_;
 
+    // Tree map database received from the parrot
+    rclcpp::Subscription<rs1_interfaces::msg::TreeMap>::SharedPtr tree_map_subscription_;
+    std::string tree_database_file_;
+
     // Keep parrot's path in husky frame ready for waypoint generation
     nav_msgs::msg::Path ground_path_;
 
@@ -132,6 +140,9 @@ private:
 
     double waypoint_spacing_;
     double waypoint_wait_timeout_;
+    // The local costmap's goal transform allows 0.3 seconds, while DWB allows
+    // 0.5 seconds. Leave some margin below the stricter of these two checks.
+    static constexpr double navigation_pose_max_age_ = 0.2;
     double roi_tolerance_;
     int max_chunk_waypoints_;
     int max_chunk_retries_;

@@ -2,6 +2,7 @@
 #define RS1_MISSION__MISSION_COORDINATOR_HPP_
 
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
@@ -19,6 +20,7 @@
 
 #include "rclcpp_action/rclcpp_action.hpp"
 #include "rs1_interfaces/action/traverse_to_roi.hpp"
+#include "rs1_interfaces/action/sample_roi.hpp"
 
 
 namespace rs1_mission
@@ -41,7 +43,7 @@ private:
         CANCELLING,
         COMPLETE,
         CANCELLED,
-        FAILED
+        MANUAL_ASSISTANCE
     };
 
     enum class Robot
@@ -56,6 +58,16 @@ private:
 
     // Cancel mission callback
     void cancelMissionCb(const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
+        std::shared_ptr<std_srvs::srv::Trigger::Response> response);
+
+    // Select the robot to assist, then retry the same ROI when the operator resumes
+    void manualMissionCb(Robot robot,
+        const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
+        std::shared_ptr<std_srvs::srv::Trigger::Response> response);
+    void resumeMissionCb(const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
+        std::shared_ptr<std_srvs::srv::Trigger::Response> response);
+    void manualInputCb(const std::string &input,
+        const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
         std::shared_ptr<std_srvs::srv::Trigger::Response> response);
 
     // Action callbacks
@@ -74,6 +86,21 @@ private:
         rclcpp_action::ClientGoalHandle<rs1_interfaces::action::TraverseToROI>::SharedPtr goal_handle,
         rclcpp_action::Client<rs1_interfaces::action::TraverseToROI>::CancelResponse::SharedPtr response);
 
+    // SampleROI (phase 2) action callbacks for the parrot
+    void sampleROIGoalResponseCb(
+        rclcpp_action::ClientGoalHandle<rs1_interfaces::action::SampleROI>::SharedPtr goal_handle);
+
+    void sampleROIFeedbackCb(
+        rclcpp_action::ClientGoalHandle<rs1_interfaces::action::SampleROI>::SharedPtr goal_handle,
+        const std::shared_ptr<const rs1_interfaces::action::SampleROI::Feedback> feedback);
+
+    void sampleROIResultCb(
+        const rclcpp_action::ClientGoalHandle<rs1_interfaces::action::SampleROI>::WrappedResult & result);
+
+    void sampleROICancelResponseCb(
+        rclcpp_action::ClientGoalHandle<rs1_interfaces::action::SampleROI>::SharedPtr goal_handle,
+        rclcpp_action::Client<rs1_interfaces::action::SampleROI>::CancelResponse::SharedPtr response);
+
     // Entrypoints to starting each phase
     bool startTraverseToROI();
     void startSampleROI();
@@ -82,6 +109,8 @@ private:
     rs1_interfaces::action::TraverseToROI::Goal createTraverseToROIGoal(
         const geometry_msgs::msg::PoseStamped &roi_pose_);
 
+    rs1_interfaces::action::SampleROI::Goal createSampleROIGoal();
+
     // Decide whether current phase has finished to progress to next phase
     void evaluateTransitions();
 
@@ -89,6 +118,8 @@ private:
     rcl_interfaces::msg::SetParametersResult validateROIParameters(
         const std::vector<rclcpp::Parameter> &parameters);
     geometry_msgs::msg::PoseStamped configuredROI() const;
+    geometry_msgs::msg::Point configuredROIMin() const;
+    geometry_msgs::msg::Point configuredROIMax() const;
     void refreshROI();
     void publishROIMarker();
     void publishStatus();
@@ -100,15 +131,26 @@ private:
     std::string session_id_, parrot_stage_{"Waiting"}, husky_stage_{"Waiting"}, message_;
     std::string instance_id_;
     geometry_msgs::msg::PoseStamped executor_roi_;
-    void failMission(const std::string &message);
+    std::string control_mode_{"hold"};
+    std::string manual_input_{"keyboard"};
+    uint64_t input_revision_{0};
+    bool traversalPending() const;
+    void enterManualAssistance(Robot robot, const std::string &message);
     void cancelTraversalToROI(Robot robot);
+    void cancelSampleROI();
     void finalizeMission();
 
     // Actions
     rclcpp_action::Client<rs1_interfaces::action::TraverseToROI>::SharedPtr traverse_to_roi_client_parrot_;
     rclcpp_action::Client<rs1_interfaces::action::TraverseToROI>::SharedPtr traverse_to_roi_client_husky_;
 
-    // TODO (james): Add a sampleTree action client for both parrot and husky
+    // Phase 2: parrot-only ROI sampling client
+    rclcpp_action::Client<rs1_interfaces::action::SampleROI>::SharedPtr sample_roi_client_parrot_;
+    rclcpp_action::Client<rs1_interfaces::action::SampleROI>::SendGoalOptions parrot_sample_goal_options_;
+    rclcpp_action::ClientGoalHandle<rs1_interfaces::action::SampleROI>::SharedPtr parrot_sample_goal_handle_;
+    bool parrot_sample_goal_pending_{false};
+    bool parrot_sample_cancel_requested_{false};
+    bool parrot_sample_succeded_{false};
 
     rclcpp_action::Client<rs1_interfaces::action::TraverseToROI>::SendGoalOptions parrot_goal_options_;
     rclcpp_action::Client<rs1_interfaces::action::TraverseToROI>::SendGoalOptions husky_goal_options_;
@@ -123,12 +165,25 @@ private:
 
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr start_mission_service_;
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr cancel_mission_service_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr manual_husky_service_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr manual_parrot_service_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr resume_mission_service_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr keyboard_input_service_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr controller_input_service_;
 
     // ROI visualisation
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr roi_marker_pub_;
     geometry_msgs::msg::PoseStamped roi_pose_;
 
+    // Axis-aligned ROI box (in roi_pose_'s frame) and sweep progress
+    geometry_msgs::msg::Point roi_min_;
+    geometry_msgs::msg::Point roi_max_;
+    float roi_progress_{0.0f};
 
+    // Sampling phase parameters
+    double search_clearance_{2.2};
+    double transit_clearance_{4.0};
+    double swath_spacing_{0.0};
 
     MissionState mission_state_;
     bool parrot_succeded_;

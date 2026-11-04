@@ -3,7 +3,7 @@
 import copy
 import time
 
-from .models import ExternalStart
+from .models import ExternalStart, roi_bounds
 from .ros_adapter import RequestUncertain
 from .session import Conflict, SessionManager, safety_stop_active
 
@@ -206,11 +206,15 @@ class ExternalSessionManager(SessionManager):
             self.mission_instance = identity[0]
             if plan.roi is not None:
                 self.terrain.check_point("ROI", plan.roi, 0.5)
-                roi = {
-                    **plan.roi.model_dump(),
-                    "z": self.terrain.height(plan.roi.x, plan.roi.y),
-                }
-                await self.adapter.configure_roi(roi)
+                roi = {**plan.roi.model_dump(), "z": self.terrain.height(plan.roi.x, plan.roi.y)}
+                roi_box = None
+                if plan.roi_second is not None:
+                    roi_min, roi_max = roi_bounds(plan.roi, plan.roi_second)
+                    for corner in (roi_min, roi_max):
+                        self.terrain.check_bounds("ROI box", corner, 0.5)
+                    roi_box = {"x_min": roi_min.x, "x_max": roi_max.x,
+                               "y_min": roi_min.y, "y_max": roi_max.y}
+                await self.adapter.configure_roi(roi, roi_box)
             current = self.adapter.snapshot()
             if identity != (
                 current.get("mission", {}).get("instance_id"),
@@ -247,9 +251,8 @@ class ExternalSessionManager(SessionManager):
                 self.command and self.command[0] == "cancel"
             ):
                 return self.snapshot()
-            if mission.get("state") != "executing" and not (
-                mission.get("state") == "failed" and not mission.get("cleanup_complete")
-            ):
+            if mission.get("state") not in ("executing", "manual_assistance") and not (
+                    mission.get("state") == "failed" and not mission.get("cleanup_complete")):
                 raise Conflict("There is no running external mission to cancel")
             self.command = ("cancel", time.monotonic())
             self.mission_instance = mission.get("instance_id")

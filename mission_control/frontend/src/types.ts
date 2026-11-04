@@ -56,14 +56,19 @@ export type State = {
       available: boolean;
       service_ready?: boolean;
       husky1_stopped: boolean | null;
-      parrot1_stopped: boolean | null;
-    };
+      parrot1_stopped: boolean | null };
+    controller?: { connected: boolean };
     mission?: {
       session_id?: string;
       instance_id?: string;
       state?: string;
       parrot_stage: string;
       husky_stage: string;
+      control_mode?: "auto" | "husky1" | "parrot1" | "hold";
+      manual_input?: "keyboard" | "controller";
+      input_revision?: number;
+      cleanup_complete?: boolean;
+      message?: string;
     };
     alignment?: {
       ready?: Record<string, boolean>;

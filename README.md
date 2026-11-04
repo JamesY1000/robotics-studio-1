@@ -17,12 +17,31 @@ For UI-driven demos, launch the world and dashboard in two sourced devcontainer
 terminals:
 
 ```bash
+# To offload OpenGL rendering to an Nvidia graphics card, run in whichever terminal you need it for (likely the rs1_sim.launch.py and the rviz one, but you can do for all of them tbh)
+export __NV_PRIME_RENDER_OFFLOAD=1
+export __GLX_VENDOR_LIBRARY_NAME=nvidia
+
 # Terminal 1: world only
 ros2 launch rs1_sim rs1_sim.launch.py ui:=true
 
 # Terminal 2: click-to-spawn, ROI selection and mission controls
 ros2 launch rs1_dashboard dashboard.launch.py mode:=deploy
+
+# One shared RViz window
+ros2 launch rs1_sim rviz.launch.py
 ```
+
+The combined view uses the shared `world` frame, groups displays under Husky,
+Parrot and Mission, and renders at 15 FPS. Camera/depth and 3D LiDAR displays
+start disabled; enable them in the Displays panel when needed. Only Husky's
+SLAM map starts visible to avoid overlapping maps; Parrot's map is available in
+its Maps group. Use the dashboard for mission commands or the separate windows
+for robot-specific Nav2 controls. The robot stacks must be running with their
+normal world alignment for the shared view to show data.
+
+The same option is available on the simulation and robot bringup launches:
+`ros2 launch rs1_sim rs1_sim.launch.py combined:=true`. For dashboard deployment
+with RViz opened alongside the world, add `ui:=true rviz:=true combined:=true`.
 
 Open **http://localhost:8000**, choose robot positions, select **Spawn robots**,
 then choose an ROI and **Start Mission**. The dashboard launches the robot stacks

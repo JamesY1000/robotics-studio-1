@@ -100,6 +100,21 @@ def start_robot(context):
         ],
     )
 
+    # Keep terrain following running and select its output only during autonomy
+    velocity_selector = Node(
+        package="rs1_navigation",
+        executable="velocity_selector",
+        namespace=ROBOT_NAMESPACE,
+        name="velocity_selector_node",
+        output="screen",
+        parameters=[{
+            "robot": ROBOT_NAMESPACE,
+            "use_sim_time": use_sim_time,
+            "command_timeout": 0.3,
+            "status_timeout": 1.5,
+        }],
+    )
+
     spawn_parrot = Node(
         package="ros_gz_sim",
         executable="create",
@@ -131,6 +146,7 @@ def start_robot(context):
         *([SetUseSimTime(True)] if use_sim_time else []),
         robot_state_publisher,
         gazebo_bridge,
+        velocity_selector,
         (RosTimer if use_sim_time else TimerAction)(
             period=float(spawn_delay),
             actions=[spawn_parrot],

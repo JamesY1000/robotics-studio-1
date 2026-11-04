@@ -1,0 +1,7 @@
+# Target height above the sensed surface, in metres.
+float32 clearance
+---
+bool success
+string message
+# Clearance that was in effect before this request.
+float32 previous_clearance

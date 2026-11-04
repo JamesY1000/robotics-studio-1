@@ -89,7 +89,11 @@ def generate_launch_description():
             PythonLaunchDescriptionSource(PathJoinSubstitution(
                 [FindPackageShare("ros_gz_sim"), "launch", "gz_sim.launch.py"])),
             launch_arguments={
-                "gz_args": f"{shlex.quote(selected)} -r" + (" -s" if headless else ""),
+                # -s runs the server only; --headless-rendering is REQUIRED for
+                # the server to render sensor data (gpu_lidar point clouds, rgbd
+                # camera) without a GUI. Without it the render loop never starts
+                # and sensor topics go stale.
+                "gz_args": f"{shlex.quote(selected)} -r" + (" -s --headless-rendering" if headless else ""),
                 # End the world marker/clock bridge when Gazebo exits or fails.
                 "on_exit_shutdown": "true",
             }.items())]

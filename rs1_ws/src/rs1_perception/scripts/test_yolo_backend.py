@@ -7,8 +7,7 @@ to prove the ONNX (or pytorch) path works without launching the whole simulation
 
 Typical use - start the node in one terminal::
 
-    ros2 run rs1_perception yolo_node.py --ros-args \\
-        -p backend:=onnx -p confidence_threshold:=0.01
+    ros2 run rs1_perception yolo_node.py --ros-args -p backend:=onnx -p confidence_threshold:=0.01
 
 then in another::
 

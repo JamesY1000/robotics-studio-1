@@ -1,7 +1,10 @@
 """Launch the mission coordinator and both robot mission executors."""
 
+from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.conditions import IfCondition
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
@@ -14,6 +17,9 @@ def generate_launch_description():
     log_level = LaunchConfiguration("log_level")
 
     launch_arguments = [
+        DeclareLaunchArgument("joystick", default_value="true"),
+        DeclareLaunchArgument("joystick_device_id", default_value="0"),
+        DeclareLaunchArgument("joystick_device_name", default_value=""),
         DeclareLaunchArgument("roi_frame", default_value="world"),
         DeclareLaunchArgument("session_id", default_value="manual"),
         DeclareLaunchArgument(
@@ -37,6 +43,26 @@ def generate_launch_description():
             description="ROI z coordinate in roi_frame (metres).",
         ),
         DeclareLaunchArgument(
+            "roi_x_min",
+            default_value="-45.0",
+            description="ROI box minimum x in roi_frame (metres).",
+        ),
+        DeclareLaunchArgument(
+            "roi_x_max",
+            default_value="-35.0",
+            description="ROI box maximum x in roi_frame (metres).",
+        ),
+        DeclareLaunchArgument(
+            "roi_y_min",
+            default_value="35.0",
+            description="ROI box minimum y in roi_frame (metres).",
+        ),
+        DeclareLaunchArgument(
+            "roi_y_max",
+            default_value="45.0",
+            description="ROI box maximum y in roi_frame (metres).",
+        ),
+        DeclareLaunchArgument(
             "log_level",
             default_value="info",
             description="Logging level for all mission nodes.",
@@ -56,6 +82,10 @@ def generate_launch_description():
                 "roi_x": ParameterValue(LaunchConfiguration("roi_x"), value_type=float),
                 "roi_y": ParameterValue(LaunchConfiguration("roi_y"), value_type=float),
                 "roi_z": ParameterValue(LaunchConfiguration("roi_z"), value_type=float),
+                "roi_x_min": ParameterValue(LaunchConfiguration("roi_x_min"), value_type=float),
+                "roi_x_max": ParameterValue(LaunchConfiguration("roi_x_max"), value_type=float),
+                "roi_y_min": ParameterValue(LaunchConfiguration("roi_y_min"), value_type=float),
+                "roi_y_max": ParameterValue(LaunchConfiguration("roi_y_max"), value_type=float),
             }
         ],
         arguments=["--ros-args", "--log-level", log_level],
@@ -81,7 +111,18 @@ def generate_launch_description():
         arguments=["--ros-args", "--log-level", log_level],
     )
 
+    # Start once per mission stack, including deploy and managed dashboard launches
+    joystick = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            get_package_share_directory("rs1_navigation") + "/launch/joystick.launch.py"),
+        condition=IfCondition(LaunchConfiguration("joystick")),
+        launch_arguments={
+            "device_id": LaunchConfiguration("joystick_device_id"),
+            "device_name": LaunchConfiguration("joystick_device_name"),
+        }.items(),
+    )
+
     return LaunchDescription(
         launch_arguments
-        + [mission_coordinator, parrot_mission_executor, husky_mission_executor]
+        + [mission_coordinator, parrot_mission_executor, husky_mission_executor, joystick]
     )

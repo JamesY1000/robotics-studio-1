@@ -23,11 +23,15 @@ def start(context):
         return IncludeLaunchDescription(PythonLaunchDescriptionSource(
             str(Path(get_package_share_directory(package)) / "launch" / file)),
             launch_arguments=arguments.items())
+    roi = placements["roi"]
+    roi_box = placements.get("roi_box")
+    roi_args = {"roi_x": str(roi["x"]), "roi_y": str(roi["y"]),
+                "roi_z": str(roi["z"]), "roi_frame": "world", "session_id": plan["session_id"]}
+    if roi_box is not None:
+        roi_args.update({f"roi_{axis}": str(roi_box[axis]) for axis in ("x_min", "x_max", "y_min", "y_max")})
     return [
         include("rs1_sim", "rs1_sim.launch.py", args),
-        include("rs1_mission", "rs1_mission.launch.py", {
-            "roi_x": str(placements["roi"]["x"]), "roi_y": str(placements["roi"]["y"]),
-            "roi_z": str(placements["roi"]["z"]), "roi_frame": "world", "session_id": plan["session_id"]}),
+        include("rs1_mission", "rs1_mission.launch.py", roi_args),
     ]
 
 

@@ -202,6 +202,113 @@ are saved under the deployment's backend data directory in `sessions/<id>/`,
 including `plan.json` and `ros.log`. The default data directory is
 `.mission-control/deploy`.
 
+## Manual assistance, keyboard and PS4 control
+
+During an active mission, choose **Manual Husky** or **Manual Parrot** at any
+time. An executor failure or rejected goal also selects manual assistance for
+the affected robot automatically. The coordinator keeps the ROI and cancels the
+current attempts; the other robot holds still. Localisation, mapping, Nav2 and
+terrain following stay running.
+
+1. In Mission Control, select **Keyboard**, then **Connect keyboard** in the manual-control panel
+2. Hold **Space** and use **W/S** to move forward/back or **A/D** to turn
+3. For Parrot, use **Q/E** to move sideways and **R/F** to move up/down
+4. Release **Space**, press **Escape**, or click **Stop keyboard control** to stop
+5. Select **Resume autonomous mission** once the previous attempts have stopped
+
+The panel must have keyboard focus. Leaving it, switching tabs, disconnecting
+or changing control mode clears held keys. Reconnect and press Space again to
+drive. Only one dashboard keyboard connection can control a robot at a time.
+The browser sends fresh input at 20 Hz; the selector stops after 0.3 seconds
+without a command or 1.5 seconds without coordinator status. Slow keyboard
+connections disconnect rather than accumulating movement commands.
+
+For a PS4 controller, connect a micro-USB data cable to the **computer running
+ROS**, or pair it there over Bluetooth using Share + PS until the light flashes.
+This ROS-native input does not read a controller attached only to a remote
+browser computer. The devcontainer already mounts `/dev`; its user still needs
+permission to read the controller's input device.
+
+The mission launch automatically starts `joy`'s `game_controller_node` and
+`teleop_twist_joy`. No extra terminal is needed. Choose **PS4 controller** in the
+manual panel, release **L1**, then hold **L1** to drive:
+
+| Control | Husky | Parrot |
+|---|---|---|
+| Left stick up/down | Forward/back | Forward/back |
+| Left stick left/right | Ignored | Sideways |
+| Right stick left/right | Turn | Turn |
+| Right stick up/down | Ignored | Ascend/descend |
+
+Release L1 to stop. The dashboard shows whether fresh controller input is
+arriving. SDL provides the standard button mapping; the configured deadzone is
+10%, with limits of 0.5 m/s horizontally, 0.3 m/s vertically and 0.7 rad/s turning.
+The mapping lives in `rs1_navigation/config/ps4_teleop.yaml`.
+
+**Only one manual input is selected at a time.** Choosing PS4 disconnects the
+dashboard keyboard connection. Choosing Keyboard makes the C++ selectors ignore
+controller commands, including held sticks. Switching robot/input or recovering
+from a controller/converter outage requires releasing and pressing L1 again.
+The selector checks both fresh Joy messages and fresh controller Twist commands.
+Unlike keyboard driving, controller driving continues when the browser closes
+or changes tabs; release L1 to stop, or select Keyboard to disable the controller.
+Neither input can affect an autonomous mission.
+
+For an existing container, install missing joystick dependencies and rebuild the
+ROS workspace and dashboard before restarting their launches:
+
+```bash
+sudo apt-get update
+sudo apt-get install ros-humble-joy ros-humble-teleop-twist-joy
+```
+
+These dependencies are also declared in `rs1_navigation/package.xml`, so the
+normal rosdep/setup script installs them on new setups. To diagnose detection,
+run these in a sourced devcontainer terminal using the mission's ROS domain:
+
+```bash
+ros2 run joy joy_enumerate_devices
+ros2 topic echo /teleop/joy
+```
+
+If several controllers are attached, `rs1_mission.launch.py` accepts
+`joystick_device_id:=0` or `joystick_device_name:=<reported name>`; a nonempty
+name takes precedence. `joystick:=false` disables the bundled driver/converter.
+The standalone `ros2 launch rs1_navigation joystick.launch.py` accepts
+`device_id` and `device_name`; use it only when the bundled instance is disabled.
+The [joy driver documentation](https://github.com/ros-drivers/joystick_drivers/tree/ros2/joy)
+describes SDL mappings and Linux device access.
+
+Resume rechecks localisation transforms and executor availability, then retries
+the **whole traversal to the same ROI from the current robot positions**. Maps
+are retained. Parrot navigates to/verifies the ROI again and generates a fresh
+ground path for Husky. This does not restore an exact waypoint checkpoint. A
+failed readiness check leaves assistance selected and displays the reason;
+another failed attempt returns to assistance. Completion and explicit
+cancellation remain terminal outcomes. A process or simulation shutdown still
+requires recovering the underlying stack.
+
+Parrot's manual command supplies all movement axes, including height. The
+terrain-following node stays on, but its output is selected only in autonomous
+mode. Keyboard commands cannot select manual mode themselves or override an
+autonomous mission.
+
+For ROS debugging, the same controls are Trigger services:
+`/mission/manual_husky`, `/mission/manual_parrot`, and `/mission/resume`.
+`/mission/input_keyboard` and `/mission/input_controller` choose the manual
+source while assistance is active. Keyboard Twist publishers use
+`/husky1/cmd_vel_manual` or `/parrot1/cmd_vel_manual`; the controller converter
+uses `/teleop/cmd_vel_controller`, with `/teleop/joy` supplying its enable-button
+state and heartbeat. Keep those inputs separate. The selectors are the only
+intended publishers to each robot's `cmd_vel_controlled` bridge input.
+Standalone Nav2 still works before any coordinator
+status has been received; once a coordinator is observed, its mode and heartbeat
+gate movement.
+
+After updating an existing checkout, rebuild the ROS packages and frontend and
+refresh backend requirements as described above. Restart the robot launch so
+the selectors and updated bridge configuration are loaded.
+
 ## Robot telemetry
 
 The **Telemetry** section embeds a local, unmodified Lichtblick workspace for
@@ -347,7 +454,8 @@ For managed and deploy placement, elevation is barycentrically interpolated from
 the **binary STL collision triangles**, with a spatial index. Husky spawn uses the highest sampled height
 under its footprint + 0.13228 m wheel-to-base extent + 0.10 m initial clearance.
 Parrot starts at ground + configured sensor clearance + 0.10 m sensor offset;
-default clearance is 4 m, matching the existing terrain-following target.
+the default spawn clearance is 4 m. Terrain following uses its separate
+`target_clearance` parameter in `rs1_navigation/config/terrain_following_params.yml`.
 Changing the initial clearance does not change that controller's target.
 In managed mode, station height uses its own sampled footprint + 0.05 m. The
 generated SDF moves the single existing station; it does not append another
@@ -443,14 +551,16 @@ the saved plan, placements, preparation state and whether an ROI was selected.
 `POST /api/deployment/stop` with `{}` stops that deployment after mission cleanup
 and removes its models; it never stops the operator's world.
 
-In deploy and external modes, `POST /api/mission/start` accepts a world ROI:
+In deploy and external modes, `POST /api/mission/start` accepts a world ROI box
+(`roi` is the first-placed corner the robots traverse to, `roi_second` the
+opposite corner of the axis-aligned sweep region):
 
 ```json
-{"roi": {"x": 88, "y": -48}}
+{"roi": {"x": 88, "y": -48}, "roi_second": {"x": 62, "y": -88}}
 ```
 
-The backend checks the selected point against the existing forest terrain and
-sets the idle coordinator's world ROI parameters atomically before requesting
+The backend checks the box against the existing forest terrain and sets the idle
+coordinator's world ROI and ROI-box parameters atomically before requesting
 start. In external mode, sending `{}` uses the coordinator's configured target.
 Deploy mode requires an explicit ROI for its first mission. Placement fields
 are not accepted in either mode. The simulation and mission process instances are

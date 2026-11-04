@@ -45,8 +45,11 @@ def start_telemetry(context):
                      # Observation only: mission commands remain in the dashboard.
                      "capabilities": ["connectionGraph", "assets"],
                      "remote_access": False,
-                     "topic_whitelist": ["^/(husky1|parrot1)/.*$", "^/(tf|tf_static|clock)$",
-                                         "^/mission/.*$", "^/simulation/session$"],
+                     # Optional debug streams stay available without subscribing until a panel uses them
+                     "topic_whitelist": ["^/(husky1|parrot1)/.*$", "^/(tf|tf_static|clock|rosout)$",
+                                         "^/mission/.*$", "^/simulation/session$",
+                                         "^/teleop/(joy|cmd_vel_controller)$", "^/yolo/debug_image$",
+                                         "^/tree_locations/(markers|map)$"],
                      "use_sim_time": False,
                  }]),
         ]

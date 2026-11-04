@@ -71,6 +71,9 @@ def start_dashboard(context):
         "MISSION_MODE": mode,
         "MISSION_REPO": str(root),
         "MISSION_DATA": str(Path(data_dir).expanduser().resolve()),
+        "MISSION_SHOW_LOGS": value("show_logs"),
+        "MISSION_LOG_LEVEL": value("log_level"),
+        "MISSION_STACK_LOG_LEVEL": value("stack_log_level"),
         # Bare ROS launches use domain 0 and permit network discovery. Prevent
         # direct-Uvicorn convenience defaults from isolating this third terminal.
         "ROS_DOMAIN_ID": os.environ.get("ROS_DOMAIN_ID", "0"),
@@ -121,65 +124,33 @@ def start_dashboard(context):
 
 
 def generate_launch_description():
-    return LaunchDescription(
-        [
-            DeclareLaunchArgument(
-                "mode",
-                default_value="external",
-                choices=["external", "deploy", "managed"],
-                description="External attaches to ROS; deploy spawns into a ui:=true world; managed launches everything.",
-            ),
-            DeclareLaunchArgument(
-                "host",
-                default_value="127.0.0.1",
-                description="HTTP bind address; localhost is recommended.",
-            ),
-            DeclareLaunchArgument(
-                "port", default_value="8000", description="HTTP port."
-            ),
-            DeclareLaunchArgument(
-                "telemetry",
-                default_value="true",
-                description="Launch the Lichtblick viewer and read-only bridge; set false when launched separately.",
-            ),
-            DeclareLaunchArgument(
-                "telemetry_host",
-                default_value="127.0.0.1",
-                description="Bind address for the telemetry services.",
-            ),
-            DeclareLaunchArgument(
-                "viewer_port",
-                default_value=os.environ.get("MISSION_TELEMETRY_VIEWER_PORT", "8080"),
-            ),
-            DeclareLaunchArgument(
-                "bridge_port",
-                default_value=os.environ.get("MISSION_TELEMETRY_BRIDGE_PORT", "8765"),
-            ),
-            DeclareLaunchArgument(
-                "viewer_url",
-                default_value=os.environ.get("MISSION_TELEMETRY_VIEWER_URL", ""),
-                description="Browser-accessible viewer URL; default uses browser hostname and viewer_port.",
-            ),
-            DeclareLaunchArgument(
-                "bridge_url",
-                default_value=os.environ.get("MISSION_TELEMETRY_BRIDGE_URL", ""),
-                description="Browser-accessible WebSocket URL; default uses browser hostname and bridge_port.",
-            ),
-            DeclareLaunchArgument(
-                "repo_dir",
-                default_value=os.environ.get("MISSION_REPO", ""),
-                description="RS1 repository root; automatically found when omitted.",
-            ),
-            DeclareLaunchArgument(
-                "python_executable",
-                default_value="",
-                description="Python with backend installed; defaults to the repository venv if present.",
-            ),
-            DeclareLaunchArgument(
-                "data_dir",
-                default_value=os.environ.get("MISSION_DATA", ""),
-                description="Session data directory; external and managed defaults are separate.",
-            ),
-            OpaqueFunction(function=start_dashboard),
-        ]
-    )
+    return LaunchDescription([
+        DeclareLaunchArgument("mode", default_value="external", choices=["external", "deploy", "managed"],
+                              description="External attaches to ROS; deploy spawns into a ui:=true world; managed launches everything."),
+        DeclareLaunchArgument("host", default_value="127.0.0.1",
+                              description="HTTP bind address; localhost is recommended."),
+        DeclareLaunchArgument("port", default_value="8000", description="HTTP port."),
+        DeclareLaunchArgument("show_logs", default_value="true", choices=["true", "false"],
+                              description="In deploy mode, stream robot and mission logs into this terminal."),
+        DeclareLaunchArgument("log_level", default_value="info", choices=["debug", "info", "warn", "error", "fatal"],
+                              description="Mission, exploration and terrain-following severity for new deployments."),
+        DeclareLaunchArgument("stack_log_level", default_value="warn", choices=["debug", "info", "warn", "error", "fatal"],
+                              description="Supporting ROS stack severity for new deployments, including Nav2 and localisation."),
+        DeclareLaunchArgument("telemetry", default_value="true",
+                              description="Launch the Lichtblick viewer and read-only bridge; set false when launched separately."),
+        DeclareLaunchArgument("telemetry_host", default_value="127.0.0.1",
+                              description="Bind address for the telemetry services."),
+        DeclareLaunchArgument("viewer_port", default_value=os.environ.get("MISSION_TELEMETRY_VIEWER_PORT", "8080")),
+        DeclareLaunchArgument("bridge_port", default_value=os.environ.get("MISSION_TELEMETRY_BRIDGE_PORT", "8765")),
+        DeclareLaunchArgument("viewer_url", default_value=os.environ.get("MISSION_TELEMETRY_VIEWER_URL", ""),
+                              description="Browser-accessible viewer URL; default uses browser hostname and viewer_port."),
+        DeclareLaunchArgument("bridge_url", default_value=os.environ.get("MISSION_TELEMETRY_BRIDGE_URL", ""),
+                              description="Browser-accessible WebSocket URL; default uses browser hostname and bridge_port."),
+        DeclareLaunchArgument("repo_dir", default_value=os.environ.get("MISSION_REPO", ""),
+                              description="RS1 repository root; automatically found when omitted."),
+        DeclareLaunchArgument("python_executable", default_value="",
+                              description="Python with backend installed; defaults to the repository venv if present."),
+        DeclareLaunchArgument("data_dir", default_value=os.environ.get("MISSION_DATA", ""),
+                              description="Session data directory; external and managed defaults are separate."),
+        OpaqueFunction(function=start_dashboard),
+    ])

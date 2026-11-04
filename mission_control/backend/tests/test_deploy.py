@@ -40,20 +40,11 @@ class Adapter:
             "mission": {},
         }
 
-    def snapshot(self):
-        return copy.deepcopy(self.data)
-
-    def foreign_nodes(self):
-        return list(self.foreign)
-
-    def close(self):
-        self.closed = True
-
-    async def call(self, kind):
-        self.calls.append(kind)
-
-    async def configure_roi(self, roi):
-        self.calls.append(("roi", roi))
+    def snapshot(self): return copy.deepcopy(self.data)
+    def foreign_nodes(self): return list(self.foreign)
+    def close(self): self.closed = True
+    async def call(self, kind): self.calls.append(kind)
+    async def configure_roi(self, roi, roi_box=None): self.calls.append(("roi", roi))
 
     def ready(self, session):
         self.data.update(
@@ -124,12 +115,8 @@ def spawn_plan(plan, terrain):
     # Deploy keeps the world's existing station at its fixed location, unlike
     # managed mode's fixture which relocates that station beside the start.
     for x, y in ((85, -45), (80, -45), (70, -40), (0, 0)):
-        candidate = SpawnPlan(
-            **{
-                **plan.model_dump(exclude={"roi", "station_offset"}),
-                "start": XY(x=x, y=y),
-            }
-        )
+        candidate = SpawnPlan(**{**plan.model_dump(exclude={"roi", "roi_second", "station_offset"}),
+                                 "start": XY(x=x, y=y)})
         try:
             terrain.spawn_placements(candidate)
             return candidate
@@ -176,16 +163,30 @@ def test_spawn_is_a_separate_operation_and_cannot_be_duplicated(
     asyncio.run(scenario())
 
 
-@pytest.mark.parametrize(
-    "change",
-    [
-        {"ui": False},
-        {"fresh": False},
-        {"instance_id": ""},
-        {"world_name": "simple_trees"},
-        {"conflict": True},
-    ],
-)
+@pytest.mark.parametrize("levels", [None, ("debug", "info")])
+def test_deployment_forwards_log_levels(terrain, spawn_plan, tmp_path, monkeypatch, levels):
+    for name, value in zip(("MISSION_LOG_LEVEL", "MISSION_STACK_LOG_LEVEL"), levels or (None, None)):
+        if value is None:
+            monkeypatch.delenv(name, raising=False)
+        else:
+            monkeypatch.setenv(name, value)
+
+    async def scenario():
+        manager, runtime, _, _ = make_manager(terrain, tmp_path)
+        await manager.spawn(spawn_plan)
+        command = runtime.launches[0][1]
+        mission, stack = levels or ("info", "warn")
+        assert f"log_level:={mission}" in command
+        assert f"stack_log_level:={stack}" in command
+        await manager.close()
+        assert runtime.running  # Terminal viewing must not own the ROS lifetime.
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("change", [
+    {"ui": False}, {"fresh": False}, {"instance_id": ""}, {"world_name": "simple_trees"},
+    {"conflict": True},
+])
 def test_spawn_requires_fresh_ui_world_identity(terrain, spawn_plan, tmp_path, change):
     async def scenario():
         manager, runtime, adapter, _ = make_manager(terrain, tmp_path)
@@ -229,20 +230,14 @@ def test_spawn_rejects_existing_robots_even_without_local_record(
     asyncio.run(scenario())
 
 
-def test_spawn_allows_configured_rviz_windows_before_robots(
-    terrain, spawn_plan, tmp_path
-):
+@pytest.mark.parametrize("combined", [False, True])
+def test_spawn_allows_configured_rviz_windows_before_robots(terrain, spawn_plan, tmp_path, combined):
     async def scenario():
         manager, runtime, adapter, _ = make_manager(terrain, tmp_path)
-        adapter.foreign = ["/simulation_session", "/ros_gz_bridge_clock"] + [
-            f"/{robot}/{node}"
-            for robot in ("husky1", "parrot1")
-            for node in (
-                "rviz2",
-                "rviz_navigation_dialog_action_client",
-                "transform_listener_impl_5fbe11c26840",
-            )
-        ]
+        displays = ["/rviz2", "/transform_listener_impl_5eba148b86c0"] if combined else [
+            f"/{robot}/{node}" for robot in ("husky1", "parrot1") for node in (
+                "rviz2", "rviz_navigation_dialog_action_client", "transform_listener_impl_5fbe11c26840")]
+        adapter.foreign = ["/simulation_session", "/ros_gz_bridge_clock"] + displays
         assert manager.snapshot()["deployment"]["can_spawn"]
         await manager.spawn(spawn_plan)
         assert len(runtime.launches) == 1
@@ -308,23 +303,16 @@ def test_managed_mode_exempts_only_the_dedicated_telemetry_node(terrain, tmp_pat
     assert manager.foreign_nodes() == ["/rs1_telemetry/mission_coordinator_node"]
 
 
-@pytest.mark.parametrize(
-    "foreign",
-    [
-        "/husky1/controller_server",
-        "/parrot1/robot_state_publisher",
-        "/mission_coordinator_node",
-        "/other/rviz2",
-        "/rviz_navigation_dialog_action_client",
-        "/husky1/transform_listener_impl_not_a_generated_id",
-    ],
-)
-def test_rviz_exemption_does_not_hide_other_stacks(
-    terrain, spawn_plan, tmp_path, foreign
-):
+@pytest.mark.parametrize("foreign", [
+    "/husky1/controller_server", "/parrot1/robot_state_publisher", "/mission_coordinator_node",
+    "/other/rviz2", "/rviz_navigation_dialog_action_client",
+    "/husky1/transform_listener_impl_not_a_generated_id",
+    "/transform_listener_impl_not_a_generated_id", "/controller_server",
+])
+def test_rviz_exemption_does_not_hide_other_stacks(terrain, spawn_plan, tmp_path, foreign):
     async def scenario():
         manager, runtime, adapter, _ = make_manager(terrain, tmp_path)
-        adapter.foreign = ["/husky1/rviz2", "/parrot1/rviz2", foreign]
+        adapter.foreign = ["/rviz2", "/husky1/rviz2", "/parrot1/rviz2", foreign]
         with pytest.raises(Conflict, match="nodes already exist"):
             await manager.spawn(spawn_plan)
         assert runtime.launches == []
@@ -333,9 +321,10 @@ def test_rviz_exemption_does_not_hide_other_stacks(
     asyncio.run(scenario())
 
 
-def test_tf_listener_without_rviz_does_not_get_observer_exemption(terrain, tmp_path):
+@pytest.mark.parametrize("namespace", ["", "/husky1", "/parrot1"])
+def test_tf_listener_without_rviz_does_not_get_observer_exemption(terrain, tmp_path, namespace):
     manager, _, adapter, _ = make_manager(terrain, tmp_path)
-    adapter.foreign = ["/husky1/transform_listener_impl_5fbe11c26840"]
+    adapter.foreign = [f"{namespace}/transform_listener_impl_5fbe11c26840"]
     assert manager.foreign_nodes() == adapter.foreign
     assert not manager.snapshot()["deployment"]["can_spawn"]
 

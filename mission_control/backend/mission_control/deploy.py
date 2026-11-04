@@ -51,24 +51,18 @@ class DeploySessionManager(ExternalSessionManager):
     def foreign_nodes(self):
         nodes = {"/" + name.lstrip("/") for name in super().foreign_nodes()}
         allowed = {"/simulation_session", "/ros_gz_bridge_clock", "/emergency_stop"}
-        for namespace in ("/husky1", "/parrot1"):
+        # Combined RViz runs at the root; separate windows use robot namespaces.
+        # Only exempt a generated TF listener when RViz is present in that same
+        # namespace, so unrelated listeners and robot stacks still block spawn.
+        for namespace in ("", "/husky1", "/parrot1"):
             if f"{namespace}/rviz2" not in nodes:
                 continue
-            # The configured RViz windows create a Nav2 panel action client and
-            # a TF listener. They can observe an empty world before deployment.
-            allowed.update(
-                {
-                    f"{namespace}/rviz2",
-                    f"{namespace}/rviz_navigation_dialog_action_client",
-                }
-            )
-            allowed.update(
-                name
-                for name in nodes
-                if re.fullmatch(
-                    rf"{namespace}/transform_listener_impl_[0-9a-fA-F]+", name
-                )
-            )
+            allowed.add(f"{namespace}/rviz2")
+            # Only the separate robot windows have a Nav2 control panel.
+            if namespace:
+                allowed.add(f"{namespace}/rviz_navigation_dialog_action_client")
+            allowed.update(name for name in nodes if re.fullmatch(
+                rf"{namespace}/transform_listener_impl_[0-9a-fA-F]+", name))
         return sorted(nodes - allowed)
 
     def deployment_view(self, ros):
@@ -193,13 +187,8 @@ class DeploySessionManager(ExternalSessionManager):
             and not self.deployment.get("roi_selected")
         ):
             mission = self.adapter.snapshot().get("mission", {})
-            if mission.get("session_id") == self.deployment[
-                "session_id"
-            ] and mission.get("state") in (
-                "executing",
-                "cancellation_requested",
-                *TERMINAL,
-            ):
+            if (mission.get("session_id") == self.deployment["session_id"]
+                    and mission.get("state") in ("executing", "manual_assistance", "cancellation_requested", *TERMINAL)):
                 # Recover a Start acknowledgement lost during a backend restart.
                 self.deployment["roi_selected"] = True
                 self.runtime.save(self.deployment)
@@ -393,24 +382,13 @@ class DeploySessionManager(ExternalSessionManager):
             saved = {"plan": plan.model_dump(mode="json"), "placements": placements}
             plan_path = directory / "plan.json"
             plan_path.write_text(json.dumps(saved, indent=2))
-            record = {
-                **saved,
-                "phase": "spawning",
-                "session_id": str(plan.session_id),
-                "world_instance_id": world["instance_id"],
-                "world_name": world["world_name"],
-                "created_at": time.time(),
-                "roi_selected": False,
-                "log_path": str(directory / "ros.log"),
-            }
-            command = [
-                "ros2",
-                "launch",
-                "rs1_mission",
-                "deploy.launch.py",
-                f"plan_file:={plan_path}",
-                f"world_instance_id:={world['instance_id']}",
-            ]
+            record = {**saved, "phase": "spawning", "session_id": str(plan.session_id),
+                      "world_instance_id": world["instance_id"], "world_name": world["world_name"],
+                      "created_at": time.time(), "roi_selected": False, "log_path": str(directory / "ros.log")}
+            command = ["ros2", "launch", "rs1_mission", "deploy.launch.py",
+                       f"plan_file:={plan_path}", f"world_instance_id:={world['instance_id']}",
+                       f"log_level:={os.getenv('MISSION_LOG_LEVEL', 'info')}",
+                       f"stack_log_level:={os.getenv('MISSION_STACK_LOG_LEVEL', 'warn')}"]
             env = {**os.environ}
             if world.get("ign_partition"):
                 env["IGN_PARTITION"] = world["ign_partition"]
@@ -438,15 +416,9 @@ class DeploySessionManager(ExternalSessionManager):
         return self.snapshot()
 
     def check_cancel_owner(self, ros):
-        if (
-            not self.deployment
-            or ros.get("mission", {}).get("session_id") != self.deployment["session_id"]
-            or ros.get("world", {}).get("instance_id")
-            != self.deployment["world_instance_id"]
-        ):
-            raise Conflict(
-                "The observed mission does not belong to this deployment; it was not cancelled"
-            )
+        if (not self.deployment or ros.get("mission", {}).get("session_id") != self.deployment["session_id"]
+                or ros.get("world", {}).get("instance_id") != self.deployment["world_instance_id"]):
+            raise Conflict("The observed mission does not belong to this deployment; no command was sent")
 
     async def stop_deployment(self):
         async with self.lock:
@@ -462,26 +434,11 @@ class DeploySessionManager(ExternalSessionManager):
                 )
             mission = ros.get("mission", {})
             same_world = ros["world"].get("instance_id") == record["world_instance_id"]
-            if same_world and (
-                self.command
-                or mission.get("state") in ("executing", "cancellation_requested")
-                or (
-                    mission.get("state") in TERMINAL
-                    and not mission.get("cleanup_complete")
-                )
-            ):
-                raise Conflict(
-                    "Cancel the mission and wait for cleanup before stopping robots"
-                )
-            if (
-                record.get("phase") == "deployed"
-                and self.runtime.alive(record)
-                and same_world
-                and not ros.get("checks", {}).get("mission_status")
-            ):
-                raise Conflict(
-                    "Mission status is unavailable; restore its connection before stopping deployed robots"
-                )
+            if same_world and (self.command or mission.get("state") in ("executing", "manual_assistance", "cancellation_requested") or (
+                    mission.get("state") in TERMINAL and not mission.get("cleanup_complete"))):
+                raise Conflict("Cancel the mission and wait for cleanup before stopping robots")
+            if record.get("phase") == "deployed" and self.runtime.alive(record) and same_world and not ros.get("checks", {}).get("mission_status"):
+                raise Conflict("Mission status is unavailable; restore its connection before stopping deployed robots")
             await self.runtime.stop(record)
             # Shutdown may take seconds. A replacement world must never inherit
             # the old decision to remove models, even if its model names match.

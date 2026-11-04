@@ -4,3 +4,12 @@
 [submodule "rs1_ws/src/extern/m-explore-ros2"]
 	path = rs1_ws/src/extern/m-explore-ros2
 	url = https://github.com/JamesY1000/m-explore-ros2.git
+[submodule "rs1_ws/src/extern/ground_segmentation"]
+	path = rs1_ws/src/extern/ground_segmentation
+	url = git@github.com:JamesY1000/ground_segmentation.git
+[submodule "rs1_ws/src/extern/ground_segmentation_ros2"]
+	path = rs1_ws/src/extern/ground_segmentation_ros2
+	url = git@github.com:JamesY1000/ground_segmentation_ros2.git
+[submodule "rs1_ws/src/extern/nav2_ground_consistency_costmap_plugin"]
+	path = rs1_ws/src/extern/nav2_ground_consistency_costmap_plugin
+	url = git@github.com:JamesY1000/nav2_ground_consistency_costmap_plugin.git

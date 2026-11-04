@@ -20,6 +20,7 @@ find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(nav2_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 
 # Include the 'include' directory
 include_directories(include)
@@ -40,7 +41,7 @@ add_executable(parrot_mission_executor
 
 ament_target_dependencies(mission_coordinator tf2 tf2_ros tf2_geometry_msgs rclcpp rcl_interfaces rclcpp_action std_msgs geometry_msgs visualization_msgs rs1_interfaces std_srvs)
 ament_target_dependencies(husky_mission_executor rclcpp rclcpp_action std_msgs geometry_msgs tf2 tf2_ros tf2_geometry_msgs nav_msgs nav2_msgs rs1_interfaces)
-ament_target_dependencies(parrot_mission_executor rclcpp rclcpp_action std_msgs geometry_msgs tf2 tf2_ros nav2_msgs rs1_interfaces)
+ament_target_dependencies(parrot_mission_executor rclcpp rclcpp_action std_msgs geometry_msgs sensor_msgs tf2 tf2_ros tf2_geometry_msgs nav2_msgs rs1_interfaces)
 
 # Install cpp executables
 install(TARGETS
@@ -54,7 +55,35 @@ install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME}
 )
 
+# Parrot-only ROI sampling test harness and RViz visualisation
+install(PROGRAMS
+  scripts/test_roi_sampling.py
+  scripts/roi_sampling_viz.py
+  scripts/carbon_calculator_node.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(DIRECTORY config
+  DESTINATION share/${PROJECT_NAME}
+)
+
+install(DIRECTORY res
+  DESTINATION share/${PROJECT_NAME}
+) # resource files
+
 if(BUILD_TESTING)
+  find_package(ament_cmake_pytest REQUIRED)
+  ament_add_pytest_test(test_manual_assistance test/test_manual_assistance.py
+    TIMEOUT 90
+    ENV COORDINATOR_EXECUTABLE=$<TARGET_FILE:mission_coordinator>
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
+  )
+  ament_add_pytest_test(test_husky_transform_readiness
+    test/test_husky_transform_readiness.py
+    TIMEOUT 90
+    ENV HUSKY_EXECUTABLE=$<TARGET_FILE:husky_mission_executor>
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
+  )
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights
   # comment the line when a copyright and license is added to all source files

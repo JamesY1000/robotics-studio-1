@@ -74,9 +74,12 @@ def test_bridge_is_an_observer_in_the_namespace_exempted_by_deployment(repositor
     # Monitoring must remain responsive while the simulation clock is paused.
     assert parameters["use_sim_time"] is False
     allowed = lambda topic: any(re.fullmatch(pattern, topic) for pattern in parameters["topic_whitelist"])
-    for topic in ("/husky1/scan", "/parrot1/map", "/tf", "/tf_static", "/clock", "/mission/status"):
+    for topic in ("/husky1/scan", "/parrot1/map", "/tf", "/tf_static", "/clock", "/mission/status",
+                  "/rosout", "/teleop/joy", "/teleop/cmd_vel_controller", "/yolo/debug_image",
+                  "/tree_locations/markers", "/tree_locations/map"):
         assert allowed(topic)
-    for topic in ("/other_robot/scan", "/husky10/scan", "/unrelated/mission/status"):
+    for topic in ("/other_robot/scan", "/husky10/scan", "/unrelated/mission/status",
+                  "/teleop/unrelated", "/yolo/unrelated", "/tree_locations/unrelated", "/rosout_extra"):
         assert not allowed(topic)
 
 
@@ -148,3 +151,21 @@ def test_dashboard_rejects_its_own_telemetry_port_collisions(repository, monkeyp
         **{conflicting_service: "8000"})
     with pytest.raises(ValueError, match="Dashboard, viewer and bridge need different ports"):
         module.start_dashboard(context)
+
+
+@pytest.mark.parametrize("overrides", [{}, {"show_logs": "false", "log_level": "debug", "stack_log_level": "info"}])
+def test_dashboard_passes_logging_defaults_and_overrides(repository, monkeypatch, overrides):
+    module, context, _ = prepared_launch("dashboard", repository, monkeypatch, **overrides)
+    processes = []
+    original_process = module.ExecuteProcess
+
+    def capture(**kwargs):
+        processes.append(kwargs)
+        return original_process(**kwargs)
+
+    monkeypatch.setattr(module, "ExecuteProcess", capture)
+    module.start_dashboard(context)
+    environment = processes[0]["additional_env"]
+    assert environment["MISSION_SHOW_LOGS"] == overrides.get("show_logs", "true")
+    assert environment["MISSION_LOG_LEVEL"] == overrides.get("log_level", "info")
+    assert environment["MISSION_STACK_LOG_LEVEL"] == overrides.get("stack_log_level", "warn")

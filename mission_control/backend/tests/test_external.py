@@ -17,35 +17,16 @@ class Adapter:
             "available": True,
             "sim_time": 10,
             "checks": {"clock": True, "mission_status": True, "mission_services": True},
-            "robots": {
-                r: {"fresh": True, "x": 90, "y": -48, "stamp": 10}
-                for r in ("husky1", "parrot1")
-            },
-            "alignment": {
-                "instance_id": "sim-1",
-                "world_name": "v2_forest",
-                "ready": {"husky1": True, "parrot1": True},
-            },
-            "mission": {
-                "session_id": "manual",
-                "instance_id": "coordinator-1",
-                "state": "ready",
-                "roi": {"x": 88, "y": -48, "z": 0, "frame_id": "world"},
-                "cleanup_complete": True,
-            },
-        }
+            "robots": {r: {"fresh": True, "x": 90, "y": -48, "stamp": 10} for r in ("husky1", "parrot1")},
+            "alignment": {"instance_id": "sim-1", "world_name": "v2_forest",
+                "ready": {"husky1": True, "parrot1": True}},
+            "mission": {"session_id": "manual", "instance_id": "coordinator-1", "state": "ready",
+                "roi": {"x": 88, "y": -48, "z": 0, "frame_id": "world"}, "cleanup_complete": True}}
 
-    def snapshot(self):
-        return copy.deepcopy(self.data)
-
-    def close(self):
-        self.closed = True
-
-    async def configure_roi(self, roi):
-        self.calls.append(("roi", roi))
-
-    async def call(self, kind):
-        self.calls.append(kind)
+    def snapshot(self): return copy.deepcopy(self.data)
+    def close(self): self.closed = True
+    async def configure_roi(self, roi, roi_box=None): self.calls.append(("roi", roi))
+    async def call(self, kind): self.calls.append(kind)
 
 
 def test_external_start_never_launches_and_blocks_duplicate(terrain, plan, tmp_path):
@@ -171,6 +152,31 @@ def test_external_api_rejects_spawn_plans(monkeypatch, tmp_path, terrain, plan):
         assert client.post("/api/mission/start", json={}).status_code == 409
 
 
+def test_roi_preview_does_not_start_and_start_rechecks(monkeypatch, tmp_path, terrain, plan):
+    from fastapi.testclient import TestClient
+    import mission_control.app as module
+    monkeypatch.setenv("MISSION_MODE", "external")
+    monkeypatch.setattr(module, "DATA", tmp_path)
+    monkeypatch.setattr(module, "Terrain", lambda _: terrain)
+    monkeypatch.setattr(module, "create_adapter", Adapter)
+    point = plan.roi.model_dump()
+    with TestClient(module.app) as client:
+        preview = client.post("/api/roi/preview", json=point)
+        assert preview.status_code == 200
+        assert preview.json() == {**point, "z": terrain.height(plan.roi.x, plan.roi.y)}
+        assert module.app.state.manager.adapter.calls == []
+
+        # A successful preview is not permission to bypass validation at Start.
+        monkeypatch.setattr(terrain, "obstacles", [(plan.roi.x, plan.roi.y)])
+        blocked = client.post("/api/roi/preview", json=point)
+        assert blocked.status_code == 422
+        assert "too close" in blocked.json()["detail"]
+        start = client.post("/api/mission/start", json={"roi": point})
+        assert start.status_code == 422
+        assert start.json()["detail"] == blocked.json()["detail"]
+        assert module.app.state.manager.adapter.calls == []
+
+
 def test_external_definitive_rejection_can_retry_but_timeout_cannot(terrain, tmp_path):
     async def scenario():
         m = ExternalSessionManager(terrain, tmp_path, Adapter)
@@ -207,8 +213,7 @@ def test_external_restart_during_roi_configuration_prevents_start(
         m = ExternalSessionManager(terrain, tmp_path, Adapter)
         m.sample_trails()
         adapter = m.adapter
-
-        async def restart(_):
+        async def restart(_, roi_box=None):
             adapter.data["alignment"]["instance_id"] = "sim-new"
             m.sample_trails()  # Must not destroy the client while a command is in flight.
             assert not adapter.closed and m.adapter is adapter

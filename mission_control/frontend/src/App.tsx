@@ -3,6 +3,7 @@ import { TerrainMap, type Mode } from "./Map";
 import type { Plan, Preset, State, XY } from "./types";
 import { canStartAttached, missionRequest, spawnRequest } from "./workflow";
 import { Telemetry } from "./Telemetry";
+import { ManualControl } from "./ManualControl";
 
 async function api<T>(path: string, body?: unknown): Promise<T> {
   const response = await fetch(`/api/${path}`, {
@@ -244,6 +245,10 @@ export default function App() {
   const [mode, setMode] = useState<Mode>("start");
   const [error, setError] = useState("");
   const [previewError, setPreviewError] = useState("");
+  const [roiPreview, setRoiPreview] = useState<{
+    key: string;
+    error: string;
+  } | null>(null);
   const [preview, setPreview] = useState<Record<
     string,
     XY & { z: number }
@@ -421,6 +426,43 @@ export default function App() {
       clearTimeout(timer);
     };
   }, [planKey, spawnLocked, external, deploy, !!state]);
+
+  // Deploy mode submits a selected world ROI. External mode only submits one
+  // when edited; an untouched coordinator goal keeps its existing frame and Z.
+  const roiNeedsPreview =
+    attached && !!roi && (deploy || externalRoiDirty.current);
+  const roiPreviewKey = roiNeedsPreview
+    ? JSON.stringify([state?.mode, deployment?.plan?.session_id, roi.x, roi.y])
+    : "";
+  useEffect(() => {
+    setRoiPreview(null);
+    if (!roiPreviewKey || roiLocked || !roi) return;
+    let alive = true;
+    // Match the spawn preview delay so clicks and coordinate edits settle first.
+    const timer = setTimeout(() => {
+      api<XY & { z: number }>("roi/preview", { x: roi.x, y: roi.y })
+        .then(() => {
+          if (alive) setRoiPreview({ key: roiPreviewKey, error: "" });
+        })
+        .catch((e) => {
+          if (alive) setRoiPreview({ key: roiPreviewKey, error: e.message });
+        });
+    }, 300);
+    return () => {
+      // A response for an older selection must never validate the new point.
+      alive = false;
+      clearTimeout(timer);
+    };
+  }, [roiPreviewKey, roiLocked]);
+  const roiPreviewMatches = roiPreview?.key === roiPreviewKey;
+  const roiPreviewError = roiPreviewMatches ? roiPreview.error : "";
+  const roiValidationMessage =
+    roiNeedsPreview && !roiLocked
+      ? roiPreviewMatches
+        ? roiPreviewError || "✓ ROI passed placement checks. Ready to start."
+        : "Checking ROI…"
+      : "";
+
   const place = (which: Mode, p: XY) => {
     if (which === "roi" ? roiLocked : spawnLocked) return;
     if (attached && which === "roi") {
@@ -438,17 +480,36 @@ export default function App() {
     );
   };
   const act = async (
-    action: "start" | "cancel" | "reset" | "spawn" | "stop",
+    action:
+      | "start"
+      | "cancel"
+      | "reset"
+      | "spawn"
+      | "stop"
+      | "manual_husky"
+      | "manual_parrot"
+      | "input_keyboard"
+      | "input_controller"
+      | "resume",
   ) => {
     setBusy(true);
     setError("");
     try {
+      const controlAction = [
+        "manual_husky",
+        "manual_parrot",
+        "input_keyboard",
+        "input_controller",
+        "resume",
+      ].includes(action);
       const next = await api<State>(
-        action === "reset"
-          ? "session/reset"
-          : action === "spawn" || action === "stop"
-            ? `deployment/${action}`
-            : `mission/${action}`,
+        controlAction
+          ? `mission/control/${action}`
+          : action === "reset"
+            ? "session/reset"
+            : action === "spawn" || action === "stop"
+              ? `deployment/${action}`
+              : `mission/${action}`,
         action === "start"
           ? missionRequest(state?.mode, roi, externalRoiDirty.current, plan)
           : action === "spawn"
@@ -505,20 +566,28 @@ export default function App() {
     }
   };
   const active =
-    ["preparing", "ready", "executing", "cancellation_requested"].includes(
-      phase,
-    ) &&
+    [
+      "preparing",
+      "ready",
+      "executing",
+      "manual_assistance",
+      "cancellation_requested",
+    ].includes(phase) &&
     (!deploy || deployment?.phase === "deployed");
   const placements = deployment?.placements || state?.placements || preview;
   const safetyActive =
     state?.ros.safety?.husky1_stopped === true ||
     state?.ros.safety?.parrot1_stopped === true;
-  const canStart = !safetyActive && (attached
-    ? canStartAttached(state, roi)
-    : !locked && !!preview && !!state?.ros.available);
+  const canStart = !safetyActive && attached
+    ? canStartAttached(state, roi) &&
+      (!roiNeedsPreview || (roiPreviewMatches && !roiPreviewError))
+    : !locked && !!preview && !!state?.ros.available;
   const canSpawn =
     deploy && !!deployment?.can_spawn && !spawnLocked && !!preview;
   const canStop = deploy && !!deployment?.plan && !active;
+  const controlMode = state?.ros.mission?.control_mode;
+  const manualRobot =
+    controlMode === "husky1" || controlMode === "parrot1" ? controlMode : null;
   return (
     <div className="shell">
       <aside className="sidebar">
@@ -605,6 +674,38 @@ export default function App() {
             </p>
           </div>
           <div className="header-actions">
+            {["executing", "manual_assistance"].includes(phase) && (
+              <>
+                <button
+                  disabled={busy || !connected}
+                  onClick={() => act("manual_husky")}
+                >
+                  Manual Husky
+                </button>
+                <button
+                  disabled={busy || !connected}
+                  onClick={() => act("manual_parrot")}
+                >
+                  Manual Parrot
+                </button>
+              </>
+            )}
+            {phase === "manual_assistance" && (
+              <button
+                className="primary"
+                disabled={
+                  busy || !connected || !state?.ros.mission?.cleanup_complete
+                }
+                title={
+                  state?.ros.mission?.cleanup_complete
+                    ? "Recheck readiness and retry the same ROI"
+                    : "Waiting for previous navigation to stop"
+                }
+                onClick={() => act("resume")}
+              >
+                Resume autonomous mission
+              </button>
+            )}
             <span
               className={`badge ${phase === "executing" || phase === "complete" ? "green" : ""}`}
             >
@@ -641,6 +742,32 @@ export default function App() {
             )}
           </div>
         </header>
+        {tab === "mission" &&
+          phase === "manual_assistance" &&
+          manualRobot &&
+          connected &&
+          !busy && (
+            <>
+              <div className="notice" role="status">
+                {state?.ros.mission?.message}
+                {!state?.ros.mission?.cleanup_complete &&
+                  " Previous navigation is still stopping; manual control is available while you wait."}
+              </div>
+              <ManualControl
+                key={`${state?.ros.mission?.instance_id}:${manualRobot}:${state?.ros.mission?.input_revision}`}
+                robot={manualRobot}
+                input={state?.ros.mission?.manual_input}
+                controllerConnected={!!state?.ros.controller?.connected}
+                onSelectInput={(input) =>
+                  act(
+                    input === "keyboard"
+                      ? "input_keyboard"
+                      : "input_controller",
+                  )
+                }
+              />
+            </>
+          )}
         {(error || (!connected && state)) && (
           <div className="alert" role="alert">
             {error ||
@@ -928,36 +1055,38 @@ export default function App() {
                   </label>
                 )}
                 <div
-                  className={`validation ${previewError ? "invalid" : ""}`}
+                  className={`validation ${previewError || roiPreviewError ? "invalid" : ""}`}
                   role="status"
                 >
                   {deploy
                     ? previewError ||
-                    (deployment?.phase === "unspawned"
-                      ? !deployment.can_spawn
-                        ? deployment.message
-                        : preview
-                          ? "✓ Robot placements validated. Spawn robots to continue."
-                          : "Choose the shared robot start to validate terrain clearance."
-                      : deployment?.phase === "deployed"
-                        ? phase !== "idle"
-                          ? state?.message
-                          : !roi
-                            ? "Select a point ROI on the map or enter coordinates. No mission starts automatically."
-                            : "Start sends the selected world X / Y to the coordinator. Terrain supplies Z."
-                        : deployment?.message ||
-                        "Connecting to the running world…")
-                    : safetyActive
-                      ? "Mission goals are blocked while an E-stop is latched. Make the robot safe and reset the stop first."
-                      : external
-                        ? locked
-                          ? "ROI editing is available when the mission coordinator is idle."
-                          : externalRoiDirty.current
+                      roiValidationMessage ||
+                      (deployment?.phase === "unspawned"
+                        ? !deployment.can_spawn
+                          ? deployment.message
+                          : preview
+                            ? "✓ Robot placements validated. Spawn robots to continue."
+                            : "Choose the shared robot start to validate terrain clearance."
+                        : deployment?.phase === "deployed"
+                          ? phase !== "idle"
+                            ? state?.message
+                            : !roi
+                              ? "Select a point ROI on the map or enter coordinates. No mission starts automatically."
+                              : "Start sends the selected world X / Y to the coordinator. Terrain supplies Z."
+                          : deployment?.message ||
+                            "Connecting to the running world…")
+                  : safetyActive
+                    ? "Mission goals are blocked while an E-stop is latched. Make the robot safe and reset the stop first."            
+                    : external
+                      ? locked
+                        ? "ROI editing is available when the mission coordinator is idle."
+                        : roiValidationMessage ||
+                          (externalRoiDirty.current
                             ? "Start sends your edited world X / Y to the coordinator. Terrain supplies Z."
-                            : "Start uses the coordinator’s configured ROI, including its frame and Z. Edit X / Y to select a world ROI with terrain height."
-                        : locked
-                          ? "Plan saved for this session."
-                          : previewError ||
+                            : "Start uses the coordinator’s configured ROI, including its frame and Z. Edit X / Y to select a world ROI with terrain height.")
+                      : locked
+                        ? "Plan saved for this session."
+                        : previewError ||
                           (preview
                             ? "✓ Placements validated against terrain."
                             : "Place both a start and an ROI to validate.")}
@@ -1174,12 +1303,6 @@ export default function App() {
                       ? "External world · persistent robot deployment"
                       : "Dashboard backend"}
                 </dd>
-                {!external && (
-                  <>
-                    <dt>Default UAV clearance</dt>
-                    <dd>4 m from downward sensor</dd>
-                  </>
-                )}
                 <dt>Session</dt>
                 <dd className="session-id">
                   {state?.plan?.session_id ||

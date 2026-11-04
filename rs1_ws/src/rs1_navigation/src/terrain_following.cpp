@@ -50,8 +50,24 @@ TerrainFollowingNode::TerrainFollowingNode() : Node("terrain_following_node"),
   );
 
   combined_vel_pub_ = this->create_publisher<geometry_msgs::msg::Twist>(
-    "cmd_vel_combined", // TODO (james): Store in config file
+    "cmd_vel_combined", // TODO (james): Store in rs1_interfaces
     cmd_vel_qos
+  );
+
+  // Nav2's status publisher retains its latest message. Match its QoS so this
+  // node also learns about an existing goal if it starts after navigation does.
+  navigation_status_sub_ = this->create_subscription<action_msgs::msg::GoalStatusArray>(
+    "navigate_to_pose/_action/status",
+    rclcpp::QoS(1).reliable().transient_local(),
+    std::bind(&TerrainFollowingNode::navigationStatusCb, this, std::placeholders::_1)
+  );
+
+  // Exploration can request a backup without an active NavigateToPose goal.
+  // Allow that retreat, but hold height instead of resuming the aborted climb.
+  backup_status_sub_ = this->create_subscription<action_msgs::msg::GoalStatusArray>(
+    "backup/_action/status",
+    rclcpp::QoS(1).reliable().transient_local(),
+    std::bind(&TerrainFollowingNode::backupStatusCb, this, std::placeholders::_1)
   );
 
   // Create ros timer as main control loop
@@ -64,7 +80,7 @@ TerrainFollowingNode::TerrainFollowingNode() : Node("terrain_following_node"),
   );
 
 
-  RCLCPP_INFO(get_logger(), "Terrain following node initialised (target %.2f m, loop %.1f Hz)", offset_height_, control_rate_hz_);
+  RCLCPP_INFO(get_logger(), "Terrain following node initialised in hover (target %.2f m, loop %.1f Hz)", offset_height_, control_rate_hz_);
 }
 
 void TerrainFollowingNode::scanCb(const sensor_msgs::msg::LaserScan &msg)
@@ -79,6 +95,143 @@ void TerrainFollowingNode::cmdVelCb(const geometry_msgs::msg::Twist &msg)
   latest_cmd_vel_ = msg;
 }
 
+void TerrainFollowingNode::navigationStatusCb(const action_msgs::msg::GoalStatusArray &msg)
+{
+  updateActionState(msg, navigation_state_);
+  updateMode();
+}
+
+void TerrainFollowingNode::backupStatusCb(const action_msgs::msg::GoalStatusArray &msg)
+{
+  updateActionState(msg, backup_state_);
+  updateMode();
+}
+
+void TerrainFollowingNode::updateActionState(
+  const action_msgs::msg::GoalStatusArray &msg, ActionState &state)
+{
+  // Status arrays are not necessarily ordered. Find the most recently accepted
+  // goal, including finished goals, rather than looking for any executing goal.
+  const action_msgs::msg::GoalStatus *latest_status = nullptr;
+  for (const auto &status : msg.status_list)
+  {
+    // Timestamps cannot distinguish replacements accepted on the same tick.
+    // Remember those previous IDs so their late statuses cannot resume them.
+    bool superseded = false;
+    for (const auto &goal : state.superseded_goals)
+    {
+      if (status.goal_info.goal_id == goal.goal_id) superseded = true;
+    }
+    if (superseded) continue;
+
+    if (latest_status == nullptr ||
+        rclcpp::Time(status.goal_info.stamp) > rclcpp::Time(latest_status->goal_info.stamp))
+    {
+      latest_status = &status;
+    }
+    else if (status.goal_info.stamp == latest_status->goal_info.stamp)
+    {
+      // Two goals can be accepted on the same simulation tick. Prefer the
+      // executing goal over a finished one; otherwise keep our current goal.
+      const bool status_executing =
+        status.status == action_msgs::msg::GoalStatus::STATUS_EXECUTING;
+      const bool latest_executing =
+        latest_status->status == action_msgs::msg::GoalStatus::STATUS_EXECUTING;
+      if ((status_executing && !latest_executing) ||
+          (status_executing == latest_executing &&
+           status.goal_info.goal_id == state.goal.goal_id))
+      {
+        latest_status = &status;
+      }
+    }
+  }
+
+  if (latest_status == nullptr)
+  {
+    // An empty array means no goals. An array containing only superseded goals
+    // is an old snapshot, so it must not stop the newer goal we already know.
+    if (msg.status_list.empty()) state.executing = false;
+    return;
+  }
+
+  // Ignore an older status snapshot if a newer goal is already known.
+  if (state.received_goal &&
+      rclcpp::Time(latest_status->goal_info.stamp) < rclcpp::Time(state.goal.stamp))
+  {
+    return;
+  }
+
+  const bool new_goal = !state.received_goal ||
+    latest_status->goal_info.goal_id != state.goal.goal_id;
+  if (new_goal)
+  {
+    if (state.received_goal && latest_status->goal_info.stamp == state.goal.stamp)
+    {
+      state.superseded_goals.push_back(state.goal);
+    }
+    else
+    {
+      // Once the acceptance time advances, the timestamp check is sufficient.
+      state.superseded_goals.clear();
+    }
+    state.goal = latest_status->goal_info;
+    state.received_goal = true;
+    state.goal_finished = false;
+
+    // A replacement goal must receive its own fresh velocity command. Do not
+    // carry the previous goal's motion into the new goal while it is planning.
+    received_cmd_vel_ = false;
+    combined_vel_pub_->publish(geometry_msgs::msg::Twist{});
+  }
+
+  const auto status = latest_status->status;
+  if (status == action_msgs::msg::GoalStatus::STATUS_CANCELING ||
+      status == action_msgs::msg::GoalStatus::STATUS_SUCCEEDED ||
+      status == action_msgs::msg::GoalStatus::STATUS_CANCELED ||
+      status == action_msgs::msg::GoalStatus::STATUS_ABORTED)
+  {
+    state.goal_finished = true;
+  }
+
+  // Accepted goals may still be waiting to execute. Only follow terrain once
+  // execution starts, and never resume this same goal after it has finished.
+  state.executing = status == action_msgs::msg::GoalStatus::STATUS_EXECUTING &&
+    !state.goal_finished;
+}
+
+void TerrainFollowingNode::updateMode()
+{
+  if (navigation_state_.executing)
+  {
+    setMode(Mode::TERRAIN_FOLLOWING);
+  }
+  else if (backup_state_.executing)
+  {
+    setMode(Mode::BACKUP_HOLD_HEIGHT);
+  }
+  else
+  {
+    setMode(Mode::HOVER);
+  }
+}
+
+void TerrainFollowingNode::setMode(Mode mode)
+{
+  if (mode_ == mode) return;
+  mode_ = mode;
+
+  // Stop immediately at the transition as well as on each control-loop tick.
+  // Clear any old command so starting navigation again cannot reuse it.
+  received_cmd_vel_ = false;
+  combined_vel_pub_->publish(geometry_msgs::msg::Twist{});
+  if (mode_ == Mode::HOVER)
+    RCLCPP_INFO(get_logger(), "Navigation stopped - hovering");
+  else if (mode_ == Mode::TERRAIN_FOLLOWING)
+    RCLCPP_INFO(get_logger(), "Navigation executing - following terrain");
+  else
+    RCLCPP_INFO(get_logger(), "Backup executing - holding height during retreat");
+}
+
 void TerrainFollowingNode::controlLoop()
 {
   const auto current_time = now();
@@ -86,17 +239,43 @@ void TerrainFollowingNode::controlLoop()
   // Create a twist msg for the combined velocity
   geometry_msgs::msg::Twist combined_vel{};
 
-  // Copy latest nav2 cmd_vel into combined_vel
-  if (received_cmd_vel_)
-  {
-    const double cmd_vel_age = (current_time - last_cmd_vel_time_).seconds();
+  // Status is retained, so also stop if the corresponding action server goes
+  // away. A new status message is required before that action can resume.
+  if (navigation_state_.executing && navigation_status_sub_->get_publisher_count() == 0)
+    navigation_state_.executing = false;
+  if (backup_state_.executing && backup_status_sub_->get_publisher_count() == 0)
+    backup_state_.executing = false;
+  updateMode();
 
-    if (cmd_vel_age >= 0.0 && cmd_vel_age <= cmd_vel_timeout_)
-    {
-      combined_vel.linear.x = latest_cmd_vel_.linear.x;
-      combined_vel.linear.y = latest_cmd_vel_.linear.y;
-      combined_vel.angular.z = latest_cmd_vel_.angular.z;
-    }
+  // Hover before the first goal and after arrival, abort or cancellation.
+  // In particular, do not keep climbing towards the target ground clearance.
+  if (mode_ == Mode::HOVER)
+  {
+    combined_vel_pub_->publish(combined_vel);
+    return;
+  }
+
+  // Nav2 status changes are event-driven, not a heartbeat. Use command freshness
+  // to stop all motion if commands disappear, including the vertical correction.
+  const double cmd_vel_age = (current_time - last_cmd_vel_time_).seconds();
+  if (!received_cmd_vel_ || cmd_vel_age < 0.0 || cmd_vel_age > cmd_vel_timeout_)
+  {
+    combined_vel_pub_->publish(combined_vel);
+    return;
+  }
+
+  // A fresh zero command can be a temporary pause during an active goal.
+  // Keep height correction available during that pause; it is not arrival.
+  combined_vel.linear.x = latest_cmd_vel_.linear.x;
+  combined_vel.linear.y = latest_cmd_vel_.linear.y;
+  combined_vel.angular.z = latest_cmd_vel_.angular.z;
+
+  // A standalone recovery can move away from foliage without climbing into it.
+  // Normal Nav2 recovery inside an executing navigation goal keeps following terrain.
+  if (mode_ == Mode::BACKUP_HOLD_HEIGHT)
+  {
+    combined_vel_pub_->publish(combined_vel);
+    return;
   }
 
   // If we have no new scan, just publish untouched cmd_vel

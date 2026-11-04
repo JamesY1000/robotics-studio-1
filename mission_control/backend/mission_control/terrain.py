@@ -7,7 +7,7 @@ from pathlib import Path
 
 from PIL import Image
 
-from .models import Calibration, Plan, SpawnPlan, XY
+from .models import Calibration, Plan, SpawnPlan, XY, roi_bounds
 
 
 class Terrain:
@@ -50,6 +50,10 @@ class Terrain:
                 return u*a[2] + v*b[2] + (1-u-v)*c[2]
         raise ValueError("No terrain collision triangle at selected coordinates")
 
+    def check_bounds(self, name: str, point: XY, radius: float):
+        if not self.bounds.contains(point, radius):
+            raise ValueError(f"{name} must be inside the terrain with {radius:g} m edge clearance")
+
     def check_point(self, name: str, point: XY, radius: float):
         if not self.bounds.contains(point, radius):
             raise ValueError(f"{name} must be inside the terrain with {radius:g} m edge clearance")
@@ -66,6 +70,9 @@ class Terrain:
         self.check_point("Robot start", plan.start, 1)
         self.check_point("Ground station", station, 2)
         self.check_point("ROI", plan.roi, 0.5)
+        roi_min, roi_max = roi_bounds(plan.roi, plan.roi_second)
+        for corner in (roi_min, roi_max):
+            self.check_bounds("ROI box", corner, 0.5)
         if math.hypot(plan.station_offset.x, plan.station_offset.y) < 4:
             raise ValueError("Ground station must be at least 4 m from the robot start")
         # Wheel lower extent: radius 0.1651 - joint Z 0.03282 = 0.13228 m.
@@ -81,6 +88,9 @@ class Terrain:
             "parrot": {**plan.start.model_dump(), "z": ground + plan.parrot_clearance + 0.1, "yaw": 0.0},
             "station": {**station.model_dump(), "z": station_z + 0.05, "yaw": 0.0},
             "roi": {**plan.roi.model_dump(), "z": self.height(plan.roi.x, plan.roi.y)},
+            "roi_box": {"x_min": roi_min.x, "x_max": roi_max.x,
+                        "y_min": roi_min.y, "y_max": roi_max.y,
+                        "z": self.height(plan.roi.x, plan.roi.y)},
         }
 
     def spawn_placements(self, plan: SpawnPlan) -> dict:

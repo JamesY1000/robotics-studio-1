@@ -26,6 +26,8 @@ def start(context):
     args = {
         "world": plan["world_id"], "session_id": plan["session_id"],
         "rviz": LaunchConfiguration("rviz").perform(context),
+        "log_level": LaunchConfiguration("log_level").perform(context),
+        "stack_log_level": LaunchConfiguration("stack_log_level").perform(context),
         "use_sim_time": "True", "husky": "True", "parrot": "True",
         "slam": "True", "nav2": "True", "alignment": "True",
     }
@@ -33,6 +35,12 @@ def start(context):
         args.update({f"{robot}_{axis}": str(placements[robot][axis])
                      for axis in ("x", "y", "z", "yaw")})
     roi = placements.get("roi", placements["husky"])
+    roi_box = placements.get("roi_box")
+    roi_args = {"roi_x": str(roi["x"]), "roi_y": str(roi["y"]), "roi_z": str(roi["z"]),
+                "roi_frame": "world", "session_id": plan["session_id"],
+                "log_level": args["log_level"]}
+    if roi_box is not None:
+        roi_args.update({f"roi_{axis}": str(roi_box[axis]) for axis in ("x_min", "x_max", "y_min", "y_max")})
 
     def include(package, file, arguments):
         return GroupAction(scoped=True, actions=[IncludeLaunchDescription(
@@ -55,10 +63,7 @@ def start(context):
         )),
         guard,
         include("rs1_sim", "robot_bringup.launch.py", args),
-        include("rs1_mission", "rs1_mission.launch.py", {
-            "roi_x": str(roi["x"]), "roi_y": str(roi["y"]), "roi_z": str(roi["z"]),
-            "roi_frame": "world", "session_id": plan["session_id"],
-        }),
+        include("rs1_mission", "rs1_mission.launch.py", roi_args),
     ]
 
 
@@ -67,5 +72,7 @@ def generate_launch_description():
         DeclareLaunchArgument("plan_file"),
         DeclareLaunchArgument("world_instance_id"),
         DeclareLaunchArgument("rviz", default_value="False"),
+        DeclareLaunchArgument("log_level", default_value="info", choices=["debug", "info", "warn", "error", "fatal"]),
+        DeclareLaunchArgument("stack_log_level", default_value="warn", choices=["debug", "info", "warn", "error", "fatal"]),
         OpaqueFunction(function=start),
     ])

@@ -2,7 +2,7 @@
   ros__parameters:
     use_sim_time: true
 
-    target_clearance: 4.0 # metres above the surface, measured from sensor
+    target_clearance: 2.0 # metres above the surface, measured using the downward lidar
     control_rate_hz: 20.0 # control-loop frequency
     scan_timeout: 0.25 # seconds
     cmd_vel_timeout: 0.25 # seconds

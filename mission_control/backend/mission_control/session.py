@@ -128,6 +128,44 @@ class SessionManager:
             if "/" + name.lstrip("/") != TELEMETRY_NODE
         ]
 
+    def check_cancel_owner(self, ros):
+        # External and deploy modes already override this check for their own ROS ownership
+        plan = self.state.get("plan") or {}
+        if (self.process is None or self.process.returncode is not None or
+                ros.get("mission", {}).get("session_id") != plan.get("session_id")):
+            raise Conflict("The observed mission does not belong to this session")
+
+    def control_status(self):
+        ros = self.adapter.snapshot()
+        mission = ros.get("mission", {})
+        if (not ros.get("available") or not mission.get("instance_id") or
+                time.monotonic() - ros.get("mission_at", 0) >= 1.5):
+            raise Conflict("Waiting for fresh mission status")
+        self.check_cancel_owner(ros)
+        if getattr(self, "command", None):
+            raise Conflict("Another mission command is still pending")
+        return mission
+
+    async def control(self, operation):
+        if operation not in ("manual_husky", "manual_parrot", "resume", "input_keyboard", "input_controller"):
+            raise ValueError("Unknown mission control operation")
+        async with self.lock:
+            mission = self.control_status()
+            if operation.startswith("input_"):
+                if mission.get("state") != "manual_assistance":
+                    raise Conflict("Select manual assistance before choosing an input")
+            elif operation == "resume":
+                if mission.get("state") != "manual_assistance":
+                    raise Conflict("Mission is not in manual assistance")
+                if not mission.get("cleanup_complete"):
+                    raise Conflict("Previous navigation is still stopping; try Resume again shortly")
+            elif mission.get("state") not in ("executing", "manual_assistance"):
+                raise Conflict("No active mission to assist")
+
+            # The coordinator rechecks TF and action readiness before retrying the saved ROI
+            await self.adapter.call(operation)
+            return self.snapshot()
+
     async def start(self, plan: Plan):
         async with self.lock:
             if self.state["phase"] != "idle" or self.process is not None:
@@ -255,16 +293,18 @@ class SessionManager:
                     )
                 await self.adapter.call("start")
                 self.transition("executing", "Traversing to the selected ROI.")
-            unhealthy_since = None
             cancellation_deadline = None
             while True:
                 ros = self.adapter.snapshot()
                 status = ros.get("mission", {})
                 if status.get("session_id") == self.state["plan"]["session_id"]:
                     phase = status.get("state")
-                    if phase in ("complete", "cancelled", "failed") and status.get(
-                        "cleanup_complete"
-                    ):
+                    if (ros.get("checks", {}).get("mission_status") and
+                            phase in ("executing", "manual_assistance") and
+                            self.state["phase"] != "cancellation_requested" and
+                            (phase, status.get("message", phase)) != (self.state["phase"], self.state["message"])):
+                        self.transition(phase, status.get("message", phase))
+                    if phase in ("complete", "cancelled", "failed") and status.get("cleanup_complete"):
                         self.transition(phase, status.get("message", phase))
                         return
                 if self.process.returncode is not None:
@@ -276,24 +316,9 @@ class SessionManager:
                         cancellation_deadline or time.monotonic() + 30
                     )
                     if time.monotonic() > cancellation_deadline:
-                        raise RuntimeError(
-                            "Cancellation was not acknowledged by both executors within 30 s. Owned simulation stopped; reset required."
-                        )
-                healthy = (
-                    all(ros.get("checks", {}).values())
-                    and all(
-                        ros.get("robots", {}).get(r, {}).get("fresh", False)
-                        for r in ("husky1", "parrot1")
-                    )
-                    and not ros.get("alignment", {}).get("invalid", False)
-                )
-                unhealthy_since = (
-                    None if healthy else (unhealthy_since or time.monotonic())
-                )
-                if unhealthy_since and time.monotonic() - unhealthy_since > 8:
-                    raise RuntimeError(
-                        "Lost clock, TF or a required navigation interface for 8 s. Owned simulation stopped; inspect ros.log and reset."
-                    )
+                        raise RuntimeError("Cancellation was not acknowledged by both executors within 30 s. Owned simulation stopped; reset required.")
+                # Keep the stack available for assistance when navigation or localisation becomes unhealthy
+                # The executors report failed attempts and Resume rechecks readiness in the coordinator
                 await asyncio.sleep(0.2)
         except asyncio.CancelledError:
             raise
@@ -317,7 +342,7 @@ class SessionManager:
             phase = self.state["phase"]
             if phase == "cancellation_requested":
                 return self.snapshot()
-            if phase not in ("preparing", "ready", "executing"):
+            if phase not in ("preparing", "ready", "executing", "manual_assistance"):
                 raise Conflict("There is no active mission to cancel")
             self.transition(
                 "cancellation_requested",
@@ -395,14 +420,6 @@ class SessionManager:
             await asyncio.gather(self.task, return_exceptions=True)
         await self.stop_process()
         self.adapter.close()
-        if self.state["phase"] in (
-            "preparing",
-            "ready",
-            "executing",
-            "cancellation_requested",
-        ):
-            self.transition(
-                "failed",
-                "Backend shut down; its simulation was stopped. Reset to start a new session.",
-            )
+        if self.state["phase"] in ("preparing", "ready", "executing", "manual_assistance", "cancellation_requested"):
+            self.transition("failed", "Backend shut down; its simulation was stopped. Reset to start a new session.")
         self.persist()
