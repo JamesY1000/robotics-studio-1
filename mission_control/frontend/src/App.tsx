@@ -1261,8 +1261,8 @@ export default function App() {
                 </>
               )}
               <p className="muted">
-                Cancellation is a mission request, not an emergency stop. Only
-                traversal to ROI is implemented.
+                Cancellation is a mission request, not an emergency stop. Robots
+                traverse to the ROI, sample it, then return home.
               </p>
             </section>
           </div>

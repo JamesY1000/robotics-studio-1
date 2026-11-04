@@ -55,6 +55,15 @@ MissionCoordinatorNode::MissionCoordinatorNode() : Node("mission_coordinator_nod
     transit_clearance_ = this->declare_parameter<double>("transit_clearance", 2.0);
     swath_spacing_ = this->declare_parameter<double>("swath_spacing", 0.0);
 
+    // Home is fixed at launch, unlike the operator-selected ROI; transform before sending goals.
+    rcl_interfaces::msg::ParameterDescriptor read_only;
+    read_only.read_only = true;
+    home_pose_.header.frame_id = this->declare_parameter<std::string>("home_frame", "world", read_only);
+    home_pose_.pose.position.x = this->declare_parameter<double>("home_x", 90.0, read_only);
+    home_pose_.pose.position.y = this->declare_parameter<double>("home_y", -48.0, read_only);
+    home_pose_.pose.position.z = this->declare_parameter<double>("home_z", 0.0, read_only);
+    home_pose_.pose.orientation.w = 1.0;
+
     // Keep the latest ROI marker for RViz instances opened later
     roi_marker_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(
         "/mission/roi_marker", rclcpp::QoS(1).reliable().transient_local());
@@ -360,6 +369,15 @@ void MissionCoordinatorNode::startMissionCb(const std::shared_ptr<std_srvs::srv:
         response->message = "ROI orientation must be a unit quaternion";
         return;
     }
+    // Reject a bad home before the robots leave it
+    if (home_pose_.header.frame_id.empty() ||
+        !std::isfinite(home_pose_.pose.position.x) ||
+        !std::isfinite(home_pose_.pose.position.y) ||
+        !std::isfinite(home_pose_.pose.position.z))
+    {
+        response->message = "Home pose must have a frame_id and finite coordinates";
+        return;
+    }
 
     // Check both action clients are ready
     const bool parrot_ready = traverse_to_roi_client_parrot_->action_server_is_ready();
@@ -375,6 +393,7 @@ void MissionCoordinatorNode::startMissionCb(const std::shared_ptr<std_srvs::srv:
 
     // A frame label is not a coordinate conversion. Both existing executors
     // accept parrot1_map; Husky transforms the generated path to its own map.
+    geometry_msgs::msg::PoseStamped executor_roi;
     try
     {
         for (const auto &robot : {"husky1", "parrot1"})
@@ -384,7 +403,9 @@ void MissionCoordinatorNode::startMissionCb(const std::shared_ptr<std_srvs::srv:
             if (age < -0.1 || age > 2.0) throw std::runtime_error("Robot localization TF is stale");
         }
         const auto transform = tf_buffer_->lookupTransform("parrot1_map", roi_pose_.header.frame_id, tf2::TimePointZero);
-        tf2::doTransform(roi_pose_, executor_roi_, transform);
+        tf2::doTransform(roi_pose_, executor_roi, transform);
+        // Home is converted again when phase 3 starts; only check its frame is connected here
+        tf_buffer_->lookupTransform("parrot1_map", home_pose_.header.frame_id, tf2::TimePointZero);
     }
     catch (const std::exception &e)
     {
@@ -392,8 +413,17 @@ void MissionCoordinatorNode::startMissionCb(const std::shared_ptr<std_srvs::srv:
         return;
     }
 
+    // Resume an interrupted home leg instead of repeating the ROI and sampling
+    if (mission_state_ == MissionState::MANUAL_ASSISTANCE && returning_home_)
+    {
+        response->success = startTraverseHome();
+        response->message = response->success ?
+            "Return home resumed; waiting for Husky to accept the goal" : message_;
+        return;
+    }
+
     // Start with husky so it is ready before parrot generates the path
-    response->success = startTraverseToROI();
+    response->success = startTraverseToROI(executor_roi);
     response->message = response->success ?
         "Mission started; waiting for Husky to accept the ROI" :
         "Could not send Husky's TraverseToROI goal";
@@ -440,9 +470,9 @@ void MissionCoordinatorNode::traverseToROIGoalResponseCb(Robot robot,
     goal_pending = false;
     if (!goal_handle)
     {
-        if (mission_state_ == MissionState::TRAVERSINGTOROI)
+        if (isTraversing())
         {
-            enterManualAssistance(robot, robot_name + " executor rejected the TraverseToROI goal");
+            enterManualAssistance(robot, robot_name + " executor rejected the TraverseToROI goal for " + target_name_);
         }
         else
         {
@@ -464,7 +494,7 @@ void MissionCoordinatorNode::traverseToROIGoalResponseCb(Robot robot,
     RCLCPP_DEBUG(this->get_logger(), "%s accepted the TraverseToROI goal", robot_name.c_str());
 
     // Husky is now waiting for a path, so parrot can start its mission
-    if (robot == Robot::Husky && mission_state_ == MissionState::TRAVERSINGTOROI)
+    if (robot == Robot::Husky && isTraversing())
     {
         if (!traverse_to_roi_client_parrot_->action_server_is_ready())
         {
@@ -475,7 +505,7 @@ void MissionCoordinatorNode::traverseToROIGoalResponseCb(Robot robot,
         try
         {
             parrot_goal_pending_ = true;
-            traverse_to_roi_client_parrot_->async_send_goal(createTraverseToROIGoal(executor_roi_), parrot_goal_options_);
+            traverse_to_roi_client_parrot_->async_send_goal(createTraverseToROIGoal(executor_target_), parrot_goal_options_);
         }
         catch (const std::exception &e)
         {
@@ -492,7 +522,7 @@ void MissionCoordinatorNode::traverseToROIFeedbackCb(Robot robot,
     const auto &current_goal = robot == Robot::Parrot ? parrot_goal_handle_ : husky_goal_handle_;
 
     // Ignore feedback from old goals or while the mission is stopping
-    if (!feedback || !goal_handle || !current_goal || mission_state_ != MissionState::TRAVERSINGTOROI ||
+    if (!feedback || !goal_handle || !current_goal || !isTraversing() ||
         goal_handle->get_goal_id() != current_goal->get_goal_id()) return;
 
     (robot == Robot::Parrot ? parrot_stage_ : husky_stage_) = feedback->stage;
@@ -516,7 +546,7 @@ void MissionCoordinatorNode::traverseToROIResultCb(Robot robot,
     // Only accept a result for the goal this mission owns
     if (!current_goal || result.goal_id != current_goal->get_goal_id()) return;
     (robot == Robot::Parrot ? parrot_stage_ : husky_stage_) =
-        result.code == rclcpp_action::ResultCode::SUCCEEDED ? "Reached ROI" :
+        result.code == rclcpp_action::ResultCode::SUCCEEDED ? "Reached " + target_name_ :
         result.code == rclcpp_action::ResultCode::CANCELED ? "Cancelled" : "Failed";
     current_goal.reset();
     cancel_requested = false;
@@ -551,22 +581,22 @@ void MissionCoordinatorNode::traverseToROIResultCb(Robot robot,
             if (robot == Robot::Parrot)
             {
                 parrot_succeded_ = true;
-                RCLCPP_INFO(this->get_logger(), "Parrot reached the ROI and handed the ground path to Husky");
+                RCLCPP_INFO(this->get_logger(), "Parrot reached %s and handed the ground path to Husky", target_name_.c_str());
             }
             else if (robot == Robot::Husky)
             {
                 husky_succeded_ = true;
-                RCLCPP_INFO(this->get_logger(), "Husky has reached the ROI");
+                RCLCPP_INFO(this->get_logger(), "Husky has reached %s", target_name_.c_str());
             }
             evaluateTransitions();
             break;
 
         case rclcpp_action::ResultCode::ABORTED:
-            enterManualAssistance(robot, robot_name + " traversal to ROI aborted" + detail);
+            enterManualAssistance(robot, robot_name + " traversal to " + target_name_ + " aborted" + detail);
             break;
 
         case rclcpp_action::ResultCode::CANCELED:
-            enterManualAssistance(robot, robot_name + " traversal to ROI was canceled" + detail);
+            enterManualAssistance(robot, robot_name + " traversal to " + target_name_ + " was canceled" + detail);
             break;
 
         default:
@@ -594,12 +624,53 @@ void MissionCoordinatorNode::traverseToROICancelResponseCb(Robot robot,
     }
 }
 
-bool MissionCoordinatorNode::startTraverseToROI()
+bool MissionCoordinatorNode::startTraverseToROI(const geometry_msgs::msg::PoseStamped &executor_roi)
 {
+    returning_home_ = false;
+    return startTraversal(MissionState::TRAVERSINGTOROI, executor_roi);
+}
+
+bool MissionCoordinatorNode::startTraverseHome()
+{
+    // Set first so Resume retries home even if this attempt cannot start
+    returning_home_ = true;
+
+    // Both executors return to IDLE after each phase and must accept a new goal
+    const bool parrot_ready = traverse_to_roi_client_parrot_->action_server_is_ready();
+    const bool husky_ready = traverse_to_roi_client_husky_->action_server_is_ready();
+    if (!parrot_ready || !husky_ready)
+    {
+        enterManualAssistance(parrot_ready ? Robot::Husky : Robot::Parrot,
+            std::string("TraverseToROI action server unavailable for return home:") +
+            (parrot_ready ? "" : " Parrot") + (husky_ready ? "" : " Husky"));
+        return false;
+    }
+
+    // Convert home now so it uses the latest SLAM alignment
+    geometry_msgs::msg::PoseStamped executor_home;
+    try
+    {
+        const auto transform = tf_buffer_->lookupTransform("parrot1_map", home_pose_.header.frame_id, tf2::TimePointZero);
+        tf2::doTransform(home_pose_, executor_home, transform);
+    }
+    catch (const std::exception &e)
+    {
+        enterManualAssistance(Robot::Parrot, std::string("Could not transform home into parrot1_map: ") + e.what());
+        return false;
+    }
+
+    return startTraversal(MissionState::TRAVERSINGTOHOME, executor_home);
+}
+
+bool MissionCoordinatorNode::startTraversal(MissionState phase, const geometry_msgs::msg::PoseStamped &executor_target)
+{
+    const bool home = phase == MissionState::TRAVERSINGTOHOME;
     parrot_succeded_ = false;
     husky_succeded_ = false;
-    mission_state_ = MissionState::TRAVERSINGTOROI;
-    message_ = "Traversal to ROI; sampling and return-home are not implemented";
+    mission_state_ = phase;
+    executor_target_ = executor_target;
+    target_name_ = home ? "home" : "the ROI";
+    message_ = home ? "Returning home" : "Traversing to the ROI";
     control_mode_ = "auto";
     ++input_revision_;
     parrot_stage_ = "Waiting";
@@ -610,7 +681,7 @@ bool MissionCoordinatorNode::startTraverseToROI()
     try
     {
         husky_goal_pending_ = true;
-        traverse_to_roi_client_husky_->async_send_goal(createTraverseToROIGoal(executor_roi_), husky_goal_options_);
+        traverse_to_roi_client_husky_->async_send_goal(createTraverseToROIGoal(executor_target_), husky_goal_options_);
     }
     catch (const std::exception &e)
     {
@@ -619,7 +690,8 @@ bool MissionCoordinatorNode::startTraverseToROI()
         return false;
     }
 
-    RCLCPP_INFO(this->get_logger(), "Starting phase 1; waiting for Husky to accept the ROI");
+    RCLCPP_INFO(this->get_logger(), "Starting phase %d; waiting for Husky to accept the goal for %s",
+        home ? 3 : 1, target_name_.c_str());
     return true;
 }
 
@@ -840,9 +912,9 @@ void MissionCoordinatorNode::cancelSampleROI()
     }
 }
 
-void MissionCoordinatorNode::startTraverseHome()
+bool MissionCoordinatorNode::isTraversing() const
 {
-    return; // TODO (james): Implement phase 3
+    return mission_state_ == MissionState::TRAVERSINGTOROI || mission_state_ == MissionState::TRAVERSINGTOHOME;
 }
 
 rs1_interfaces::action::TraverseToROI::Goal MissionCoordinatorNode::createTraverseToROIGoal(const geometry_msgs::msg::PoseStamped &roi_pose_)
@@ -871,10 +943,18 @@ void MissionCoordinatorNode::evaluateTransitions()
     if (mission_state_ == MissionState::SAMPLINGROI && parrot_sample_succeded_)
     {
         parrot_sample_succeded_ = false;
-        mission_state_ = MissionState::COMPLETE;
         roi_progress_ = 1.0f;
-        message_ = "Sampling complete: tree map published for Husky";
-        RCLCPP_INFO(this->get_logger(), "Phase 2 complete: ROI sampling finished");
+        RCLCPP_INFO(this->get_logger(), "Phase 2 complete: ROI sampling finished; returning home");
+        startTraverseHome();
+        return;
+    }
+
+    // Same handoff on the way back; the mission ends once both robots are home
+    if (mission_state_ == MissionState::TRAVERSINGTOHOME && parrot_succeded_ && husky_succeded_)
+    {
+        mission_state_ = MissionState::COMPLETE;
+        RCLCPP_INFO(this->get_logger(), "Phase 3 complete: both robots returned home");
+        message_ = "Mission complete: both robots returned home";
         finalizeMission();
         return;
     }
@@ -988,7 +1068,8 @@ void MissionCoordinatorNode::manualMissionCb(Robot robot,
     std::shared_ptr<std_srvs::srv::Trigger::Response> response)
 {
     response->success = false;
-    if (mission_state_ != MissionState::TRAVERSINGTOROI && mission_state_ != MissionState::MANUAL_ASSISTANCE)
+    if (!isTraversing() && mission_state_ != MissionState::SAMPLINGROI &&
+        mission_state_ != MissionState::MANUAL_ASSISTANCE)
     {
         response->message = "No active mission to assist";
         return;
@@ -1091,9 +1172,10 @@ void MissionCoordinatorNode::publishStatus()
     switch (mission_state_)
     {
         case MissionState::IDLE: status.state = "ready"; break;
-        case MissionState::TRAVERSINGTOROI: status.state = "executing"; break;
-        case MissionState::SAMPLINGROI: status.state = "sampling"; break;
-        case MissionState::TRAVERSINGTOHOME: status.state = "returning"; break;
+        // The velocity selector and dashboard treat every autonomous phase as executing
+        case MissionState::TRAVERSINGTOROI:
+        case MissionState::SAMPLINGROI:
+        case MissionState::TRAVERSINGTOHOME: status.state = "executing"; break;
         case MissionState::CANCELLING: status.state = "cancellation_requested"; break;
         case MissionState::CANCELLED: status.state = "cancelled"; break;
         case MissionState::COMPLETE: status.state = "complete"; break;

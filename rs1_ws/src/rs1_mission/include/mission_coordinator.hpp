@@ -102,9 +102,13 @@ private:
         rclcpp_action::Client<rs1_interfaces::action::SampleROI>::CancelResponse::SharedPtr response);
 
     // Entrypoints to starting each phase
-    bool startTraverseToROI();
+    bool startTraverseToROI(const geometry_msgs::msg::PoseStamped &executor_roi);
     void startSampleROI();
-    void startTraverseHome();
+    bool startTraverseHome();
+
+    // Shared by phases 1 and 3: send husky its goal; its acceptance starts parrot
+    bool startTraversal(MissionState phase, const geometry_msgs::msg::PoseStamped &executor_target);
+    bool isTraversing() const;
 
     rs1_interfaces::action::TraverseToROI::Goal createTraverseToROIGoal(
         const geometry_msgs::msg::PoseStamped &roi_pose_);
@@ -130,7 +134,13 @@ private:
     rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr roi_parameters_callback_;
     std::string session_id_, parrot_stage_{"Waiting"}, husky_stage_{"Waiting"}, message_;
     std::string instance_id_;
-    geometry_msgs::msg::PoseStamped executor_roi_;
+    // Current traversal target in parrot1_map, and its name for stages and logs
+    geometry_msgs::msg::PoseStamped executor_target_;
+    std::string target_name_{"the ROI"};
+    // Return-home target in its configured frame, fixed for the session
+    geometry_msgs::msg::PoseStamped home_pose_;
+    // Resume retries home rather than the ROI once phase 3 has begun
+    bool returning_home_{false};
     std::string control_mode_{"hold"};
     std::string manual_input_{"keyboard"};
     uint64_t input_revision_{0};

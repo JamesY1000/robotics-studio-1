@@ -62,6 +62,22 @@ def generate_launch_description():
             default_value="45.0",
             description="ROI box maximum y in roi_frame (metres).",
         ),
+        DeclareLaunchArgument("home_frame", default_value="world"),
+        DeclareLaunchArgument(
+            "home_x",
+            default_value="90.0",
+            description="Return-home x coordinate in home_frame (metres).",
+        ),
+        DeclareLaunchArgument(
+            "home_y",
+            default_value="-48.0",
+            description="Return-home y coordinate in home_frame (metres).",
+        ),
+        DeclareLaunchArgument(
+            "home_z",
+            default_value="0.0",
+            description="Return-home z coordinate in home_frame (metres).",
+        ),
         DeclareLaunchArgument(
             "log_level",
             default_value="info",
@@ -86,6 +102,10 @@ def generate_launch_description():
                 "roi_x_max": ParameterValue(LaunchConfiguration("roi_x_max"), value_type=float),
                 "roi_y_min": ParameterValue(LaunchConfiguration("roi_y_min"), value_type=float),
                 "roi_y_max": ParameterValue(LaunchConfiguration("roi_y_max"), value_type=float),
+                "home_frame": LaunchConfiguration("home_frame"),
+                "home_x": ParameterValue(LaunchConfiguration("home_x"), value_type=float),
+                "home_y": ParameterValue(LaunchConfiguration("home_y"), value_type=float),
+                "home_z": ParameterValue(LaunchConfiguration("home_z"), value_type=float),
             }
         ],
         arguments=["--ros-args", "--log-level", log_level],

@@ -29,6 +29,9 @@ def start(context):
                 "roi_z": str(roi["z"]), "roi_frame": "world", "session_id": plan["session_id"]}
     if roi_box is not None:
         roi_args.update({f"roi_{axis}": str(roi_box[axis]) for axis in ("x_min", "x_max", "y_min", "y_max")})
+    # Both robots share the start, so it is home; the station itself is an obstacle
+    roi_args.update({f"home_{axis}": str(placements["husky"][axis]) for axis in ("x", "y", "z")})
+    roi_args["home_frame"] = "world"
     return [
         include("rs1_sim", "rs1_sim.launch.py", args),
         include("rs1_mission", "rs1_mission.launch.py", roi_args),

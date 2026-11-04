@@ -78,6 +78,15 @@ if(BUILD_TESTING)
     ENV COORDINATOR_EXECUTABLE=$<TARGET_FILE:mission_coordinator>
       PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
   )
+  ament_add_pytest_test(test_return_home test/test_return_home.py
+    TIMEOUT 120
+    ENV COORDINATOR_EXECUTABLE=$<TARGET_FILE:mission_coordinator>
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
+  )
+  ament_add_pytest_test(test_launch_home test/test_launch_home.py
+    TIMEOUT 30
+    ENV PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
+  )
   ament_add_pytest_test(test_husky_transform_readiness
     test/test_husky_transform_readiness.py
     TIMEOUT 90

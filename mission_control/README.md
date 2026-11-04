@@ -2,8 +2,9 @@
 
 A local React/TypeScript dashboard and FastAPI service for the existing ROS 2
 Humble / Ignition Gazebo Fortress stack. The first mission phase is traversal to
-a point ROI: Parrot explores and hands a ground path to Husky. Sampling and
-return-home are not implemented. The UI does not fabricate sensor data, battery
+a point ROI: Parrot explores and hands a ground path to Husky. Parrot then
+samples the ROI, and both robots return home (the shared robot start) with the
+same Parrot-to-Husky handoff. The UI does not fabricate sensor data, battery
 levels, biomass results or completion percentages.
 
 The recommended demo uses **two terminals**: `rs1_sim.launch.py ui:=true` loads
@@ -690,7 +691,7 @@ Stopping the world must stop the detached robot stack through
 its world guard. These are verification instructions; recorded run results belong
 in `VALIDATION.md`.
 
-Deferred: polygon ROI, live sensor viewers, tree sampling, return-home,
+Deferred: polygon ROI, live sensor viewers,
 biomass/results, arbitrary worlds, automatic image registration and full 3D
 localization. Simulation setup and ROS transport are separate backend modules
 so future hardware adapters do not require changing map interaction code.
