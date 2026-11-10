@@ -1,12 +1,11 @@
 carbon_calculator:
   ros__parameters:
-    csv_path: ""            # set by the launch file (defaults to share/tree_carbon/data/tree_locations.csv)
-    default_dbh_m: 1.0      # used when the DBH cell/column is missing
+    # Only confirmed survey DBHs are used, never a default or a ground-truth CSV
     chave_a: 0.0673         # AGB = a * (rho * D^2 * H)^b   (Chave et al. 2014; D in cm)
     chave_b: 0.976
     oak:
       wood_density: 0.71    # rho [g/cm^3]
-      height_m: 12.0        # nominal H [m]
+      height_m: 12.0        # assumed H [m], not measured by this mission
     pine:
       wood_density: 0.545
       height_m: 10.0

@@ -10,6 +10,7 @@
 #include "geometry_msgs/msg/twist.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 #include "rs1_interfaces/msg/mission_status.hpp"
+#include "rs1_interfaces/msg/safety_state.hpp"
 
 namespace rs1_navigation
 {
@@ -29,6 +30,11 @@ private:
     // Helpers
     static double age(std::chrono::steady_clock::time_point timestamp); // Returns current timestamp/age of message
     bool statusFresh() const; // Returns if current status is fresh or stale
+    bool safetyClear() const;
+    void safetyCb(const rs1_interfaces::msg::SafetyState &msg);
+    rs1_interfaces::msg::SafetyState safety_;
+    std::chrono::steady_clock::time_point safety_received_{};
+    rclcpp::Subscription<rs1_interfaces::msg::SafetyState>::SharedPtr safety_sub_;
     void clearCommand();
     void resetController();
 

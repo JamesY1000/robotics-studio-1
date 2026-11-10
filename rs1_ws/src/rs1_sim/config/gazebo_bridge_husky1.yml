@@ -40,13 +40,6 @@
   gz_type_name: "gz.msgs.PointCloudPacked"
   direction: GZ_TO_ROS
 
-# Camera: RGB
-- ros_topic_name: "camera/image"
-  gz_topic_name: "/model/husky1/camera/image"
-  ros_type_name: "sensor_msgs/msg/Image"
-  gz_type_name: "ignition.msgs.Image"
-  direction: GZ_TO_ROS
-
 # Camera: depth
 - ros_topic_name: "camera/depth/image"
   gz_topic_name: "/model/husky1/camera/depth_image"

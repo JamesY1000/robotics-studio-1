@@ -65,30 +65,39 @@ only one telemetry launch per ROS domain.
 
 Use **Reset to starter layout** in the Telemetry section, or download the starter
 JSON and import it through Lichtblick's Layout menu. The checked-in
-[layout1.json](layout1.json) contains the world and camera panels,
+[layout.json](layout.json) contains the world and camera panels,
 with **Mission & commands**, **ROS logs**, and **Exploration** tabs underneath:
 
 | Panel | Actual ROS data | Meaning |
 | --- | --- | --- |
 | World | `/tf`, `/tf_static`, both robots' `/robot_description`, `/map`, `/plan`, `/local_plan`, `/husky1/scan_filtered`, `/parrot1/scan`, `/parrot1/downwards_scan`, `/parrot1/explore/frontiers`, `/mission/roi_marker` | Actual URDF robot models, registered SLAM maps, navigation scans, planned paths, frontier candidates, robot frame axes and ROI in `world`. Husky overlays are cyan; Parrot overlays are amber. |
-| Husky camera | `/husky1/camera/image` | Raw RGB image from Husky's existing camera bridge. |
-| Parrot camera | `/parrot1/camera/image` | Raw RGB image from Parrot's existing camera bridge. |
+| Husky camera | `/husky1/camera/image/compressed` | JPEG from the Husky RGB camera. |
+| Parrot camera | `/parrot1/camera/image/compressed` | JPEG from the Parrot RGB camera. |
 | Downward centre ray | `/parrot1/downwards_scan.ranges[1]` | The same centre ray used by terrain following, in metres. |
 | Selected commands | `/parrot1/cmd_vel_controlled.linear.z`, `/parrot1/cmd_vel_controlled.linear.x`, `/husky1/cmd_vel_controlled.linear.x` | Final vertical/forward commands sent to Gazebo after autonomous/manual selection, in m/s; these are not measured vehicle velocities. |
 | Mission status | `/mission/status` | The existing `rs1_interfaces/msg/MissionStatus`, including state, robot stages, ROI, coordinator message, control mode and selected manual input. |
 | ROS logs | `/rosout` | ROS node logging with logger-name, severity and text filters; not a mirror of a particular terminal. |
 | Exploration | `/parrot1/explore/status` | Guided exploration's current status. |
 
+For a saved layout, select the corresponding `/camera/image/compressed` topic in
+each robot's Image panel, or use **Reset to starter layout**. Perception can
+continue subscribing to the raw `/husky1/camera/image` and `/parrot1/camera/image`
+topics. The bridge encodes JPEGs when the compressed topic has subscribers.
+
 Husky's raw `/scan` still exists, but SLAM and Nav2 use `/scan_filtered` after
 terrain filtering. Likewise, Parrot's `/cmd_vel_combined` still exists as the
 autonomous input to the selector; `/cmd_vel_controlled` shows its final decision
 during both autonomy and manual assistance.
 
-The world panel also has disabled entries for both robots' footprint outlines, costmaps, LiDAR and
-depth point clouds, Husky's ground/obstacle/navigation points, the raw Husky scan,
-and tree-location markers. Enable these in the 3D panel's topic settings when
-needed. Costmaps and point clouds start hidden to keep the default view light.
-Tree markers require their separate perception/visualisation scripts.
+The starter layout hides both `/camera/depth/points` layers to keep the RGB
+panels responsive during manual driving. Enable either robot's depth cloud in
+the 3D panel when inspecting geometry. Each cloud uses a separate stream.
+
+Both RGB-D sensors default to 6 Hz. For smoother manual driving, start the
+dashboard with `RS1_CAMERA_HZ=15 ros2 launch rs1_dashboard dashboard.launch.py mode:=deploy`
+before deploying into a fresh world. For standalone robot bringup, pass
+`camera_hz:=15` to `rs1_sim.launch.py`. This setting takes effect at spawn.
+The Phase 2 sweep publishes live tree estimates on `/parrot1/tree_map_markers`, enabled in the 3D panel. Orange spheres mark oak estimates and green spheres mark pines. The final sweep result replaces the candidates. The separate `/tree_locations/*` debug layers require the perception visualisation scripts.
 
 The bridge also exposes `/teleop/joy`, `/teleop/cmd_vel_controller`, and
 `/yolo/debug_image` for custom Raw Messages, Plot or Image panels. The YOLO image

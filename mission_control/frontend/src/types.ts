@@ -20,6 +20,9 @@ export type Plan = {
   calibration_id: string;
   start: XY;
   roi: XY;
+  // Opposite (top-right) corner of the axis-aligned square ROI box. roi is the
+  // first-placed entry corner (bottom-left) the robots reach in phase 1.
+  roi_second?: XY | null;
   station_offset: XY;
   parrot_clearance: number;
 };
@@ -34,11 +37,41 @@ export type Deployment = {
   requires_world_restart?: boolean;
 };
 export type Pose = XY & { yaw: number; stamp: number; fresh: boolean };
+export type TreeMarker = {
+  x: number;
+  y: number;
+  z: number;
+  type: string;
+  observations: number;
+};
+export type GroundTruthTree = {
+  name: string;
+  type: string;
+  x: number;
+  y: number;
+  z: number;
+};
+export type GroundTruthObstacle = GroundTruthTree;
+export type SafetyState = {
+  fresh: boolean;
+  service_ready: boolean;
+  reset_ready: boolean;
+  instance_id?: string;
+  revision?: number;
+  husky_stopped?: boolean;
+  parrot_stopped?: boolean;
+};
 export type State = {
   mode: "managed" | "external" | "deploy";
   deployment?: Deployment;
   can_start?: boolean;
-  configured_roi?: XY & { z: number; frame_id: string };
+  configured_roi?: XY & {
+    z: number;
+    frame_id: string;
+    min?: XY;
+    max?: XY;
+    progress?: number;
+  };
   phase: string;
   message: string;
   plan: Plan | null;
@@ -47,6 +80,7 @@ export type State = {
   events: { phase: string; message: string; at: number }[];
   process_running: boolean;
   ros: {
+    safety?: SafetyState;
     available: boolean;
     error?: string;
     sim_time?: number;
@@ -63,8 +97,36 @@ export type State = {
       manual_input?: "keyboard" | "controller";
       input_revision?: number;
       cleanup_complete?: boolean;
+      returning_home?: boolean;
       message?: string;
+      roi?: {
+        frame_id: string;
+        x: number;
+        y: number;
+        z: number;
+        min?: XY;
+        max?: XY;
+        progress: number;
+      };
     };
+    total_agb_kg?: number | null; // Aggregated AGB (kg)
+    biomass?: {
+      valid: boolean;
+      total_agb_kg: number | null;
+      tree_count: number;
+      measured_count: number;
+      estimated_count: number;
+      message: string;
+    } | null;
+    trees?: TreeMarker[];
+    sampling_target?:
+      | (XY & {
+          tree_index: number;
+          refined: boolean;
+          min_range_m: number;
+          max_range_m: number;
+        })
+      | null;
     alignment?: {
       ready?: Record<string, boolean>;
       errors?: Record<string, { xy_m: number; yaw_rad: number }>;

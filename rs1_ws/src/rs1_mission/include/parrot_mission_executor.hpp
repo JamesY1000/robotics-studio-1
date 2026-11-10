@@ -20,6 +20,7 @@
 #include "nav_msgs/msg/path.hpp"
 
 #include "rclcpp_action/rclcpp_action.hpp"
+#include "return_home.hpp"
 #include "nav2_msgs/action/navigate_to_pose.hpp"
 #include "nav2_msgs/action/compute_path_to_pose.hpp"
 
@@ -27,6 +28,7 @@
 #include "rs1_interfaces/action/explore_to_pose.hpp"
 #include "rs1_interfaces/action/sample_roi.hpp"
 #include "rs1_interfaces/msg/tree_map.hpp"
+#include "visualization_msgs/msg/marker.hpp"
 #include "rs1_interfaces/msg/tree_location.hpp"
 #include "rs1_interfaces/srv/set_ground_path.hpp"
 #include "rs1_interfaces/srv/get_current_pose.hpp"
@@ -52,9 +54,11 @@ private:
         GENERATING_GROUND_PATH,
         TRAVERSE_INSIDE_ROI,
         GENERATE_TREE_MAP, // Finalise tree map -> send map to husky
+        RETURNING_HOME,
     };
 
     // Goal response and cancel response for TraverseToROI action received from the mission coordinator
+    std::unique_ptr<ReturnHomeExecution> home_execution_;
     rclcpp_action::GoalResponse traverseToROIGoalRequestCb(const rclcpp_action::GoalUUID &uuid,
     std::shared_ptr<const rs1_interfaces::action::TraverseToROI::Goal> goal);
 
@@ -122,6 +126,7 @@ private:
         rclcpp::Client<rs1_interfaces::srv::ProcessTreeLocations>::SharedFuture future);
     void mergeTree(const rs1_interfaces::msg::TreeLocation & tree);
     std::size_t publishTreeMap();
+    void publishTreeMarkers(const std::vector<rs1_interfaces::msg::TreeLocation> & trees);
     void finishSampling();
     void abortSampling(const std::string & message);
     void cancelSampling();
@@ -197,6 +202,17 @@ private:
         std::map<std::string, double> type_x_sum;   // score-weighted sums
         std::map<std::string, double> type_y_sum;
         std::map<std::string, double> type_z_sum;
+
+        rs1_interfaces::msg::TreeLocation locationMessage() const
+        {
+            rs1_interfaces::msg::TreeLocation tree;
+            tree.tree_type = tree_type;
+            tree.location.x = x;
+            tree.location.y = y;
+            tree.location.z = z;
+            tree.observations = observations;
+            return tree;
+        }
 
         void addObservation(const std::string & type, double tx, double ty, double tz, double score)
         {
@@ -326,6 +342,7 @@ private:
     rclcpp::Client<rs1_interfaces::srv::ProcessTreeLocations>::SharedPtr process_client_;
     rclcpp::Client<rs1_interfaces::srv::SetClearance>::SharedPtr set_clearance_client_;
     rclcpp::Publisher<rs1_interfaces::msg::TreeMap>::SharedPtr tree_map_pub_;
+    rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr tree_marker_pub_;
     rclcpp::TimerBase::SharedPtr detection_timer_;
     // Lidar outage watchdog
     rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_sub_;
@@ -341,6 +358,11 @@ private:
     double waypoint_progress_epsilon_{1.0};
     int consecutive_skips_{0};
     int max_consecutive_skips_{3};
+    // For waypoints that the drone physically can't reach
+    double waypoint_close_enough_m_{3.0};
+    double waypoint_close_enough_dwell_{3.0};
+    bool withinCloseEnough(double & distance) const;
+    bool acceptWaypointIfCloseEnough(const std::string & reason);
     // Where the drone was at the previous skipped waypoint.  Skips from the same
     // spot are what "wedged" looks like; skips while moving down a lane are not.
     geometry_msgs::msg::Point skip_anchor_;
@@ -356,6 +378,9 @@ private:
     int stationary_detection_limit_{3};
     double detection_motion_threshold_m_{0.5};
     std::vector<MergedTree> tree_map_;
+    // Finalized map built by publishTreeMap(); attached to the SampleROI result
+    // so the coordinator receives the tree map from the action call.
+    rs1_interfaces::msg::TreeMap last_tree_map_;
     std::size_t total_waypoints_{0};
     int16_t waypoints_remaining_{0};
 

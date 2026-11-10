@@ -61,12 +61,21 @@ def test_control_requires_active_mission_fresh_status_and_finished_cleanup(dashb
 
 def test_keyboard_cannot_connect_during_autonomy_or_for_other_robot(dashboard):
     client, adapter = dashboard
-    for robot, state in (("parrot1", "manual_assistance"), ("husky1", "executing")):
+    for robot, state in (("parrot1", "manual_assistance"), ("husky1", "executing"), ("husky1", "returning")):
         adapter.data["mission"]["state"] = state
         with pytest.raises(WebSocketDisconnect):
             with client.websocket_connect(f"/api/teleop/{robot}"):
                 pass
     assert not adapter.commands
+
+
+def test_returning_allows_assistance_without_another_cancellation(dashboard):
+    client, adapter = dashboard
+    adapter.data["mission"].update(state="returning", control_mode="auto", cleanup_complete=False, returning_home=True)
+    assert client.get("/api/state").json()["phase"] == "returning"
+    assert client.post("/api/mission/control/manual_husky").status_code == 200
+    assert client.post("/api/mission/cancel").status_code == 200
+    assert adapter.calls == ["manual_husky"]
 
 
 def test_keyboard_single_owner_disconnect_and_resume_send_zero(dashboard):
@@ -142,6 +151,107 @@ def test_manual_assistance_remains_active_and_can_be_cancelled(dashboard):
     assert adapter.calls == ["cancel"]
 
 
+@pytest.mark.parametrize("uncertain", [False, True])
+def test_cancel_return_acknowledgement_releases_manual_controls(dashboard, uncertain):
+    from mission_control.ros_adapter import RequestUncertain
+    import mission_control.app as module
+
+    client, adapter = dashboard
+    adapter.data["mission"].update(state="sampling", cleanup_complete=False)
+    adapter.data["biomass"] = {"valid": True, "measured_count": 1, "total_agb_kg": 12.5}
+    if uncertain:
+        async def timed_out(kind):
+            adapter.calls.append(kind)
+            raise RequestUncertain("Cancel response timed out")
+        original = adapter.call
+        adapter.call = timed_out
+    response = client.post("/api/mission/cancel")
+    if not uncertain:
+        assert response.status_code == 200
+    else:
+        adapter.call = original
+    assert client.get("/api/state").json()["phase"] == "cancellation_requested"
+    assert client.post("/api/mission/control/manual_husky").status_code == 409
+    adapter.data["mission"].update(state="cancellation_requested", returning_home=True)
+    module.app.state.manager.sample_trails()
+    assert module.app.state.manager.command is None
+    assert module.app.state.manager.command_error is None
+    adapter.data["mission"].update(state="returning", control_mode="auto")
+    assert client.get("/api/state").json()["phase"] == "returning"
+    for _ in range(2):
+        assert client.post("/api/mission/control/manual_husky").status_code == 200
+        adapter.data["mission"].update(state="manual_assistance", control_mode="husky1", cleanup_complete=True)
+        view = client.get("/api/state").json()
+        assert view["phase"] == "manual_assistance"
+        assert view["ros"]["biomass"]["measured_count"] == 1
+        assert client.post("/api/mission/cancel").status_code == 200
+        assert adapter.calls.count("cancel") == 1
+        assert client.post("/api/mission/control/resume").status_code == 200
+        adapter.data["mission"].update(state="returning", control_mode="auto", cleanup_complete=False)
+    adapter.data["mission"].update(state="cancelled", control_mode="hold", cleanup_complete=True)
+    assert client.get("/api/state").json()["phase"] == "cancelled"
+    assert client.post("/api/mission/control/resume").status_code == 409
+
+
+@pytest.mark.parametrize("uncertain", [False, True])
+def test_managed_cancel_allows_long_return_and_assistance(terrain, plan, tmp_path, monkeypatch, uncertain):
+    import asyncio
+    from types import SimpleNamespace
+    import mission_control.session as session
+    from test_session import Adapter as ManagedAdapter, Manager
+
+    monkeypatch.setattr(terrain, "write_world", lambda *_: None)
+    offset = 0
+    monkeypatch.setattr(session, "time", SimpleNamespace(
+        time=time.time, monotonic=lambda: time.monotonic() + offset))
+
+    async def scenario():
+        nonlocal offset
+        manager = Manager(terrain, tmp_path, ManagedAdapter)
+        try:
+            await manager.start(plan)
+            manager.adapter.ready(str(plan.session_id))
+            await asyncio.sleep(.3)
+            manager.adapter.data["checks"]["mission_status"] = True
+            manager.adapter.data["mission"].update(state="sampling", instance_id="test", cleanup_complete=False)
+            await asyncio.sleep(.3)
+            if uncertain:
+                from mission_control.ros_adapter import RequestUncertain
+                original = manager.adapter.call
+                async def timed_out(kind):
+                    manager.adapter.calls.append(kind)
+                    raise RequestUncertain("Cancel response timed out")
+                manager.adapter.call = timed_out
+                with pytest.raises(RequestUncertain):
+                    await manager.cancel()
+                manager.adapter.call = original
+            else:
+                await manager.cancel()
+            # Old sampling status must not undo the pending request
+            await asyncio.sleep(.3)
+            assert manager.state["phase"] == "cancellation_requested"
+            manager.adapter.data["mission"].update(state="cancellation_requested", returning_home=True)
+            await asyncio.sleep(.3)
+            for phase in ("cancellation_requested", "returning", "manual_assistance", "returning", "manual_assistance"):
+                manager.adapter.data["mission"].update(state=phase, message=phase)
+                offset += 40
+                await asyncio.sleep(.3)
+                assert manager.state["phase"] == phase
+                assert manager.process is not None and not manager.task.done()
+            manager.adapter.data["mission_at"] = session.time.monotonic()
+            manager.adapter.data["mission"]["cleanup_complete"] = True
+            await manager.control("resume")
+            assert manager.adapter.calls == ["start", "cancel", "resume"]
+            manager.adapter.data["mission"].update(state="cancelled", message="Both robots home")
+            await asyncio.wait_for(manager.task, 1)
+            assert manager.state["phase"] == "cancelled"
+            assert manager.process is not None
+        finally:
+            await manager.close()
+
+    asyncio.run(scenario())
+
+
 def test_managed_assistance_keeps_stack_running(terrain, plan, tmp_path, monkeypatch):
     import asyncio
     from types import SimpleNamespace
@@ -174,6 +284,10 @@ def test_managed_assistance_keeps_stack_running(terrain, plan, tmp_path, monkeyp
             await asyncio.sleep(0.3)
             assert manager.state["phase"] == "executing"
             assert manager.adapter.calls == ["start"]
+            manager.adapter.data["mission"].update(state="returning", message="Returning home")
+            await asyncio.sleep(0.3)
+            assert manager.state["phase"] == "returning"
+            assert manager.process is not None and not manager.task.done()
             await manager.cancel()
             manager.adapter.data["mission"].update(state="cancelled", cleanup_complete=True)
             await asyncio.wait_for(manager.task, 1)

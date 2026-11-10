@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # One entry point for the existing ROS Humble devcontainer: ROS dependencies,
-# Python backend, Node/pnpm, dashboard assets, and the upstream telemetry viewer.
+# perception runtime, Python backend, Node/pnpm, dashboard assets, and telemetry.
 # This does not build the ROS source packages or start any application.
 set -euo pipefail
 
@@ -42,6 +42,11 @@ rosdep fix-permissions || true
 rosdep update --rosdistro "${ros_distro}"
 rosdep install --from-paths "${repo_root}/rs1_ws/src" --ignore-src -r -y \
     --rosdistro "${ros_distro}"
+
+# The ROS perception executables use system Python, not the dashboard venv.
+printf '%s\n' 'Installing the ONNX perception runtime'
+"${elevate[@]}" /usr/bin/python3 -m pip install \
+    -r "${repo_root}/rs1_ws/src/rs1_perception/requirements/onnx.txt"
 
 printf '%s\n' '[3/6] Installing the Python dashboard backend'
 bash "${repo_root}/.devcontainer/scripts/setup_dashboard_backend.sh"

@@ -46,13 +46,7 @@ from visualization_msgs.msg import Marker, MarkerArray
 from rs1_interfaces.msg import TreeMap
 
 DEFAULT_ROI = (62.0, -88.0, 92.0, -58.0)
-# Everything drawn here is Gazebo ground truth: the ROI corners come from the
-# command line (world metres) and the ground-truth trees are parsed from the world
-# SDF, while /parrot1/tree_map carries the same world coordinates (perception
-# anchors on the raw Gazebo odometry).  This used to be parrot1_odom because the
-# EKF then relayed the exact Gazebo pose and the two frames coincided; with a
-# twist-only EKF they do not, so the markers are published in `world` and RViz
-# transforms them into whatever fixed frame it uses.
+# The ROI, SDF reference trees and estimated trunk positions share this frame.
 FRAME = "world"
 
 TYPE_COLORS = {

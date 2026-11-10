@@ -31,6 +31,11 @@ PATTERNS=(
     'rs1_alignment' 'mission_alignment'
     'yolo_node' 'tree_location' 'test_roi_sampling'
     'rviz2'
+    # Dashboard/telemetry stack. The launch files spawn these as children, and
+    # killing the `ros2 launch` parent does NOT stop them (they get reparented
+    # and keep serving stale state - e.g. the backend keeps holding its ROS
+    # domain lock and ports 8000/8080/8765 after the world is restarted).
+    'mission_control.app' 'telemetry_viewer' 'foxglove_bridge'
 )
 
 count_matching() {

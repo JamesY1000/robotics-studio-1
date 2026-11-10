@@ -1,0 +1,9 @@
+# husky1, parrot1 or all
+string robot
+bool stopped
+# Reset must refer to the exact state the operator saw, Stop ignores these fields
+string expected_instance_id
+uint64 expected_revision
+---
+bool success
+string message

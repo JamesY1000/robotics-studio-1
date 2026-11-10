@@ -16,9 +16,14 @@ string parrot_stage
 string husky_stage
 string message
 bool cleanup_complete
+# Stays true while stopping the survey, returning, or assisting the home journey
+bool returning_home
 # auto (Autonomous), husky1 (husky teleop), parrot1 (parrot teleop), or hold (stop)
 string control_mode
 # Only one manual input can command the selected robot
 string manual_input
 # Changes when input or control is reselected so quick switches also clear held input
 uint64 input_revision
+# Safety state processed by the coordinator, used to acknowledge a stop before reset
+string safety_instance_id
+uint64 safety_revision

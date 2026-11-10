@@ -14,6 +14,8 @@ float32 swath_spacing
 # Result
 string message
 uint32 tree_count
+# The detected/located tree map, returned so the Husky can sample each tree.
+TreeMap tree_map
 ---
 # Feedback
 string stage

@@ -1,12 +1,25 @@
 import React, { useEffect, useRef, useState } from "react";
 import { TerrainMap, type Mode } from "./Map";
-import type { Plan, Preset, State, XY } from "./types";
+import type {
+  GroundTruthObstacle,
+  GroundTruthTree,
+  Plan,
+  Preset,
+  State,
+  XY,
+} from "./types";
 import { canStartAttached, missionRequest, spawnRequest } from "./workflow";
 import { Telemetry } from "./Telemetry";
 import { ManualControl } from "./ManualControl";
+import { SafetyControls, safetyClear } from "./SafetyControls";
 
-async function api<T>(path: string, body?: unknown): Promise<T> {
+async function api<T>(
+  path: string,
+  body?: unknown,
+  signal?: AbortSignal,
+): Promise<T> {
   const response = await fetch(`/api/${path}`, {
+    signal,
     method: body === undefined ? "GET" : "POST",
     headers:
       body instanceof FormData ? {} : { "Content-Type": "application/json" },
@@ -105,6 +118,8 @@ const words = (s: string) => s.replaceAll("_", " ");
 type Draft = {
   start: XY | null;
   roi: XY | null;
+  // Square side length in metres; roi is the bottom-left entry corner.
+  roi_side: number;
   station_offset: XY;
   parrot_clearance: number;
   image_id: string;
@@ -112,9 +127,14 @@ type Draft = {
 const emptyDraft = (): Draft => ({
   start: null,
   roi: null,
+  roi_side: 10,
   station_offset: { x: 0, y: 5 },
   parrot_clearance: 4,
   image_id: "forest-overhead",
+});
+const roiCorner = (entry: XY, side: number): XY => ({
+  x: entry.x + side,
+  y: entry.y - side,
 });
 function readDraft(): Draft {
   try {
@@ -236,6 +256,15 @@ export default function App() {
   const [presets, setPresets] = useState<Preset[]>([]);
   const [draft, setDraft] = useState(readDraft);
   const [externalRoi, setExternalRoi] = useState<XY | null>(null);
+  const [externalRoiSecond, setExternalRoiSecond] = useState<XY | null>(null);
+  const [groundTruth, setGroundTruth] = useState<GroundTruthTree[]>([]);
+  const [obstacles, setObstacles] = useState<GroundTruthObstacle[]>([]);
+  const [showGroundTruth, setShowGroundTruth] = useState(false);
+  const [showObstacles, setShowObstacles] = useState(false);
+  // Filters the overlay to the trees inside the ROI box. Defaults off so the
+  // whole inventory is visible while the operator positions the box, and turns
+  // on automatically once the mission starts (the ROI is then locked).
+  const [roiOnlyGroundTruth, setRoiOnlyGroundTruth] = useState(false);
   const externalSession = useRef<string | null>(null);
   const externalRoiDirty = useRef(false);
   const previousExternalPhase = useRef("");
@@ -268,7 +297,11 @@ export default function App() {
     let timer: ReturnType<typeof setTimeout>;
     const poll = async () => {
       try {
-        const s = await api<State>("state");
+        const s = await api<State>(
+          "state",
+          undefined,
+          AbortSignal.timeout(2000),
+        );
         if (alive) {
           setState(s);
           setConnected(true);
@@ -291,6 +324,28 @@ export default function App() {
         .then(setPresets)
         .catch((e) => setError(e.message));
   }, [connected, state?.plan?.image_id, state?.deployment?.plan?.image_id]);
+  useEffect(() => {
+    // Ground-truth inventories are static; fetch them once when connected.
+    if (!connected) return;
+    let alive = true;
+    api<GroundTruthTree[]>("trees/ground_truth")
+      .then((trees) => {
+        if (alive) setGroundTruth(trees);
+      })
+      .catch(() => {
+        /* overlay is optional; leave it empty */
+      });
+    api<GroundTruthObstacle[]>("obstacles/ground_truth")
+      .then((items) => {
+        if (alive) setObstacles(items);
+      })
+      .catch(() => {
+        /* overlay is optional; leave it empty */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [connected]);
   useEffect(() => {
     localStorage.setItem("rs1-draft", JSON.stringify(draft));
   }, [draft]);
@@ -316,9 +371,16 @@ export default function App() {
       externalSession.current = session;
       externalRoiDirty.current = false;
       setExternalRoi(null);
+      setExternalRoiSecond(null);
     }
-    if (!externalRoiDirty.current && configuredRoi?.frame_id === "world")
+    if (!externalRoiDirty.current && configuredRoi?.frame_id === "world") {
       setExternalRoi({ x: configuredRoi.x, y: configuredRoi.y });
+      setExternalRoiSecond(
+        configuredRoi.min && configuredRoi.max
+          ? { x: configuredRoi.max.x, y: configuredRoi.min.y }
+          : roiCorner(configuredRoi, 10),
+      );
+    }
     // Waiting during a coordinator restart must not hide its preceding outcome.
     if (phase !== "waiting") previousExternalPhase.current = phase;
   }, [
@@ -337,6 +399,7 @@ export default function App() {
       deploySession.current = session;
       externalRoiDirty.current = false;
       setExternalRoi(null);
+      setExternalRoiSecond(null);
     }
     // A newly spawned coordinator has a placeholder target. Do not present it
     // as an operator-selected ROI after a refresh or dashboard restart.
@@ -344,8 +407,14 @@ export default function App() {
       !externalRoiDirty.current &&
       deployment?.roi_selected &&
       configuredRoi?.frame_id === "world"
-    )
+    ) {
       setExternalRoi({ x: configuredRoi.x, y: configuredRoi.y });
+      setExternalRoiSecond(
+        configuredRoi.min && configuredRoi.max
+          ? { x: configuredRoi.max.x, y: configuredRoi.min.y }
+          : roiCorner(configuredRoi, 10),
+      );
+    }
   }, [
     deploy,
     deployment?.plan?.session_id,
@@ -368,15 +437,26 @@ export default function App() {
     : !!state?.plan;
   const locked =
     deploy && deployment?.phase !== "deployed" ? spawnLocked : roiLocked;
+  useEffect(() => {
+    // ROI-only filtering follows the mission: off while planning, on once the
+    // mission starts, and back off when the ROI is unlocked again.
+    setRoiOnlyGroundTruth(locked);
+  }, [locked]);
   const selected = state?.plan || { ...draft, ...deployment?.plan };
   const preset = presets.find((p) => p.id === selected.image_id) || presets[0];
   const start = external ? null : selected.start;
   const savedRoi = deploy && !deployment?.roi_selected ? null : worldRoi;
-  const roi = attached
-    ? locked
-      ? savedRoi || externalRoi
-      : externalRoi || savedRoi
-    : selected.roi;
+  const savedRoiSecond =
+    savedRoi?.min && savedRoi?.max
+      ? { x: savedRoi.max.x, y: savedRoi.min.y }
+      : null;
+  const roi = attached ? externalRoi || savedRoi : selected.roi;
+  const roiSecond = attached
+    ? externalRoiSecond || savedRoiSecond
+    : selected.roi
+      ? ((selected.roi_second as XY | null) ??
+        roiCorner(selected.roi, draft.roi_side))
+      : null;
   const station =
     start && !deploy
       ? {
@@ -384,6 +464,20 @@ export default function App() {
           y: start.y + selected.station_offset.y,
         }
       : null;
+  // Ground-truth overlay. "ROI only" filters to trees inside the box; it is off
+  // by default and switches on when the mission starts (see the effect above).
+  const groundTruthFiltered = showGroundTruth
+    ? groundTruth.filter((t) => {
+        if (!roiOnlyGroundTruth || !roi || !roiSecond) return true;
+        return (
+          t.x >= Math.min(roi.x, roiSecond.x) &&
+          t.x <= Math.max(roi.x, roiSecond.x) &&
+          t.y >= Math.min(roi.y, roiSecond.y) &&
+          t.y <= Math.max(roi.y, roiSecond.y)
+        );
+      })
+    : [];
+  const obstaclesShown = showObstacles ? obstacles : [];
   const plan: Plan | null =
     !attached && start && roi && preset
       ? {
@@ -393,6 +487,7 @@ export default function App() {
           calibration_id: preset.calibration_id,
           start,
           roi,
+          roi_second: roiSecond,
           station_offset: selected.station_offset,
           parrot_clearance: selected.parrot_clearance,
         }
@@ -430,7 +525,14 @@ export default function App() {
   const roiNeedsPreview =
     attached && !!roi && (deploy || externalRoiDirty.current);
   const roiPreviewKey = roiNeedsPreview
-    ? JSON.stringify([state?.mode, deployment?.plan?.session_id, roi.x, roi.y])
+    ? JSON.stringify([
+        state?.mode,
+        deployment?.plan?.session_id,
+        roi.x,
+        roi.y,
+        roiSecond?.x,
+        roiSecond?.y,
+      ])
     : "";
   useEffect(() => {
     setRoiPreview(null);
@@ -438,7 +540,11 @@ export default function App() {
     let alive = true;
     // Match the spawn preview delay so clicks and coordinate edits settle first.
     const timer = setTimeout(() => {
-      api<XY & { z: number }>("roi/preview", { x: roi.x, y: roi.y })
+      api<XY & { z: number }>("roi/preview", {
+        x: roi.x,
+        y: roi.y,
+        ...(roiSecond ? { second: { x: roiSecond.x, y: roiSecond.y } } : {}),
+      })
         .then(() => {
           if (alive) setRoiPreview({ key: roiPreviewKey, error: "" });
         })
@@ -462,20 +568,48 @@ export default function App() {
       : "";
 
   const place = (which: Mode, p: XY) => {
-    if (which === "roi" ? roiLocked : spawnLocked) return;
-    if (attached && which === "roi") {
-      externalRoiDirty.current = true;
-      setExternalRoi(p);
-      return;
-    }
+    if (which !== "start" && which !== "station") return;
+    if (spawnLocked) return;
     if (external || (deploy && which === "station")) return;
     setDraft((d) =>
       which === "station" && d.start
         ? { ...d, station_offset: { x: p.x - d.start.x, y: p.y - d.start.y } }
-        : which === "start" || which === "roi"
-          ? { ...d, [which]: p }
+        : which === "start"
+          ? { ...d, start: p }
           : d,
     );
+  };
+  const placeRoi = (entry: XY, corner: XY) => {
+    if (roiLocked) return;
+    if (attached) {
+      externalRoiDirty.current = true;
+      setExternalRoi(entry);
+      setExternalRoiSecond(corner);
+      return;
+    }
+    setDraft((d) => ({
+      ...d,
+      roi: entry,
+      roi_side: Math.max(2, corner.x - entry.x, entry.y - corner.y),
+    }));
+  };
+  const roiEntryChange = (p: XY) => {
+    if (roiLocked) return;
+    if (attached) {
+      externalRoiDirty.current = true;
+      const side =
+        externalRoi && externalRoiSecond
+          ? Math.max(
+              2,
+              externalRoiSecond.x - externalRoi.x,
+              externalRoi.y - externalRoiSecond.y,
+            )
+          : 10;
+      setExternalRoi(p);
+      setExternalRoiSecond(roiCorner(p, side));
+      return;
+    }
+    setDraft((d) => ({ ...d, roi: p }));
   };
   const act = async (
     action:
@@ -509,7 +643,13 @@ export default function App() {
               ? `deployment/${action}`
               : `mission/${action}`,
         action === "start"
-          ? missionRequest(state?.mode, roi, externalRoiDirty.current, plan)
+          ? missionRequest(
+              state?.mode,
+              roi,
+              roiSecond,
+              externalRoiDirty.current,
+              plan,
+            )
           : action === "spawn"
             ? spawnPlan
             : {},
@@ -556,21 +696,36 @@ export default function App() {
       "preparing",
       "ready",
       "executing",
+      "sampling",
+      "returning",
       "manual_assistance",
       "cancellation_requested",
     ].includes(phase) &&
     (!deploy || deployment?.phase === "deployed");
   const placements = deployment?.placements || state?.placements || preview;
+  const motionEnabled = safetyClear(state?.ros.safety);
   const canStart = attached
-    ? canStartAttached(state, roi) &&
+    ? motionEnabled &&
+      canStartAttached(state, roi) &&
       (!roiNeedsPreview || (roiPreviewMatches && !roiPreviewError))
     : !locked && !!preview && !!state?.ros.available;
   const canSpawn =
     deploy && !!deployment?.can_spawn && !spawnLocked && !!preview;
   const canStop = deploy && !!deployment?.plan && !active;
   const controlMode = state?.ros.mission?.control_mode;
+  const returningHome =
+    state?.ros.mission?.returning_home || phase === "returning";
   const manualRobot =
     controlMode === "husky1" || controlMode === "parrot1" ? controlMode : null;
+  const sweepProgress = state?.ros.mission?.roi?.progress;
+  const showSweep =
+    ["sampling", "returning", "complete"].includes(phase) &&
+    typeof sweepProgress === "number" &&
+    Number.isFinite(sweepProgress);
+  const sweepPct = showSweep
+    ? Math.round(Math.min(1, Math.max(0, sweepProgress as number)) * 100)
+    : 0;
+  const treeCount = state?.ros.trees?.length ?? 0;
   return (
     <div className="shell">
       <aside className="sidebar">
@@ -657,16 +812,21 @@ export default function App() {
             </p>
           </div>
           <div className="header-actions">
-            {["executing", "manual_assistance"].includes(phase) && (
+            {[
+              "executing",
+              "sampling",
+              "returning",
+              "manual_assistance",
+            ].includes(phase) && (
               <>
                 <button
-                  disabled={busy || !connected}
+                  disabled={busy || !connected || !motionEnabled}
                   onClick={() => act("manual_husky")}
                 >
                   Manual Husky
                 </button>
                 <button
-                  disabled={busy || !connected}
+                  disabled={busy || !connected || !motionEnabled}
                   onClick={() => act("manual_parrot")}
                 >
                   Manual Parrot
@@ -677,11 +837,16 @@ export default function App() {
               <button
                 className="primary"
                 disabled={
-                  busy || !connected || !state?.ros.mission?.cleanup_complete
+                  busy ||
+                  !connected ||
+                  !motionEnabled ||
+                  !state?.ros.mission?.cleanup_complete
                 }
                 title={
                   state?.ros.mission?.cleanup_complete
-                    ? "Recheck readiness and retry the same ROI"
+                    ? returningHome
+                      ? "Recheck readiness and continue returning home"
+                      : "Recheck readiness and continue the mission"
                     : "Waiting for previous navigation to stop"
                 }
                 onClick={() => act("resume")}
@@ -690,7 +855,7 @@ export default function App() {
               </button>
             )}
             <span
-              className={`badge ${phase === "executing" || phase === "complete" ? "green" : ""}`}
+              className={`badge ${["executing", "sampling", "returning", "complete"].includes(phase) ? "green" : ""}`}
             >
               {words(phase)}
             </span>
@@ -708,11 +873,22 @@ export default function App() {
               <button
                 className="cancel"
                 disabled={
-                  busy || !connected || phase === "cancellation_requested"
+                  busy ||
+                  !connected ||
+                  phase === "cancellation_requested" ||
+                  returningHome
                 }
                 onClick={() => act("cancel")}
               >
-                ■ Cancel Mission
+                {phase === "cancellation_requested"
+                  ? "Stopping survey…"
+                  : returningHome
+                    ? phase === "manual_assistance"
+                      ? "Return home paused"
+                      : "Returning home…"
+                    : phase === "preparing"
+                      ? "Cancel preparation"
+                      : "Cancel mission & return home"}
               </button>
             ) : (
               <button
@@ -725,6 +901,7 @@ export default function App() {
             )}
           </div>
         </header>
+        <SafetyControls safety={state?.ros.safety} connected={connected} />
         {tab === "mission" &&
           phase === "manual_assistance" &&
           manualRobot &&
@@ -822,7 +999,7 @@ export default function App() {
                         onClick={() => setMode(m)}
                       >
                         <span>{["↔", "①", "②", "⌂"][i]}</span>
-                        {["Pan", "Robot start", "Point ROI", "Station"][i]}
+                        {["Pan", "Robot start", "ROI box", "Station"][i]}
                       </button>
                     ),
                 )}
@@ -832,11 +1009,15 @@ export default function App() {
                   preset={preset}
                   start={start}
                   roi={roi}
+                  roiSecond={roiSecond}
                   station={station}
                   mode={mode}
                   locked={locked}
                   state={state}
+                  groundTruth={groundTruthFiltered}
+                  obstacles={obstaclesShown}
                   onPlace={place}
+                  onRoi={placeRoi}
                 />
               ) : (
                 <div className="loading-map">
@@ -854,7 +1035,11 @@ export default function App() {
                 </span>
                 <span>
                   <i className="legend-dot roi-dot" />
-                  Point ROI
+                  ROI box
+                </span>
+                <span>
+                  <i className="legend-dot tree-dot" />
+                  Trees
                 </span>
                 <span className="map-footer-note">
                   {external || (deploy ? !!deployment?.plan : locked)
@@ -862,6 +1047,46 @@ export default function App() {
                     : "Dashed markers · spawn preview"}
                 </span>
               </div>
+              <label className="ground-truth-toggle">
+                <input
+                  type="checkbox"
+                  checked={showGroundTruth}
+                  aria-label="Show ground-truth trees"
+                  onChange={(e) => setShowGroundTruth(e.target.checked)}
+                />
+                <i className="legend-dot gt-dot" />
+                Ground-truth trees
+                <small>
+                  {groundTruthFiltered.length}
+                  {roiOnlyGroundTruth && roi && roiSecond
+                    ? " inside ROI"
+                    : " total"}
+                </small>
+              </label>
+              <label className="ground-truth-toggle">
+                <input
+                  type="checkbox"
+                  checked={roiOnlyGroundTruth}
+                  disabled={!showGroundTruth}
+                  aria-label="Show only ground-truth trees inside the ROI"
+                  onChange={(e) => setRoiOnlyGroundTruth(e.target.checked)}
+                />
+                ROI only
+              </label>
+              <label className="ground-truth-toggle">
+                <input
+                  type="checkbox"
+                  checked={showObstacles}
+                  aria-label="Show ground-truth bushes and rocks"
+                  onChange={(e) => setShowObstacles(e.target.checked)}
+                />
+                Obstacles
+                <i className="legend-dot bush-dot" />
+                Bush
+                <i className="legend-dot rock-dot" />
+                Rock
+                <small>{obstacles.length}</small>
+              </label>
             </section>
             <aside className="plan-column">
               <div className="card plan-card">
@@ -900,19 +1125,28 @@ export default function App() {
                 )}
                 <div className="plan-section">
                   <h3>
-                    <b>{external ? "◎" : "2"}</b> Point of interest
+                    <b>{external ? "◎" : "2"}</b> ROI box
                   </h3>
                   <p>
                     {deploy && deployment?.phase !== "deployed"
-                      ? "Spawn the robots first, then choose their destination."
-                      : "Both robots traverse to this ROI."}
+                      ? "Spawn the robots first, then choose the square to survey."
+                      : "Both robots traverse to the square's bottom-left corner."}
                   </p>
                   <Coordinates
-                    label="ROI"
+                    label="ROI entry"
                     point={roi}
                     disabled={roiLocked}
-                    onChange={(p) => place("roi", p)}
+                    onChange={roiEntryChange}
                   />
+                  {roiSecond && roi && (
+                    <small className="height-info">
+                      Square side{" "}
+                      {format(
+                        Math.max(roiSecond.x - roi.x, roi.y - roiSecond.y),
+                      )}{" "}
+                      m · corner {format(roiSecond.x)}, {format(roiSecond.y)} m
+                    </small>
+                  )}
                   {external &&
                     configuredRoi &&
                     configuredRoi.frame_id !== "world" &&
@@ -946,29 +1180,6 @@ export default function App() {
                     )}
                   </div>
                 )}
-                {!external && (
-                  <label className="clearance">
-                    Parrot sensor clearance{" "}
-                    <div>
-                      <input
-                        aria-label="Parrot clearance"
-                        type="number"
-                        min="2"
-                        max="15"
-                        step="0.5"
-                        value={selected.parrot_clearance}
-                        disabled={spawnLocked}
-                        onChange={(e) =>
-                          setDraft((d) => ({
-                            ...d,
-                            parrot_clearance: e.target.valueAsNumber,
-                          }))
-                        }
-                      />
-                      <span>m</span>
-                    </div>
-                  </label>
-                )}
                 <div
                   className={`validation ${previewError || roiPreviewError ? "invalid" : ""}`}
                   role="status"
@@ -986,8 +1197,8 @@ export default function App() {
                           ? phase !== "idle"
                             ? state?.message
                             : !roi
-                              ? "Select a point ROI on the map or enter coordinates. No mission starts automatically."
-                              : "Start sends the selected world X / Y to the coordinator. Terrain supplies Z."
+                              ? "Select an ROI box on the map or enter coordinates. No mission starts automatically."
+                              : "Start sends the selected square ROI to the coordinator. Terrain supplies Z."
                           : deployment?.message ||
                             "Connecting to the running world…")
                     : external
@@ -1018,7 +1229,7 @@ export default function App() {
                 <Icon kind="mission" />
                 <span>
                   {deploy
-                    ? "Stop robots removes this deployment and its mission nodes. Gazebo stays running; restart the world terminal before deploying again. Cancel an active mission before stopping."
+                    ? "Stop robots removes this deployment and its mission nodes. Gazebo stays running; restart the world terminal before deploying again. Cancel an active mission to return both robots home, then Stop robots."
                     : external
                       ? "After a mission ends, restart the mission launch in its terminal to run another. Restarting this dashboard does not reset the mission."
                       : "Terrain following stays active. Horizontal movement begins after alignment and navigation are ready."}
@@ -1032,11 +1243,40 @@ export default function App() {
             <section className="card progress-card">
               <div className="card-heading">
                 <h3>Mission status</h3>
-                <span className="tiny-label">TRAVERSAL</span>
+                <span className="tiny-label">
+                  {phase === "returning"
+                    ? "RETURNING HOME"
+                    : phase === "sampling"
+                      ? "SAMPLING"
+                      : phase === "complete"
+                        ? "COMPLETE"
+                        : phase === "cancelled"
+                          ? "CANCELLED"
+                          : "TRAVERSAL"}
+                </span>
               </div>
               <p className="phase-message" aria-live="polite">
                 {state?.message || "Connecting to mission service…"}
               </p>
+              {showSweep && (
+                <div
+                  className="sweep-progress"
+                  role="progressbar"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={sweepPct}
+                >
+                  <div className="sweep-progress-track">
+                    <div
+                      className="sweep-progress-fill"
+                      style={{ width: `${sweepPct}%` }}
+                    />
+                  </div>
+                  <div className="sweep-progress-label">
+                    {sweepPct}% swept · {treeCount} tree(s) found
+                  </div>
+                </div>
+              )}
               <div className="steps">
                 {(deploy
                   ? ["Place", "Spawn", "Traverse", "Finish"]
@@ -1072,7 +1312,11 @@ export default function App() {
                   </div>
                 ))}
               </div>
-              <small>Sampling and return-home are future phases.</small>
+              <small>
+                {treeCount > 0
+                  ? `${treeCount} tree(s) mapped; markers shown on the terrain map.`
+                  : "Sweep progress updates live; tree markers appear once the tree map is published."}
+              </small>
             </section>
           </div>
         </div>
@@ -1261,8 +1505,9 @@ export default function App() {
                 </>
               )}
               <p className="muted">
-                Cancellation is a mission request, not an emergency stop. Only
-                traversal to ROI is implemented.
+                Cancellation is a mission request, not an emergency stop. The
+                mission traverses to the ROI, samples trees and returns to the
+                start poses.
               </p>
             </section>
           </div>

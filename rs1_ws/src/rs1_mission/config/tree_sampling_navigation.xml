@@ -1,0 +1,17 @@
+<!-- The survey owns retreat and alternate views, so don't stack another recovery loop inside Nav2 -->
+<root main_tree_to_execute="MainTree">
+  <BehaviorTree ID="MainTree">
+    <RecoveryNode number_of_retries="1" name="TreeApproach">
+      <PipelineSequence name="ReplanApproach">
+        <RateController hz="1.0">
+          <ComputePathToPose goal="{goal}" path="{path}" planner_id="GridBased"/>
+        </RateController>
+        <FollowPath path="{path}" controller_id="TreeApproach" goal_checker_id="tree_goal_checker"/>
+      </PipelineSequence>
+      <Sequence name="RefreshCostmaps">
+        <ClearEntireCostmap name="ClearLocal" service_name="local_costmap/clear_entirely_local_costmap"/>
+        <ClearEntireCostmap name="ClearGlobal" service_name="global_costmap/clear_entirely_global_costmap"/>
+      </Sequence>
+    </RecoveryNode>
+  </BehaviorTree>
+</root>

@@ -5,21 +5,13 @@ tree_location_node:
     depth_image_topic: "/parrot1/camera/depth/image"
     lidar_topic: "/parrot1/scan"
 
-    # Frames
-    # world_frame is the frame the tree locations are computed in.  Use
-    # parrot1_odom (NOT world): the EKF fuses the exact Gazebo pose, so
-    # parrot1_odom == world numerically, whereas ``world`` resolves through
-    # SLAM's parrot1_map -> parrot1_odom which diverges badly on this forest and
-    # biases every centroid by tens of metres.
-    world_frame: "parrot1_odom"
+    # The mission filters detections and publishes its tree map in world coordinates.
+    world_frame: "world"
     base_link_frame: "parrot1_base_link"
     lidar_frame: "parrot1_base_scan"
     depth_optical_frame: "parrot1_camera_depth_optical_frame"
-    # Anchor sensor poses on the raw Gazebo odometry (ground truth) instead of
-    # the TF tree.  The EKF's odom->base_link orientation corrupts after set_pose
-    # teleports, and SLAM's map->odom diverges on this forest.  Set false to use
-    # the localisation TF (world_frame <- sensor).
-    use_truth_odometry: true
+    # Enable only for comparisons against the simulator pose.
+    use_truth_odometry: false
     odometry_topic: "/parrot1/odometry"
 
     # Camera intrinsics fallback (derived from image size + hfov)

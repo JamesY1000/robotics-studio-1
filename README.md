@@ -141,7 +141,8 @@ hook, run the same setup from the repository root:
 bash .devcontainer/scripts/setup_dependencies.sh
 ```
 
-This handles apt/rosdep dependencies, the Python backend in
+This handles apt/rosdep dependencies, the ONNX perception runtime in system
+Python, the Python backend in
 `.venv/mission-control`, Node/pnpm and the frontend's locked dependency install
 and build. A compatible existing Node is reused; otherwise the script installs
 a SHA256-checked official Node runtime privately under `.venv/frontend-tools`.

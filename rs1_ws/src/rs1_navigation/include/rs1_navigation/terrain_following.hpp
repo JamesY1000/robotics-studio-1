@@ -8,6 +8,7 @@
 #include "geometry_msgs/msg/twist.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/laser_scan.hpp"
+#include "rs1_interfaces/srv/set_clearance.hpp"
 
 namespace rs1_navigation
 {
@@ -41,6 +42,10 @@ private:
   // Publishes combined cmd_vel to /parrot1/cmd_vel_combined, then make gz plugin subscribe to this topic? What else is needed here?
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr combined_vel_pub_;
 
+  // Lets the mission executor switch the held clearance (transit vs search).
+  // The parrot executor drives its sweep through this service.
+  rclcpp::Service<rs1_interfaces::srv::SetClearance>::SharedPtr set_clearance_service_;
+
   // Ros timer for control rate
   rclcpp::TimerBase::SharedPtr control_timer_;
 
@@ -61,6 +66,8 @@ private:
   void cmdVelCb(const geometry_msgs::msg::Twist &msg);
   void navigationStatusCb(const action_msgs::msg::GoalStatusArray &msg);
   void backupStatusCb(const action_msgs::msg::GoalStatusArray &msg);
+  void setClearanceCb(const std::shared_ptr<rs1_interfaces::srv::SetClearance::Request> request,
+                      std::shared_ptr<rs1_interfaces::srv::SetClearance::Response> response);
 
   void controlLoop(); // Main control loop
   double computeZVel(double current_height);

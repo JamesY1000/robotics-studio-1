@@ -2,6 +2,7 @@
 #define RS1_MISSION__MISSION_COORDINATOR_HPP_
 
 #include <cstddef>
+#include <array>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -14,6 +15,8 @@
 
 #include "std_srvs/srv/trigger.hpp"
 #include "rs1_interfaces/msg/mission_status.hpp"
+#include "rs1_interfaces/msg/safety_state.hpp"
+#include "rs1_interfaces/msg/tree_map.hpp"
 #include "tf2_ros/buffer.h"
 #include "tf2_ros/transform_listener.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
@@ -21,6 +24,8 @@
 #include "rclcpp_action/rclcpp_action.hpp"
 #include "rs1_interfaces/action/traverse_to_roi.hpp"
 #include "rs1_interfaces/action/sample_roi.hpp"
+#include "rs1_interfaces/action/measure_trees.hpp"
+#include "rs1_interfaces/action/return_home.hpp"
 
 
 namespace rs1_mission
@@ -32,6 +37,12 @@ public:
   MissionCoordinatorNode();
 
 private:
+
+    bool safetyClear() const;
+    void checkSafety();
+    rs1_interfaces::msg::SafetyState safety_;
+    std::chrono::steady_clock::time_point safety_received_{};
+    rclcpp::Subscription<rs1_interfaces::msg::SafetyState>::SharedPtr safety_sub_;
 
     // State machine
     enum class MissionState
@@ -103,8 +114,25 @@ private:
 
     // Entrypoints to starting each phase
     bool startTraverseToROI();
+    bool sendHuskyTraversal(bool resume_route);
     void startSampleROI();
-    void startTraverseHome();
+    bool startTraverseHome();
+    void saveHomePoses();
+    void cancelReturnHome();
+    using ReturnHome = rs1_interfaces::action::ReturnHome;
+    using HomeHandle = rclcpp_action::ClientGoalHandle<ReturnHome>;
+    struct HomeReturn
+    {
+        geometry_msgs::msg::PoseStamped pose;
+        rclcpp_action::Client<ReturnHome>::SharedPtr client;
+        HomeHandle::SharedPtr goal;
+        bool pending{false}, cancel_requested{false}, arrived{false};
+    };
+    std::array<HomeReturn, 2> home_returns_;
+    bool homes_saved_{false}, returning_home_{false};
+    // Cancelling ends the survey early, but the mission stays alive until both robots are home
+    bool survey_cancelled_{false};
+    double home_tolerance_{0.5};
 
     rs1_interfaces::action::TraverseToROI::Goal createTraverseToROIGoal(
         const geometry_msgs::msg::PoseStamped &roi_pose_);
@@ -144,13 +172,12 @@ private:
     rclcpp_action::Client<rs1_interfaces::action::TraverseToROI>::SharedPtr traverse_to_roi_client_parrot_;
     rclcpp_action::Client<rs1_interfaces::action::TraverseToROI>::SharedPtr traverse_to_roi_client_husky_;
 
-    // Phase 2: parrot-only ROI sampling client
+    // Parrot sweep client
     rclcpp_action::Client<rs1_interfaces::action::SampleROI>::SharedPtr sample_roi_client_parrot_;
     rclcpp_action::Client<rs1_interfaces::action::SampleROI>::SendGoalOptions parrot_sample_goal_options_;
     rclcpp_action::ClientGoalHandle<rs1_interfaces::action::SampleROI>::SharedPtr parrot_sample_goal_handle_;
     bool parrot_sample_goal_pending_{false};
     bool parrot_sample_cancel_requested_{false};
-    bool parrot_sample_succeded_{false};
 
     rclcpp_action::Client<rs1_interfaces::action::TraverseToROI>::SendGoalOptions parrot_goal_options_;
     rclcpp_action::Client<rs1_interfaces::action::TraverseToROI>::SendGoalOptions husky_goal_options_;
@@ -175,6 +202,10 @@ private:
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr roi_marker_pub_;
     geometry_msgs::msg::PoseStamped roi_pose_;
 
+    // Tree map received from the parrot's SampleROI action result, forwarded to
+    // the Husky so it can sample each tree.
+    rclcpp::Publisher<rs1_interfaces::msg::TreeMap>::SharedPtr mission_tree_map_pub_;
+
     // Axis-aligned ROI box (in roi_pose_'s frame) and sweep progress
     geometry_msgs::msg::Point roi_min_;
     geometry_msgs::msg::Point roi_max_;
@@ -188,6 +219,22 @@ private:
     MissionState mission_state_;
     bool parrot_succeded_;
     bool husky_succeded_;
+    enum class SamplingStage { None, Sweeping, MapReady, Measuring };
+    SamplingStage sampling_stage_{SamplingStage::None};
+    using MeasureTrees = rs1_interfaces::action::MeasureTrees;
+    using MeasureHandle = rclcpp_action::ClientGoalHandle<MeasureTrees>;
+    rs1_interfaces::msg::TreeSurvey survey_;
+    rclcpp::Publisher<rs1_interfaces::msg::TreeSurvey>::SharedPtr survey_pub_;
+    rclcpp_action::Client<MeasureTrees>::SharedPtr measure_client_;
+    MeasureHandle::SharedPtr measure_goal_;
+    bool measure_pending_{false};
+    bool measure_cancel_requested_{false};
+    void startMeasureTrees(bool resume_from_current_pose = false);
+    void requireFreshPose(const std::string &robot) const;
+    void resumeSampling(std_srvs::srv::Trigger::Response &response);
+    void cancelMeasureTrees();
+    void measureResultCb(const MeasureHandle::WrappedResult &result);
+    rs1_interfaces::msg::TreeMap treesInROI(const rs1_interfaces::msg::TreeMap &map);
 
 };
 

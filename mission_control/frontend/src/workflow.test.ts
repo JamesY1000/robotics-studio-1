@@ -50,10 +50,22 @@ describe("staged deployment", () => {
 
   it("requires an operator ROI even when the new coordinator has a placeholder target", () => {
     expect(canStartAttached(state, null)).toBe(false);
-    expect(missionRequest("deploy", null, false, null)).toBeNull();
+    expect(missionRequest("deploy", null, null, false, null)).toBeNull();
     expect(canStartAttached(state, { x: 88, y: -48 })).toBe(true);
-    expect(missionRequest("deploy", { x: 88, y: -48 }, true, null)).toEqual({
+    expect(missionRequest("deploy", { x: 88, y: -48 }, null, true, null)).toEqual({
       roi: { x: 88, y: -48 },
+    });
+    expect(
+      missionRequest(
+        "deploy",
+        { x: 88, y: -48 },
+        { x: 98, y: -58 },
+        true,
+        null,
+      ),
+    ).toEqual({
+      roi: { x: 88, y: -48 },
+      roi_second: { x: 98, y: -58 },
     });
   });
 
@@ -77,8 +89,8 @@ describe("staged deployment", () => {
       configured_roi: { x: 2, y: 3, z: 7, frame_id: "parrot1/map" },
     };
     expect(canStartAttached(external, null)).toBe(true);
-    expect(missionRequest("external", null, false, null)).toEqual({});
-    expect(missionRequest("external", { x: 88, y: -48 }, true, null)).toEqual({
+    expect(missionRequest("external", null, null, false, null)).toEqual({});
+    expect(missionRequest("external", { x: 88, y: -48 }, null, true, null)).toEqual({
       roi: { x: 88, y: -48 },
     });
   });

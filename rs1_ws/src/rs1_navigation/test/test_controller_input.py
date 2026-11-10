@@ -11,7 +11,7 @@ import rclpy
 from ament_index_python.packages import get_package_prefix
 from geometry_msgs.msg import Twist
 from rclpy.qos import DurabilityPolicy, QoSProfile
-from rs1_interfaces.msg import MissionStatus
+from rs1_interfaces.msg import MissionStatus, SafetyState
 from sensor_msgs.msg import Joy
 
 
@@ -21,6 +21,11 @@ def test_exclusive_input_and_rearming(robot, tmp_path, monkeypatch):
     monkeypatch.setenv('ROS_LOCALHOST_ONLY', '1')
     rclpy.init()
     node = rclpy.create_node('controller_input_test')
+    safety = SafetyState(instance_id='test_safety')
+    safety_pub = node.create_publisher(SafetyState, '/safety/state',
+        QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL))
+    send_safety = True
+    node.create_timer(.04, lambda: safety_pub.publish(safety) if send_safety else None)
     status_pub = node.create_publisher(MissionStatus, '/mission/status',
                                       QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL))
     keyboard_pub = node.create_publisher(Twist, '/' + robot + '/cmd_vel_manual', 1)
@@ -117,6 +122,20 @@ def test_exclusive_input_and_rearming(robot, tmp_path, monkeypatch):
             expect(0.1)
             status.manual_input = 'controller'
             status.input_revision += 1
+            expect()
+            release_and_press()
+
+            safety.husky_stopped = safety.parrot_stopped = True
+            safety.revision += 1
+            expect()
+            safety.husky_stopped = safety.parrot_stopped = False
+            safety.revision += 1
+            expect()  # Reset cannot rearm an already held L1
+            release_and_press()
+            send_safety = False
+            pump(.6)
+            expect()
+            send_safety = True
             expect()
             release_and_press()
 

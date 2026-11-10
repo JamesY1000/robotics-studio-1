@@ -1,0 +1,9 @@
+std_msgs/Header map_header
+uint32 tree_index
+TreeLocation tree
+# Use the configured tolerance when called without a tighter neighbour bound
+float64 max_center_offset_m
+---
+bool success
+float64 dbh_m
+string message

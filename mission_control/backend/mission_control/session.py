@@ -8,7 +8,9 @@ import time
 from pathlib import Path
 
 from .models import Calibration, Plan
+from .ros_adapter import RequestUncertain
 from .telemetry_config import TELEMETRY_NODE
+from .safety import safety_clear
 
 
 class Conflict(ValueError):
@@ -95,6 +97,8 @@ class SessionManager:
 
     def control_status(self):
         ros = self.adapter.snapshot()
+        if not safety_clear(ros):
+            raise Conflict("Software stop active or unavailable; reset it before enabling motion")
         mission = ros.get("mission", {})
         if (not ros.get("available") or not mission.get("instance_id") or
                 time.monotonic() - ros.get("mission_at", 0) >= 1.5):
@@ -117,10 +121,10 @@ class SessionManager:
                     raise Conflict("Mission is not in manual assistance")
                 if not mission.get("cleanup_complete"):
                     raise Conflict("Previous navigation is still stopping; try Resume again shortly")
-            elif mission.get("state") not in ("executing", "manual_assistance"):
+            elif mission.get("state") not in ("executing", "manual_assistance", "sampling", "returning"):
                 raise Conflict("No active mission to assist")
 
-            # The coordinator rechecks TF and action readiness before retrying the saved ROI
+            # The coordinator rechecks TF and action readiness before resuming the unfinished phase
             await self.adapter.call(operation)
             return self.snapshot()
 
@@ -162,7 +166,7 @@ class SessionManager:
 
     def ready(self, ros):
         session = self.state["plan"]["session_id"]
-        return (ros.get("alignment", {}).get("session_id") == session and
+        return (safety_clear(ros) and ros.get("alignment", {}).get("session_id") == session and
                 ros.get("mission", {}).get("session_id") == session and
                 all(ros.get("alignment", {}).get("ready", {}).get(r, False) for r in ("husky1", "parrot1")) and
                 all(ros.get("robots", {}).get(r, {}).get("fresh", False) for r in ("husky1", "parrot1")) and
@@ -181,6 +185,8 @@ class SessionManager:
                     message = f"Aligning observed robot poses at matching simulation times ({count}/2 registered)…"
                 elif not all(ros.get("alignment", {}).get("ready", {}).values()):
                     message = "Verifying initial XY / heading alignment against Gazebo…"
+                elif not safety_clear(ros):
+                    message = "Waiting for software stop reset in the safety panel before starting the mission…"
                 else:
                     pending = [k for k, v in ros.get("checks", {}).items() if not v]
                     message = "Waiting for navigation readiness: " + ", ".join(pending or ["fresh localization TF"])
@@ -203,11 +209,13 @@ class SessionManager:
             while True:
                 ros = self.adapter.snapshot()
                 status = ros.get("mission", {})
+                return_acknowledged = (status.get("session_id") == self.state["plan"]["session_id"] and
+                                       ros.get("checks", {}).get("mission_status") and status.get("returning_home"))
                 if status.get("session_id") == self.state["plan"]["session_id"]:
                     phase = status.get("state")
                     if (ros.get("checks", {}).get("mission_status") and
-                            phase in ("executing", "manual_assistance") and
-                            self.state["phase"] != "cancellation_requested" and
+                            phase in ("executing", "sampling", "returning", "manual_assistance", "cancellation_requested") and
+                            (self.state["phase"] != "cancellation_requested" or return_acknowledged) and
                             (phase, status.get("message", phase)) != (self.state["phase"], self.state["message"])):
                         self.transition(phase, status.get("message", phase))
                     if phase in ("complete", "cancelled", "failed") and status.get("cleanup_complete"):
@@ -215,10 +223,12 @@ class SessionManager:
                         return
                 if self.process.returncode is not None:
                     raise RuntimeError("ROS launch stopped during execution. Inspect ros.log and reset.")
-                if self.state["phase"] == "cancellation_requested":
+                if self.state["phase"] == "cancellation_requested" and not return_acknowledged:
                     cancellation_deadline = cancellation_deadline or time.monotonic()+30
                     if time.monotonic() > cancellation_deadline:
-                        raise RuntimeError("Cancellation was not acknowledged by both executors within 30 s. Owned simulation stopped; reset required.")
+                        raise RuntimeError("Cancel and return home was not acknowledged by the coordinator within 30 s. Owned simulation stopped; reset required.")
+                else:
+                    cancellation_deadline = None
                 # Keep the stack available for assistance when navigation or localisation becomes unhealthy
                 # The executors report failed attempts and Resume rechecks readiness in the coordinator
                 await asyncio.sleep(0.2)
@@ -242,11 +252,11 @@ class SessionManager:
     async def cancel(self):
         async with self.lock:
             phase = self.state["phase"]
-            if phase == "cancellation_requested":
+            if phase == "cancellation_requested" or self.adapter.snapshot().get("mission", {}).get("returning_home"):
                 return self.snapshot()
-            if phase not in ("preparing", "ready", "executing", "manual_assistance"):
+            if phase not in ("preparing", "ready", "executing", "sampling", "returning", "manual_assistance"):
                 raise Conflict("There is no active mission to cancel")
-            self.transition("cancellation_requested", "Cancellation requested; waiting for owned work to finish.")
+            self.transition("cancellation_requested", "Cancel and return home requested; waiting for the coordinator.")
             if phase == "preparing":
                 self.task.cancel()
                 await asyncio.gather(self.task, return_exceptions=True)
@@ -255,6 +265,10 @@ class SessionManager:
             else:
                 try:
                     await self.adapter.call("cancel")
+                except RequestUncertain as exc:
+                    # The return may already be running, so wait for ROS acknowledgement without killing it
+                    self.transition("cancellation_requested", f"{exc}; waiting for return-home status.")
+                    raise
                 except Exception as exc:
                     if self.task:
                         self.task.cancel()
@@ -303,6 +317,6 @@ class SessionManager:
             await asyncio.gather(self.task, return_exceptions=True)
         await self.stop_process()
         self.adapter.close()
-        if self.state["phase"] in ("preparing", "ready", "executing", "manual_assistance", "cancellation_requested"):
+        if self.state["phase"] in ("preparing", "ready", "executing", "sampling", "returning", "manual_assistance", "cancellation_requested"):
             self.transition("failed", "Backend shut down; its simulation was stopped. Reset to start a new session.")
         self.persist()

@@ -16,8 +16,8 @@ flowchart TD
         DEP["/parrot1/camera/depth/image<br/>32FC1"]
         SCAN["/parrot1/scan<br/>LaserScan - MIDDLE ring only"]
         CLD["/parrot1/scan/points<br/>PointCloud2 - all 9 rings"]
-        ODO["/parrot1/odometry<br/>Gazebo ground truth"]
     end
+    ODO["Registered localisation TF<br/>world to sensor"]
 
     subgraph DET["1 DETECTION - yolo_node"]
         INF["inference<br/>imgsz 640, conf 0.5"]
@@ -37,11 +37,11 @@ flowchart TD
 
     subgraph AGG["3 AGGREGATION - parrot_mission_executor"]
         ROIF["ROI box filter"]
-        MERGE["association<br/>nearest within 4.0 m, type-agnostic<br/>score-weighted vote + centroid"]
+        MERGE["association<br/>within 4.0 m, type-agnostic<br/>score-weighted vote + centroid"]
         FIN["final dedup 5.5 m<br/>then observations >= 2"]
     end
 
-    OUT["/parrot1/tree_map<br/>TreeMap, frame parrot1_odom<br/>TRANSIENT_LOCAL"]
+    OUT["/parrot1/tree_map<br/>TreeMap, frame world<br/>TRANSIENT_LOCAL"]
 
     CAM --> INF
     INF -->|"/yolo/detect"| FOL
@@ -101,11 +101,11 @@ az -30 deg / 1.9 m while the trunk was at az 0 deg / 5 m). Depth only supplies
 `base_z` from the lowest visible trunk row. Finally, boxes closer than
 `frame_dedup_distance` (1.0 m) within one response collapse to the highest score.
 
-Frames: all positions are in `parrot1_odom`, which equals `world` numerically
-because the EKF fuses the exact Gazebo pose. Sensor poses come from
-`/parrot1/odometry` plus the *static* `base_link -> sensor` TF
-(`use_truth_odometry: true`) - **not** from the EKF/SLAM chain, which corrupts
-after a `set_pose` teleport.
+The localiser uses the registered TF chain from `world` to the camera and lidar.
+The Parrot EKF supplies local motion and SLAM supplies the map correction. The
+simulator provides the initial planar world registration. Set `use_truth_odometry`
+to `true` at startup for a comparison using Gazebo's base pose. The current EKF
+has no altitude measurement, so interpret tree-base Z as approximate.
 
 ### Stage 3 - aggregation (`parrot_mission_executor`)
 
@@ -126,8 +126,12 @@ At the end, `publishTreeMap()` does a final greedy dedup at `final_merge_distanc
 collapse - then drops anything with `observations < min_observations` (2), because
 a single sighting is usually a bad anchor or a false positive.
 
-Output is `/parrot1/tree_map` (`TreeMap`, frame `parrot1_odom`,
-TRANSIENT_LOCAL); the Husky executor consumes it and writes the CSV database.
+During the sweep, `/parrot1/tree_map_markers` shows the current candidates as
+world-frame spheres in RViz and Lichtblick. The final markers match the filtered
+`/parrot1/tree_map` (`rs1_interfaces/msg/TreeMap`, transient local). The
+coordinator forwards the successful action result on `/mission/tree_map` for
+the Husky and the dashboard.
+
 
 ### Read the counters, not the node output
 
@@ -311,8 +315,18 @@ pip install -r requirements/tensorrt.txt   # NVIDIA only, on top of onnx.txt
 > `nvidia/*` libraries you cannot use:
 > `pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu`
 
-The devcontainer already installs the ONNX profile (`.devcontainer/requirements.txt`),
-so `backend:=onnx` works out of the box.
+The devcontainer post-create hook installs the ONNX profile into the system
+Python used by ROS nodes. To repair an existing container without rebuilding
+either Docker image, run from the repository root inside the container:
+
+```bash
+sudo -H /usr/bin/python3 -m pip install -r rs1_ws/src/rs1_perception/requirements/onnx.txt
+```
+
+Restart the failed YOLO node or relaunch the mission afterwards. Rebuilding ROS
+packages alone does not install these Python dependencies. The profile keeps
+NumPy below 1.25 for compatibility with Jammy's SciPy and Humble's binary
+`cv_bridge`.
 
 ### TensorRT notes (NVIDIA users)
 
@@ -641,3 +655,26 @@ These were Husky-only tests. They do not validate Parrot, mission handoff, or th
 combined simulation load. The new sensor processing uses measured IMU orientation,
 not the simulator's ground-truth pose or terrain mesh; those were used only by the
 test observer. The planar EKF and its existing input sources are unchanged.
+
+### Overhead returns supported by a narrow ground strip
+
+`ground_relative_scan_cloud.py` still tries the 0.75 m and 1.5 m ground fits with
+the same sample-count, spread, error and slope checks. If only the spread check
+fails, the optional height bound can reject a clearly overhead return without
+accepting the under-supported plane. It takes the highest neighbour height bound,
+allowing 0.7 m of terrain rise per horizontal metre and another 0.2 m of uncertainty.
+Missing, sparse, rough or excessively sloped ground retains the old conservative
+behaviour. Reliable plane fits keep their existing 0.08--1.0 m obstacle band.
+
+The fallback is disabled by default because the full-mission trial did not show
+a navigation improvement. Add `ground_height_bound_enabled:=true` to the simulation
+launch to try it; leaving it disabled reproduces the old selection behaviour. The node also
+accepts startup parameters `ground_bound_max_slope` (at least 0.7) and
+`ground_bound_margin` (nonnegative). These are startup settings, not live controls.
+
+The bound assumes terrain cannot rise faster than the configured allowance across
+the observed gap. It cannot establish safety across an unseen step or cliff.
+It changes the existing navigation cloud only; raw LiDAR used for DBH is unchanged.
+Saved-scan, terrain-reference and full-mission results are recorded under
+`.mission-control/height-bound-20261106/`. The foliage regression passes, but the
+full mission still encounters navigation and retreat failures.

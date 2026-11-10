@@ -41,7 +41,7 @@ add_executable(parrot_mission_executor
 
 ament_target_dependencies(mission_coordinator tf2 tf2_ros tf2_geometry_msgs rclcpp rcl_interfaces rclcpp_action std_msgs geometry_msgs visualization_msgs rs1_interfaces std_srvs)
 ament_target_dependencies(husky_mission_executor rclcpp rclcpp_action std_msgs geometry_msgs tf2 tf2_ros tf2_geometry_msgs nav_msgs nav2_msgs rs1_interfaces)
-ament_target_dependencies(parrot_mission_executor rclcpp rclcpp_action std_msgs geometry_msgs sensor_msgs tf2 tf2_ros tf2_geometry_msgs nav2_msgs rs1_interfaces)
+ament_target_dependencies(parrot_mission_executor rclcpp rclcpp_action std_msgs geometry_msgs visualization_msgs sensor_msgs tf2 tf2_ros tf2_geometry_msgs nav2_msgs rs1_interfaces)
 
 # Install cpp executables
 install(TARGETS
@@ -73,6 +73,24 @@ install(DIRECTORY res
 
 if(BUILD_TESTING)
   find_package(ament_cmake_pytest REQUIRED)
+  ament_add_pytest_test(test_return_home test/test_return_home.py
+    TIMEOUT 180
+    ENV COORDINATOR_EXECUTABLE=$<TARGET_FILE:mission_coordinator>
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
+  )
+  ament_add_pytest_test(test_home_execution test/test_home_execution.py
+    TIMEOUT 240
+    ENV HUSKY_EXECUTABLE=$<TARGET_FILE:husky_mission_executor>
+      PARROT_EXECUTABLE=$<TARGET_FILE:parrot_mission_executor>
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
+  )
+  ament_add_pytest_test(test_launch_home test/test_launch_home.py
+    ENV PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
+  )
+  ament_add_pytest_test(test_carbon_calculator test/test_carbon_calculator.py
+    TIMEOUT 60
+    ENV PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
+  )
   ament_add_pytest_test(test_manual_assistance test/test_manual_assistance.py
     TIMEOUT 90
     ENV COORDINATOR_EXECUTABLE=$<TARGET_FILE:mission_coordinator>
@@ -81,6 +99,16 @@ if(BUILD_TESTING)
   ament_add_pytest_test(test_husky_transform_readiness
     test/test_husky_transform_readiness.py
     TIMEOUT 90
+    ENV HUSKY_EXECUTABLE=$<TARGET_FILE:husky_mission_executor>
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
+  )
+  ament_add_pytest_test(test_husky_tree_survey test/test_husky_tree_survey.py
+    TIMEOUT 480
+    ENV HUSKY_EXECUTABLE=$<TARGET_FILE:husky_mission_executor>
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
+  )
+  ament_add_pytest_test(test_assisted_sampling test/test_assisted_sampling.py
+    TIMEOUT 120
     ENV HUSKY_EXECUTABLE=$<TARGET_FILE:husky_mission_executor>
       PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
   )

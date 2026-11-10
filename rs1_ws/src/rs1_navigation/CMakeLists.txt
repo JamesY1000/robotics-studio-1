@@ -29,7 +29,7 @@ add_executable(velocity_selector
 # Declare version required by std::clamp =
 target_compile_features(velocity_selector PRIVATE cxx_std_17)
 
-ament_target_dependencies(terrain_following rclcpp action_msgs geometry_msgs sensor_msgs)
+ament_target_dependencies(terrain_following rclcpp action_msgs geometry_msgs sensor_msgs rs1_interfaces)
 ament_target_dependencies(velocity_selector rclcpp geometry_msgs sensor_msgs rs1_interfaces)
 
 # Install cpp executables

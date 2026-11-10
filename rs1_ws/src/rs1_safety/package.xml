@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>rs1_safety</name>
+  <version>0.0.1</version>
+  <description>Latched software stop authority for the coordinated robot mission</description>
+  <maintainer email="nikhil.kumar-5@student.uts.edu.au">Nikhil</maintainer>
+  <license>TODO: License declaration</license>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>rclcpp</depend>
+  <depend>rs1_interfaces</depend>
+  <test_depend>ament_cmake_pytest</test_depend>
+  <test_depend>rclpy</test_depend>
+  <export><build_type>ament_cmake</build_type></export>
+</package>

@@ -126,5 +126,7 @@ def generate_launch_description():
             set_gazebo_server_config,
             gazebo,
             clock_bridge,
+            # The world owns the stop authority so closing the dashboard cannot remove it
+            Node(package="rs1_safety", executable="emergency_stop", output="screen"),
         ]
     )

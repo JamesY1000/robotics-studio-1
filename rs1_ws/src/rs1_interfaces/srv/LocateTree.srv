@@ -1,0 +1,8 @@
+# Find one standing trunk around this map point before planning the final approach
+std_msgs/Header map_header
+geometry_msgs/Point expected
+float64 search_radius_m
+---
+bool success
+geometry_msgs/Point centre
+string message

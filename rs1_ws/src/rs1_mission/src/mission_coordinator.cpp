@@ -7,9 +7,10 @@
 // 1. Get to ROI
 // 2. Sample trees
 // 3. Get to home
-// Once both robots are at home base (ground station), we finish the mission
+// Once both robots are back at their start positions, we finish the mission
 
 #include "mission_coordinator.hpp"
+#include "tree_survey.hpp"
 
 #include <exception>
 #include <algorithm>
@@ -17,7 +18,9 @@
 #include <functional>
 #include <limits>
 #include <string>
+#include <stdexcept>
 #include <cmath>
+#include <tf2/utils.h>
 
 namespace rs1_mission
 {
@@ -38,6 +41,15 @@ MissionCoordinatorNode::MissionCoordinatorNode() : Node("mission_coordinator_nod
     status_pub_ = this->create_publisher<rs1_interfaces::msg::MissionStatus>(
         "/mission/status", rclcpp::QoS(1).reliable().transient_local());
     status_timer_ = this->create_wall_timer(std::chrono::milliseconds(200), [this]() { publishStatus(); });
+    safety_sub_ = create_subscription<rs1_interfaces::msg::SafetyState>(
+        "/safety/state", rclcpp::QoS(1).reliable().transient_local(),
+        [this](const rs1_interfaces::msg::SafetyState &msg) {
+            // Notice a heartbeat gap even if the next heartbeat beats our status timer
+            checkSafety();
+            safety_ = msg;
+            safety_received_ = std::chrono::steady_clock::now();
+            checkSafety();
+        });
     roi_pose_.pose.position.x = this->declare_parameter<double>("roi_x", -40.0);
     roi_pose_.pose.position.y = this->declare_parameter<double>("roi_y", 40.0);
     roi_pose_.pose.position.z = this->declare_parameter<double>("roi_z", 0.0);
@@ -55,9 +67,26 @@ MissionCoordinatorNode::MissionCoordinatorNode() : Node("mission_coordinator_nod
     transit_clearance_ = this->declare_parameter<double>("transit_clearance", 2.0);
     swath_spacing_ = this->declare_parameter<double>("swath_spacing", 0.0);
 
+    // Dashboard launches supply spawn poses, standalone launches remember the first mission start
+    rcl_interfaces::msg::ParameterDescriptor fixed;
+    fixed.read_only = true;
+    declare_parameter<bool>("home_from_start", true, fixed);
+    home_tolerance_ = declare_parameter<double>("home_tolerance_m", 0.5, fixed);
+    if (!std::isfinite(home_tolerance_) || home_tolerance_ <= 0)
+        throw std::invalid_argument("home_tolerance_m must be positive and finite");
+    for (const auto &robot : {"parrot", "husky"})
+        declare_parameter<std::vector<double>>(std::string(robot) + "_home", {0.0, 0.0, 0.0, 0.0}, fixed);
+    home_returns_[0].client = rclcpp_action::create_client<ReturnHome>(this, "/parrot1/return_home");
+    home_returns_[1].client = rclcpp_action::create_client<ReturnHome>(this, "/husky1/return_home");
+
     // Keep the latest ROI marker for RViz instances opened later
     roi_marker_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(
         "/mission/roi_marker", rclcpp::QoS(1).reliable().transient_local());
+
+    // Latched tree map the Husky samples from, populated from the parrot's
+    // SampleROI action result.
+    mission_tree_map_pub_ = this->create_publisher<rs1_interfaces::msg::TreeMap>(
+        "/mission/tree_map", rclcpp::QoS(1).reliable().transient_local());
 
     // Show the configured ROI before starting the mission
     publishROIMarker();
@@ -123,7 +152,17 @@ MissionCoordinatorNode::MissionCoordinatorNode() : Node("mission_coordinator_nod
         std::placeholders::_1
     );
 
-    // Phase 2: parrot-only ROI sampling client
+    measure_client_ = rclcpp_action::create_client<MeasureTrees>(this, "/husky1/measure_trees");
+    survey_pub_ = create_publisher<rs1_interfaces::msg::TreeSurvey>(
+        "/mission/tree_survey", rclcpp::QoS(1).reliable().transient_local());
+    // A new mission starts with no readings, including for late dashboard subscribers
+    survey_.mission_id = instance_id_;
+    survey_.tree_map.header.frame_id = "world";
+    survey_.tree_map.header.stamp = now();
+    mission_tree_map_pub_->publish(survey_.tree_map);
+    survey_pub_->publish(survey_);
+
+    // Parrot handles the sweep, then Husky measures the trees it found
     sample_roi_client_parrot_ = rclcpp_action::create_client<rs1_interfaces::action::SampleROI>(
         this,
         "/parrot1/sample_roi"
@@ -316,9 +355,23 @@ void MissionCoordinatorNode::refreshROI()
     publishROIMarker();
 }
 
+void MissionCoordinatorNode::requireFreshPose(const std::string &robot) const
+{
+    const auto tf = tf_buffer_->lookupTransform("world", robot + "_base_link", tf2::TimePointZero);
+    const double age = (now() - rclcpp::Time(tf.header.stamp)).seconds();
+    if (age < -0.1 || age > 2.0) throw std::runtime_error(robot + " localization TF is stale");
+}
+
 void MissionCoordinatorNode::startMissionCb(const std::shared_ptr<std_srvs::srv::Trigger::Request>,
     std::shared_ptr<std_srvs::srv::Trigger::Response> response)
 {
+    if (!safetyClear())
+    {
+        response->success = false;
+        response->message = "Software stop active or safety heartbeat missing; reset the stop before enabling motion";
+        return;
+    }
+
     response->success = false;
 
     // Reuse the start checks when retrying the saved ROI after manual assistance
@@ -330,6 +383,17 @@ void MissionCoordinatorNode::startMissionCb(const std::shared_ptr<std_srvs::srv:
     if (traversalPending())
     {
         response->message = "Previous navigation is still stopping; continue manual assistance and try Resume again shortly";
+        return;
+    }
+    if (mission_state_ == MissionState::MANUAL_ASSISTANCE && returning_home_)
+    {
+        response->success = startTraverseHome();
+        response->message = message_;
+        return;
+    }
+    if (mission_state_ == MissionState::MANUAL_ASSISTANCE && sampling_stage_ != SamplingStage::None)
+    {
+        resumeSampling(*response);
         return;
     }
     // Synchronize immediately even when Start follows a parameter update before
@@ -377,14 +441,11 @@ void MissionCoordinatorNode::startMissionCb(const std::shared_ptr<std_srvs::srv:
     // accept parrot1_map; Husky transforms the generated path to its own map.
     try
     {
-        for (const auto &robot : {"husky1", "parrot1"})
-        {
-            const auto t = tf_buffer_->lookupTransform("world", std::string(robot) + "_base_link", tf2::TimePointZero);
-            const double age = (this->now() - rclcpp::Time(t.header.stamp)).seconds();
-            if (age < -0.1 || age > 2.0) throw std::runtime_error("Robot localization TF is stale");
-        }
+        requireFreshPose("husky1");
+        requireFreshPose("parrot1");
         const auto transform = tf_buffer_->lookupTransform("parrot1_map", roi_pose_.header.frame_id, tf2::TimePointZero);
         tf2::doTransform(roi_pose_, executor_roi_, transform);
+        saveHomePoses();
     }
     catch (const std::exception &e)
     {
@@ -414,19 +475,32 @@ void MissionCoordinatorNode::cancelMissionCb(const std::shared_ptr<std_srvs::srv
         response->message = "Mission already finished; create a new session";
         return;
     }
+
+    // Repeated clicks must not cancel the home journey or resume it behind the operator's back
+    if (returning_home_)
+    {
+        response->success = true;
+        response->message = mission_state_ == MissionState::MANUAL_ASSISTANCE ?
+            "Return home is paused; select Resume when ready" : "Return home is already requested";
+        return;
+    }
+    survey_cancelled_ = true;
+    returning_home_ = true;
     mission_state_ = MissionState::CANCELLING;
     control_mode_ = "hold";
-    message_ = "Cancellation requested; waiting for both executors";
+    ++input_revision_;
+    message_ = "Stopping the survey before returning both robots home";
     publishStatus();
 
     // A pending goal will be canceled once its goal handle arrives
     cancelTraversalToROI(Robot::Parrot);
     cancelTraversalToROI(Robot::Husky);
     cancelSampleROI();
+    cancelMeasureTrees();
     evaluateTransitions();
 
     response->success = true;
-    response->message = "Cancellation requested; waiting for both executors to finish";
+    response->message = "Cancel and return home requested; keeping confirmed measurements";
 }
 
 void MissionCoordinatorNode::traverseToROIGoalResponseCb(Robot robot,
@@ -440,7 +514,7 @@ void MissionCoordinatorNode::traverseToROIGoalResponseCb(Robot robot,
     goal_pending = false;
     if (!goal_handle)
     {
-        if (mission_state_ == MissionState::TRAVERSINGTOROI)
+        if (mission_state_ == MissionState::TRAVERSINGTOROI || mission_state_ == MissionState::SAMPLINGROI)
         {
             enterManualAssistance(robot, robot_name + " executor rejected the TraverseToROI goal");
         }
@@ -462,6 +536,13 @@ void MissionCoordinatorNode::traverseToROIGoalResponseCb(Robot robot,
     }
 
     RCLCPP_DEBUG(this->get_logger(), "%s accepted the TraverseToROI goal", robot_name.c_str());
+
+    if (robot == Robot::Husky && mission_state_ == MissionState::SAMPLINGROI)
+    {
+        // The route is back under Husky's control so Parrot can restart its interrupted sweep
+        if (sampling_stage_ == SamplingStage::Sweeping) startSampleROI();
+        return;
+    }
 
     // Husky is now waiting for a path, so parrot can start its mission
     if (robot == Robot::Husky && mission_state_ == MissionState::TRAVERSINGTOROI)
@@ -492,7 +573,8 @@ void MissionCoordinatorNode::traverseToROIFeedbackCb(Robot robot,
     const auto &current_goal = robot == Robot::Parrot ? parrot_goal_handle_ : husky_goal_handle_;
 
     // Ignore feedback from old goals or while the mission is stopping
-    if (!feedback || !goal_handle || !current_goal || mission_state_ != MissionState::TRAVERSINGTOROI ||
+    if (!feedback || !goal_handle || !current_goal ||
+        (mission_state_ != MissionState::TRAVERSINGTOROI && mission_state_ != MissionState::SAMPLINGROI) ||
         goal_handle->get_goal_id() != current_goal->get_goal_id()) return;
 
     (robot == Robot::Parrot ? parrot_stage_ : husky_stage_) = feedback->stage;
@@ -536,6 +618,9 @@ void MissionCoordinatorNode::traverseToROIResultCb(Robot robot,
     // A success received while stopping must not advance the mission
     if (mission_state_ == MissionState::MANUAL_ASSISTANCE || mission_state_ == MissionState::CANCELLING)
     {
+        if (mission_state_ == MissionState::MANUAL_ASSISTANCE && sampling_stage_ != SamplingStage::None &&
+            robot == Robot::Husky && result.code == rclcpp_action::ResultCode::SUCCEEDED)
+            husky_succeded_ = true;
         evaluateTransitions();
         return;
     }
@@ -598,19 +683,27 @@ bool MissionCoordinatorNode::startTraverseToROI()
 {
     parrot_succeded_ = false;
     husky_succeded_ = false;
+    sampling_stage_ = SamplingStage::None;
     mission_state_ = MissionState::TRAVERSINGTOROI;
-    message_ = "Traversal to ROI; sampling and return-home are not implemented";
+    message_ = "Parrot will start sweeping once Husky accepts its ground path";
     control_mode_ = "auto";
     ++input_revision_;
     parrot_stage_ = "Waiting";
     husky_stage_ = "Waiting";
     publishStatus();
 
-    // Send husky its goal first; its acceptance callback starts parrot
+    return sendHuskyTraversal(false);
+}
+
+bool MissionCoordinatorNode::sendHuskyTraversal(bool resume_route)
+{
     try
     {
         husky_goal_pending_ = true;
-        traverse_to_roi_client_husky_->async_send_goal(createTraverseToROIGoal(executor_roi_), husky_goal_options_);
+        auto goal = createTraverseToROIGoal(executor_roi_);
+        goal.route_id = instance_id_;
+        goal.resume_route = resume_route;
+        traverse_to_roi_client_husky_->async_send_goal(goal, husky_goal_options_);
     }
     catch (const std::exception &e)
     {
@@ -619,12 +712,12 @@ bool MissionCoordinatorNode::startTraverseToROI()
         return false;
     }
 
-    RCLCPP_INFO(this->get_logger(), "Starting phase 1; waiting for Husky to accept the ROI");
     return true;
 }
 
 void MissionCoordinatorNode::startSampleROI()
 {
+    sampling_stage_ = SamplingStage::Sweeping;
     if (!sample_roi_client_parrot_->action_server_is_ready())
     {
         enterManualAssistance(Robot::Parrot, "Parrot SampleROI action server unavailable");
@@ -645,7 +738,10 @@ void MissionCoordinatorNode::startSampleROI()
     mission_state_ = MissionState::SAMPLINGROI;
     roi_progress_ = 0.0f;
     message_ = "Sampling ROI: sweeping the box for trees";
-    parrot_sample_succeded_ = false;
+    // Restore autonomous control before dispatching the sweep
+    control_mode_ = "auto";
+    ++input_revision_;
+    publishStatus();
 
     try
     {
@@ -778,8 +874,10 @@ void MissionCoordinatorNode::sampleROIResultCb(
         }
     }
 
-    // A result received while stopping must not advance the mission
-    if (mission_state_ != MissionState::SAMPLINGROI)
+    // Save a completed map if its result crosses the operator's pause request
+    const bool paused = mission_state_ == MissionState::MANUAL_ASSISTANCE;
+    if (mission_state_ != MissionState::SAMPLINGROI &&
+        !(paused && result.code == rclcpp_action::ResultCode::SUCCEEDED))
     {
         evaluateTransitions();
         return;
@@ -788,9 +886,32 @@ void MissionCoordinatorNode::sampleROIResultCb(
     switch (result.code)
     {
         case rclcpp_action::ResultCode::SUCCEEDED:
-            parrot_sample_succeded_ = true;
-            RCLCPP_INFO(this->get_logger(), "Parrot finished the ROI sweep with %u tree(s)",
-                result.result ? result.result->tree_count : 0u);
+            if (!result.result)
+            {
+                if (!paused) enterManualAssistance(Robot::Parrot, "Sweep returned no tree map");
+                return;
+            }
+            try
+            {
+                survey_.tree_map = treesInROI(result.result->tree_map);
+            }
+            catch (const std::exception &e)
+            {
+                if (!paused) enterManualAssistance(Robot::Parrot, e.what());
+                return;
+            }
+            survey_.measurements.clear();
+            survey_.pending_views.clear();
+            roi_progress_ = 1.0f;
+            mission_tree_map_pub_->publish(survey_.tree_map);
+            survey_pub_->publish(survey_);
+            if (survey_.tree_map.trees.empty())
+            {
+                if (!paused) enterManualAssistance(Robot::Parrot, "Sweep found no trees in the ROI; check coverage before retrying");
+                return;
+            }
+            sampling_stage_ = SamplingStage::MapReady;
+            if (!paused) message_ = "Sweep map ready; waiting for Husky to reach the ROI";
             evaluateTransitions();
             break;
 
@@ -840,9 +961,321 @@ void MissionCoordinatorNode::cancelSampleROI()
     }
 }
 
-void MissionCoordinatorNode::startTraverseHome()
+rs1_interfaces::msg::TreeMap MissionCoordinatorNode::treesInROI(const rs1_interfaces::msg::TreeMap &map)
 {
-    return; // TODO (james): Implement phase 3
+    // Check the original box since a rotated sweep can pick up trees just outside it
+    rs1_interfaces::msg::TreeMap inside;
+    inside.header = map.header;
+    if (map.trees.empty()) return inside;
+    geometry_msgs::msg::TransformStamped transform;
+    const bool needs_tf = map.header.frame_id != roi_pose_.header.frame_id;
+    if (needs_tf)
+        transform = tf_buffer_->lookupTransform(roi_pose_.header.frame_id, map.header.frame_id, tf2::TimePointZero);
+    for (const auto &tree : map.trees)
+    {
+        auto p = tree.location;
+        if (needs_tf) tf2::doTransform(tree.location, p, transform);
+        if (!std::isfinite(p.x) || !std::isfinite(p.y) || !std::isfinite(p.z))
+            throw std::runtime_error("Sweep returned a tree with invalid coordinates");
+        if (p.x >= roi_min_.x && p.x <= roi_max_.x && p.y >= roi_min_.y && p.y <= roi_max_.y)
+            inside.trees.push_back(tree);
+    }
+    return inside;
+}
+
+void MissionCoordinatorNode::startMeasureTrees(bool resume_from_current_pose)
+{
+    sampling_stage_ = SamplingStage::Measuring;
+    if (!measure_client_->action_server_is_ready())
+    {
+        enterManualAssistance(Robot::Husky, "Husky MeasureTrees server unavailable");
+        return;
+    }
+    mission_state_ = MissionState::SAMPLINGROI;
+    control_mode_ = "auto";
+    ++input_revision_;
+    husky_stage_ = "Planning tree visits";
+    message_ = "Husky is measuring the trees in the ROI";
+    publishStatus();
+
+    MeasureTrees::Goal goal;
+    goal.survey = survey_;
+    goal.resume_from_current_pose = resume_from_current_pose;
+    rclcpp_action::Client<MeasureTrees>::SendGoalOptions options;
+    options.goal_response_callback = [this](MeasureHandle::SharedPtr handle) {
+        measure_pending_ = false;
+        measure_goal_ = handle;
+        if (mission_state_ != MissionState::SAMPLINGROI)
+        {
+            cancelMeasureTrees();
+            evaluateTransitions();
+        }
+        else if (!handle) enterManualAssistance(Robot::Husky, "Husky rejected the tree survey");
+    };
+    options.feedback_callback = [this](MeasureHandle::SharedPtr handle, MeasureTrees::Feedback::ConstSharedPtr fb) {
+        if (handle == measure_goal_ && mission_state_ == MissionState::SAMPLINGROI)
+            husky_stage_ = fb->stage + " (" + std::to_string(fb->measured_count) + "/" +
+                std::to_string(fb->total_count) + " measured)";
+    };
+    options.result_callback = std::bind(&MissionCoordinatorNode::measureResultCb, this, std::placeholders::_1);
+    try
+    {
+        measure_pending_ = true;
+        measure_client_->async_send_goal(goal, options);
+    }
+    catch (const std::exception &e)
+    {
+        measure_pending_ = false;
+        enterManualAssistance(Robot::Husky, e.what());
+    }
+}
+
+void MissionCoordinatorNode::resumeSampling(std_srvs::srv::Trigger::Response &response)
+{
+    if (traversalPending())
+    {
+        response.success = false;
+        response.message = "Previous action is still stopping";
+        return;
+    }
+    try
+    {
+        if (!husky_succeded_ || sampling_stage_ != SamplingStage::Sweeping) requireFreshPose("husky1");
+        if (sampling_stage_ == SamplingStage::Sweeping) requireFreshPose("parrot1");
+        if (!husky_succeded_ && !traverse_to_roi_client_husky_->action_server_is_ready())
+            throw std::runtime_error("Husky TraverseToROI server unavailable");
+    }
+    catch (const std::exception &e)
+    {
+        response.success = false;
+        response.message = e.what();
+        return;
+    }
+    mission_state_ = MissionState::SAMPLINGROI;
+    control_mode_ = "auto";
+    ++input_revision_;
+    if (!husky_succeded_)
+    {
+        message_ = "Resuming Husky's ground path";
+        publishStatus();
+        sendHuskyTraversal(true);
+    }
+    else if (sampling_stage_ == SamplingStage::Sweeping) startSampleROI();
+    else startMeasureTrees(true);
+    response.success = mission_state_ == MissionState::SAMPLINGROI;
+    response.message = message_;
+}
+
+void MissionCoordinatorNode::cancelMeasureTrees()
+{
+    if (!measure_goal_ || measure_cancel_requested_) return;
+    try
+    {
+        measure_cancel_requested_ = true;
+        measure_client_->async_cancel_goal(measure_goal_, [this, goal = measure_goal_](auto reply) {
+            if (goal == measure_goal_ && (!reply || reply->goals_canceling.empty()))
+                measure_cancel_requested_ = false;
+        });
+    }
+    catch (const std::exception &e)
+    {
+        measure_cancel_requested_ = false;
+        RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 3000, "Waiting to cancel the tree survey: %s", e.what());
+    }
+}
+
+void MissionCoordinatorNode::measureResultCb(const MeasureHandle::WrappedResult &result)
+{
+    if (!measure_goal_ || result.goal_id != measure_goal_->get_goal_id()) return;
+    measure_goal_.reset();
+    measure_cancel_requested_ = false;
+
+    // Save confirmed readings even if the operator stopped Husky halfway through
+    const auto count = survey_.tree_map.trees.size();
+    const bool valid = result.result && validSurveyProgress(count, result.result->measurements, result.result->pending_views) &&
+        std::all_of(survey_.measurements.begin(), survey_.measurements.end(), [&](const auto &previous) {
+            const auto &readings = result.result->measurements;
+            return std::find(readings.begin(), readings.end(), previous) != readings.end();
+        }) && std::all_of(survey_.pending_views.begin(), survey_.pending_views.end(), [&](const auto &previous) {
+            const auto &readings = result.result->measurements;
+            const auto &pending = result.result->pending_views;
+            return std::any_of(readings.begin(), readings.end(), [&](const auto &reading) {
+                return reading.tree_index == previous.tree_index;
+            }) || std::find(pending.begin(), pending.end(), previous) != pending.end();
+        });
+    if (valid)
+    {
+        survey_.measurements = result.result->measurements;
+        survey_.pending_views = result.result->pending_views;
+        survey_pub_->publish(survey_);
+    }
+    if (mission_state_ != MissionState::SAMPLINGROI)
+    {
+        evaluateTransitions();
+        return;
+    }
+    if (!valid || result.code != rclcpp_action::ResultCode::SUCCEEDED || survey_.measurements.size() != count)
+    {
+        enterManualAssistance(Robot::Husky, valid && !result.result->message.empty() ?
+            result.result->message : "Husky returned an incomplete tree survey");
+        return;
+    }
+    husky_stage_ = "Measured all " + std::to_string(count) + " trees";
+    message_ = "Phase 2 complete: " + husky_stage_;
+    startTraverseHome();
+}
+
+void MissionCoordinatorNode::saveHomePoses()
+{
+    if (homes_saved_) return;
+    std::array<geometry_msgs::msg::PoseStamped, 2> homes;
+    for (std::size_t i = 0; i < homes.size(); ++i)
+    {
+        const std::string robot = i == 0 ? "parrot" : "husky";
+        auto &pose = homes[i];
+        pose.header.frame_id = "world";
+        pose.header.stamp = now();
+        double yaw;
+        if (get_parameter("home_from_start").as_bool())
+        {
+            const auto tf = tf_buffer_->lookupTransform("world", robot + "1_base_link", tf2::TimePointZero);
+            pose.pose.position.x = tf.transform.translation.x;
+            pose.pose.position.y = tf.transform.translation.y;
+            pose.pose.position.z = tf.transform.translation.z;
+            yaw = tf2::getYaw(tf.transform.rotation);
+        }
+        else
+        {
+            const auto values = get_parameter(robot + "_home").as_double_array();
+            if (values.size() != 4) throw std::runtime_error(robot + "_home needs [x, y, z, yaw]");
+            pose.pose.position.x = values[0];
+            pose.pose.position.y = values[1];
+            pose.pose.position.z = values[2];
+            yaw = values[3];
+        }
+        if (!std::isfinite(pose.pose.position.x) || !std::isfinite(pose.pose.position.y) ||
+            !std::isfinite(pose.pose.position.z) || !std::isfinite(yaw))
+            throw std::runtime_error(robot + " home must be finite");
+        pose.pose.orientation.z = std::sin(yaw / 2);
+        pose.pose.orientation.w = std::cos(yaw / 2);
+    }
+    for (std::size_t i = 0; i < homes.size(); ++i) home_returns_[i].pose = homes[i];
+    homes_saved_ = true;
+}
+
+bool MissionCoordinatorNode::startTraverseHome()
+{
+    // Keep this flag through assistance so Resume cannot restart tree sampling
+    returning_home_ = true;
+    if (traversalPending())
+    {
+        message_ = "Previous navigation is still stopping; try Resume again shortly";
+        return false;
+    }
+    if (!safetyClear())
+    {
+        enterManualAssistance(Robot::Husky, "Return home paused: software stop active or safety heartbeat missing");
+        return false;
+    }
+    for (std::size_t i = 0; i < home_returns_.size(); ++i)
+    {
+        auto &home = home_returns_[i];
+        try
+        {
+            if (!homes_saved_) throw std::runtime_error("Mission start poses were not saved");
+            const std::string robot = i == 0 ? "parrot1" : "husky1";
+            requireFreshPose(robot);
+            // The operator may have driven an already-arrived robot away during assistance
+            const auto tf = tf_buffer_->lookupTransform("world", robot + "_base_link", tf2::TimePointZero);
+            if (std::hypot(tf.transform.translation.x - home.pose.pose.position.x,
+                           tf.transform.translation.y - home.pose.pose.position.y) > home_tolerance_)
+                home.arrived = false;
+            if (home.arrived) continue;
+            if (!home.client->action_server_is_ready()) throw std::runtime_error("ReturnHome server is unavailable");
+        }
+        catch (const std::exception &e)
+        {
+            enterManualAssistance(static_cast<Robot>(i), e.what());
+            return false;
+        }
+    }
+    mission_state_ = MissionState::TRAVERSINGTOHOME;
+    control_mode_ = "auto";
+    ++input_revision_;
+    message_ = survey_cancelled_ ? "Survey cancelled; returning both robots to their start poses" :
+        "Phase 3: returning both robots to their start poses";
+    publishStatus();
+    for (std::size_t i = 0; i < home_returns_.size(); ++i)
+    {
+        auto &home = home_returns_[i];
+        if (home.arrived) continue;
+        const auto robot = static_cast<Robot>(i);
+        rclcpp_action::Client<ReturnHome>::SendGoalOptions options;
+        options.goal_response_callback = [this, i, robot](auto goal) {
+            auto &current = home_returns_[i];
+            current.pending = false;
+            current.goal = goal;
+            if (mission_state_ != MissionState::TRAVERSINGTOHOME)
+            {
+                cancelReturnHome();
+                evaluateTransitions();
+            }
+            else if (!goal) enterManualAssistance(robot, "ReturnHome goal was rejected");
+        };
+        options.feedback_callback = [this, i](auto goal, auto feedback) {
+            if (mission_state_ == MissionState::TRAVERSINGTOHOME && home_returns_[i].goal == goal)
+                (i == 0 ? parrot_stage_ : husky_stage_) = feedback->stage;
+        };
+        options.result_callback = [this, i, robot](const auto &result) {
+            auto &current = home_returns_[i];
+            if (!current.goal || result.goal_id != current.goal->get_goal_id()) return;
+            current.goal.reset();
+            current.cancel_requested = false;
+            // Preserve an arrival even when it crosses the operator's pause request
+            current.arrived = result.code == rclcpp_action::ResultCode::SUCCEEDED;
+            (i == 0 ? parrot_stage_ : husky_stage_) = current.arrived ? "Reached home" : "Return interrupted";
+            if (mission_state_ == MissionState::TRAVERSINGTOHOME && !current.arrived)
+                enterManualAssistance(robot, result.result ? result.result->message : "Return home failed");
+            else evaluateTransitions();
+        };
+        try
+        {
+            home.pending = true;
+            (i == 0 ? parrot_stage_ : husky_stage_) = "Returning home";
+            ReturnHome::Goal goal;
+            goal.home = home.pose;
+            goal.home.header.stamp = now();
+            home.client->async_send_goal(goal, options);
+        }
+        catch (const std::exception &e)
+        {
+            home.pending = false;
+            enterManualAssistance(robot, e.what());
+            return false;
+        }
+    }
+    evaluateTransitions();
+    return true;
+}
+
+void MissionCoordinatorNode::cancelReturnHome()
+{
+    for (std::size_t i = 0; i < home_returns_.size(); ++i)
+    {
+        auto &home = home_returns_[i];
+        if (!home.goal || home.cancel_requested) continue;
+        auto goal = home.goal;
+        home.cancel_requested = true;
+        try
+        {
+            home.client->async_cancel_goal(goal, [this, i, goal](auto response) {
+                auto &current = home_returns_[i];
+                if (current.goal == goal && (!response || response->goals_canceling.empty()))
+                    current.cancel_requested = false;
+            });
+        }
+        catch (const std::exception &) { home.cancel_requested = false; }
+    }
 }
 
 rs1_interfaces::action::TraverseToROI::Goal MissionCoordinatorNode::createTraverseToROIGoal(const geometry_msgs::msg::PoseStamped &roi_pose_)
@@ -857,34 +1290,31 @@ rs1_interfaces::action::TraverseToROI::Goal MissionCoordinatorNode::createTraver
 
 void MissionCoordinatorNode::evaluateTransitions()
 {
-    // Parrot finishes after handoff, but husky must also reach the ROI
-    if (mission_state_ == MissionState::TRAVERSINGTOROI && parrot_succeded_ && husky_succeded_)
+    if (mission_state_ == MissionState::TRAVERSINGTOHOME && !traversalPending() &&
+        home_returns_[0].arrived && home_returns_[1].arrived)
     {
-        RCLCPP_INFO(this->get_logger(), "Phase 1 complete: both robots reached the ROI; starting sampling");
-        parrot_succeded_ = false;
-        husky_succeded_ = false;
+        mission_state_ = survey_cancelled_ ? MissionState::CANCELLED : MissionState::COMPLETE;
+        message_ = survey_cancelled_ ? "Mission cancelled: both robots returned home; confirmed measurements preserved" :
+            "Mission complete: both robots returned home";
+        finalizeMission();
+        return;
+    }
+    if (mission_state_ == MissionState::TRAVERSINGTOROI && parrot_succeded_)
+    {
         startSampleROI();
         return;
     }
-
-    // Sampling finished: the parrot has published the tree map
-    if (mission_state_ == MissionState::SAMPLINGROI && parrot_sample_succeded_)
+    if (mission_state_ == MissionState::SAMPLINGROI && sampling_stage_ == SamplingStage::MapReady && husky_succeded_)
     {
-        parrot_sample_succeded_ = false;
-        mission_state_ = MissionState::COMPLETE;
-        roi_progress_ = 1.0f;
-        message_ = "Sampling complete: tree map published for Husky";
-        RCLCPP_INFO(this->get_logger(), "Phase 2 complete: ROI sampling finished");
-        finalizeMission();
+        startMeasureTrees();
         return;
     }
 
     // Manual assistance keeps the mission alive even after both old attempts have stopped
     if (mission_state_ == MissionState::CANCELLING && !traversalPending())
     {
-        mission_state_ = MissionState::CANCELLED;
-        message_ = "Cancellation completed; both executors finished";
-        finalizeMission();
+        // Final action results have saved any completed DBHs and released navigation ownership
+        startTraverseHome();
     }
 }
 
@@ -960,18 +1390,19 @@ void MissionCoordinatorNode::publishROIMarker()
 
 bool MissionCoordinatorNode::traversalPending() const
 {
+    for (const auto &home : home_returns_) if (home.pending || home.goal) return true;
     return parrot_goal_pending_ || husky_goal_pending_ || parrot_goal_handle_ || husky_goal_handle_ ||
-        parrot_sample_goal_pending_ || parrot_sample_goal_handle_;
+        parrot_sample_goal_pending_ || parrot_sample_goal_handle_ || measure_pending_ || measure_goal_;
 }
 
 void MissionCoordinatorNode::enterManualAssistance(Robot robot, const std::string &message)
 {
     mission_state_ = MissionState::MANUAL_ASSISTANCE;
-    control_mode_ = robot == Robot::Husky ? "husky1" : "parrot1";
+    control_mode_ = safetyClear() ? (robot == Robot::Husky ? "husky1" : "parrot1") : "hold";
     // A quick retry followed by another failure must not reuse a held controller input
     ++input_revision_;
-    message_ = message + ". Manual assistance selected for " + control_mode_ +
-        "; reposition the robot, then select Resume";
+    message_ = control_mode_ == "hold" ? message + "; motion held, reset the software stop then select Resume or manual assistance" :
+        message + ". Manual assistance selected for " + control_mode_ + "; reposition the robot, then select Resume";
     RCLCPP_WARN(this->get_logger(), "%s", message_.c_str());
 
     // Gate autonomous velocities immediately, then cancel the old attempts without losing the ROI
@@ -980,6 +1411,8 @@ void MissionCoordinatorNode::enterManualAssistance(Robot robot, const std::strin
     cancelTraversalToROI(Robot::Parrot);
     cancelTraversalToROI(Robot::Husky);
     cancelSampleROI();
+    cancelMeasureTrees();
+    cancelReturnHome();
     evaluateTransitions();
 }
 
@@ -987,8 +1420,18 @@ void MissionCoordinatorNode::manualMissionCb(Robot robot,
     const std::shared_ptr<std_srvs::srv::Trigger::Request>,
     std::shared_ptr<std_srvs::srv::Trigger::Response> response)
 {
+    if (!safetyClear())
+    {
+        response->success = false;
+        response->message = "Software stop active or safety heartbeat missing; reset the stop before enabling motion";
+        return;
+    }
+
     response->success = false;
-    if (mission_state_ != MissionState::TRAVERSINGTOROI && mission_state_ != MissionState::MANUAL_ASSISTANCE)
+    if (mission_state_ != MissionState::TRAVERSINGTOROI &&
+        mission_state_ != MissionState::TRAVERSINGTOHOME &&
+        mission_state_ != MissionState::SAMPLINGROI &&
+        mission_state_ != MissionState::MANUAL_ASSISTANCE)
     {
         response->message = "No active mission to assist";
         return;
@@ -1002,10 +1445,24 @@ void MissionCoordinatorNode::resumeMissionCb(
     const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
     std::shared_ptr<std_srvs::srv::Trigger::Response> response)
 {
+    if (!safetyClear())
+    {
+        response->success = false;
+        response->message = "Software stop active or safety heartbeat missing; reset the stop before enabling motion";
+        return;
+    }
+
     if (mission_state_ != MissionState::MANUAL_ASSISTANCE)
     {
         response->success = false;
         response->message = "Mission is not in manual assistance";
+        return;
+    }
+
+    // Pick up the same part of phase 2 after the old goal has stopped
+    if (!returning_home_ && sampling_stage_ != SamplingStage::None)
+    {
+        resumeSampling(*response);
         return;
     }
 
@@ -1017,6 +1474,13 @@ void MissionCoordinatorNode::manualInputCb(const std::string &input,
     const std::shared_ptr<std_srvs::srv::Trigger::Request>,
     std::shared_ptr<std_srvs::srv::Trigger::Response> response)
 {
+    if (!safetyClear())
+    {
+        response->success = false;
+        response->message = "Software stop active or safety heartbeat missing; reset the stop before enabling motion";
+        return;
+    }
+
     response->success = false;
     if (mission_state_ != MissionState::MANUAL_ASSISTANCE)
     {
@@ -1069,14 +1533,40 @@ void MissionCoordinatorNode::finalizeMission()
     parrot_sample_goal_handle_.reset();
     parrot_sample_goal_pending_ = false;
     parrot_sample_cancel_requested_ = false;
-    parrot_sample_succeded_ = false;
+    sampling_stage_ = SamplingStage::None;
     // Preserve the terminal outcome and stop all command sources until a new session
     control_mode_ = "hold";
     publishStatus();
 }
 
+bool MissionCoordinatorNode::safetyClear() const
+{
+    return !safety_.instance_id.empty() && !safety_.husky_stopped && !safety_.parrot_stopped &&
+        std::chrono::duration<double>(std::chrono::steady_clock::now() - safety_received_).count() < 0.5;
+}
+
+void MissionCoordinatorNode::checkSafety()
+{
+    if (!safetyClear() && (mission_state_ == MissionState::TRAVERSINGTOROI ||
+        mission_state_ == MissionState::SAMPLINGROI || mission_state_ == MissionState::TRAVERSINGTOHOME ||
+        (mission_state_ == MissionState::MANUAL_ASSISTANCE && control_mode_ != "hold")))
+    {
+        // Keep phase progress and samples, but do not grant teleop authority during a stop
+        enterManualAssistance(Robot::Husky, "Software stop active or safety heartbeat missing");
+    }
+}
+
 void MissionCoordinatorNode::publishStatus()
 {
+    checkSafety();
+    if (mission_state_ == MissionState::CANCELLING || mission_state_ == MissionState::MANUAL_ASSISTANCE)
+    {
+        cancelTraversalToROI(Robot::Husky);
+        cancelTraversalToROI(Robot::Parrot);
+        cancelSampleROI();
+        cancelMeasureTrees();
+        cancelReturnHome();
+    }
     refreshROI();
     rs1_interfaces::msg::MissionStatus status;
     status.header.stamp = this->now();
@@ -1106,7 +1596,10 @@ void MissionCoordinatorNode::publishStatus()
     status.control_mode = control_mode_;
     status.manual_input = manual_input_;
     status.input_revision = input_revision_;
+    status.safety_instance_id = safety_.instance_id;
+    status.safety_revision = safety_.revision;
     status.cleanup_complete = !traversalPending();
+    status.returning_home = returning_home_;
     status_pub_->publish(status);
 }
 

@@ -14,6 +14,7 @@
   <depend>rclpy</depend>
   <depend>std_msgs</depend>
   <depend>sensor_msgs</depend>
+  <exec_depend>sensor_msgs_py</exec_depend>
   <depend>nav_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>tf2_msgs</depend>
@@ -28,6 +29,7 @@
   <exec_depend>ground_segmentation_ros2</exec_depend>
   <exec_depend>pointcloud_to_laserscan</exec_depend>
 
+  <test_depend>ament_index_python</test_depend>
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_cmake_pytest</test_depend>
   <test_depend>ament_lint_common</test_depend>
